@@ -1,0 +1,6 @@
+/vendor
+/benchmark/compiles
+/demo/compiles
+/tests/coverage
+/tests/phpunit.xml
+/tests/Test/files/compile
