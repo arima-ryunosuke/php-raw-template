@@ -40,5 +40,19 @@
     "files": [
       "tests/functions.php"
     ]
+  },
+  "scripts": {
+    "build": [
+      "@export"
+    ],
+    "export": [
+      "@php bin/export.php"
+    ],
+    "post-install-cmd": [
+      "@export"
+    ],
+    "post-update-cmd": [
+      "@export"
+    ]
   }
 }
