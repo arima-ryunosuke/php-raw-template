@@ -1,0 +1,8 @@
+<?php $this->extend('extend1.phtml') ?>
+
+<?php $this->begin('title') ?><?php $this->parent() ?>/2<?php $this->end() ?>
+
+<?php $this->begin('main') ?>
+<?php $this->parent() ?>
+This is 2 body.
+<?php $this->end() ?>

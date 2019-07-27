@@ -1,0 +1,17 @@
+<?php
+# meta template data
+// using variables:
+/** @var \ryunosuke\NightDragon\Template $this */
+/** @var mixed $_ */
+/** @var integer $int */
+/** @var boolean $bool */
+/** @var string $string */
+/** @var string[] $array */
+/** @var \Exception $object */
+?>
+<?= $int ?>
+<?= $bool ?>
+<?= $string | strtoupper ?>
+<?= $array . x >> strtoupper ?>
+<?= $array | implode(', ', $_) ?>
+<?= $object->getMessage() ?>

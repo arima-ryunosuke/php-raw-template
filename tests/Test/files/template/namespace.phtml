@@ -1,0 +1,19 @@
+<?php
+namespace template;
+?>
+<?php
+# meta template data
+// using variables:
+/** @var \ryunosuke\NightDragon\Template $this */
+/** @var mixed $_ */
+// using modifier functions:
+true or define('\\globaled', \globaled(...[]));
+true or define('\\template\\spaced', \template\spaced(...[]));
+true or define('\\fully\\qualified', \fully\qualified(...[]));
+// using array keys:
+true or define('key1', 'key1');
+true or define('key2', 'key2');
+?>
+
+?>
+<?= $value . key1 . key2.3 | \globaled | spaced | \fully\qualified ?>

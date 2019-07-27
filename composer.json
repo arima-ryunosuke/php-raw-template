@@ -43,10 +43,14 @@
   },
   "scripts": {
     "build": [
-      "@export"
+      "@export",
+      "@test"
     ],
     "export": [
       "@php bin/export.php"
+    ],
+    "test": [
+      "vendor/bin/phpunit --configuration=tests/phpunit.xml"
     ],
     "post-install-cmd": [
       "@export"
