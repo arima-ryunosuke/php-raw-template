@@ -1,0 +1,21 @@
+<?php
+# meta template data
+// using variables:
+/** @var \ryunosuke\NightDragon\Template $this */
+/** @var mixed $_ */
+/** @var string $SiteName */
+// using modifier functions:
+
+// using array keys:
+
+?>
+<html lang="ja">
+<head>
+    <title><?php $this->block('title') ?> - <?= $SiteName ?></title>
+</head>
+<body>
+<?php $this->begin('main') ?>
+これは親コンテンツです。
+<?php $this->end() ?>
+</body>
+</html>

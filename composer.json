@@ -47,13 +47,17 @@
     ],
     "build": [
       "@export",
-      "@test"
+      "@test",
+      "@demo"
     ],
     "export": [
       "@php bin/export.php"
     ],
     "test": [
       "vendor/bin/phpunit --configuration=tests/phpunit.xml"
+    ],
+    "demo": [
+      "@php demo/run.php"
     ],
     "post-install-cmd": [
       "@export"
