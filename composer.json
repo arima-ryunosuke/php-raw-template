@@ -42,6 +42,9 @@
     ]
   },
   "scripts": {
+    "benchmark": [
+      "@php benchmark/run.php"
+    ],
     "build": [
       "@export",
       "@test"
