@@ -475,6 +475,12 @@ varAccessor は `<?= $array.key ?>` における `.` を指定します。
 #### $this->include(string $filename[, array $vars])
 
 指定したテンプレートを読み込みます。
+このメソッドはレンダリングされます。
+
+#### $this->content(string $filename)
+
+指定したファイルをを読み込みます。
+このメソッドはレンダリングされません（js, css などを埋め込みたいときに使います）。
 
 ## Notes
 
