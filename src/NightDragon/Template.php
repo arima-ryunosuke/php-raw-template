@@ -111,7 +111,7 @@ class Template
                     }
                 }
             };
-            $recho($this->original->blocks[$name]);
+            $recho($this->original->closestBlock($name));
         }
     }
 
@@ -145,7 +145,7 @@ class Template
 
         $name = $this->currentBlock;
         $this->blocks[$this->currentBlock][] = ob_get_clean();
-        $this->blocks[$this->currentBlock][] = function () use ($name) { return $this->parent->blocks[$name]; };
+        $this->blocks[$this->currentBlock][] = function () use ($name) { return $this->parent->closestBlock($name); };
         ob_start();
     }
 
@@ -191,5 +191,21 @@ class Template
             return $filename;
         }
         return dirname($this->filename) . "/$filename";
+    }
+
+    /**
+     * 指定ブロックを持つ直上の親を返す（自身も含む）
+     *
+     * @param string $name ブロック名
+     * @return string[] 指定ブロック
+     */
+    private function closestBlock($name)
+    {
+        $that = $this;
+        while (!isset($that->blocks[$name])) {
+            $that = $that->parent;
+            assert($that !== null, "undefined block '$name'."); // public メソッドの範疇では基本的にありえない
+        }
+        return $that->blocks[$name];
     }
 }

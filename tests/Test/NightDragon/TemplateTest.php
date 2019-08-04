@@ -72,6 +72,18 @@ nesting
         $this->assertEquals('contents1parentContent1contents2', ob_get_clean());
     }
 
+    function test_block_parent_only()
+    {
+        $template = new Template(new Renderer([]), '');
+
+        ob_start();
+
+        $parent = $template->extend('');
+        $parent->block('blocking', 'parentContent');
+
+        $this->assertEquals('parentContent', ob_get_clean());
+    }
+
     function test_extend()
     {
         $renderer = new Renderer([
@@ -90,6 +102,11 @@ nesting
 This is 3 body.
 This is 1 body.
 This is 2 body.
+
+extend1
+extend1/extend2
+extend1/extend2/extend3
+extend1/extend3
 </body>
 </html>
 ', $contents);
