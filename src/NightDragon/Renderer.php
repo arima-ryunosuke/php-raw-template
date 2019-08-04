@@ -471,7 +471,9 @@ class Renderer
 
         // スタックトレースは共通で書き換えてしまう
         $rewritten['trace'] = array_map(function ($trace) use ($refile) {
-            $trace['file'] = $refile($trace['file']);
+            if (isset($trace['file'])) {
+                $trace['file'] = $refile($trace['file']);
+            }
             return $trace;
         }, $ex->getTrace());
 
