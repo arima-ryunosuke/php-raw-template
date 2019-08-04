@@ -271,6 +271,27 @@ define("ns\\\\hoge2", "ns\\\\hoge2");
         $this->assertEquals('Undefined variable: undefined', error_get_last()['message']);
     }
 
+    function test_errorHandling_report0()
+    {
+        $renderer = new Renderer([
+            'debug' => true,
+        ]);
+        try {
+            $receiver = null;
+            set_error_handler(static function ($v) use (&$receiver) {
+                $receiver = true;
+            });
+            $this->assertEquals('az', @$renderer->render(self::TEMPLATE_DIR . '/notice.phtml', []));
+            $this->assertTrue($receiver);
+        }
+        catch (\Throwable $e) {
+            $this->fail();
+        }
+        finally {
+            restore_error_handler();
+        }
+    }
+
     function test_errorHandling_notice()
     {
         $renderer = new Renderer([

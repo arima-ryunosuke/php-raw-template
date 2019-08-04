@@ -416,7 +416,10 @@ class Renderer
         $template = new $templateClass($this, $filename);
 
         if ($this->errorHandling) {
-            set_error_handler(function (int $errno, string $errstr, string $errfile, int $errline) {
+            $already = set_error_handler(function (int $errno, string $errstr, string $errfile, int $errline) use (&$already) {
+                if (error_reporting() === 0) {
+                    return $already !== null ? $already(...func_get_args()) : false;
+                }
                 throw new \ErrorException($errstr, 0, $errno, $errfile, $errline);
             });
         }
