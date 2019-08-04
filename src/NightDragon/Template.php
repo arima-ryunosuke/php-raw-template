@@ -152,6 +152,8 @@ class Template
     /**
      * 指定ファイルを取り込む
      *
+     * ファイルはテンプレートファイルとしてレンダリングして取り込まれる。
+     *
      * @param string $filename 読み込むファイル名
      * @param array $vars 変数配列
      */
@@ -159,6 +161,19 @@ class Template
     {
         $template = new static($this->renderer, $this->resolvePath($filename));
         echo $template->render($vars + $this->vars);
+    }
+
+    /**
+     * 指定ファイルをただのファイルとして読み込む
+     *
+     * ファイルはただのテキストファイルとして取り込まれる。
+     *
+     * @param string $filename 読み込むファイル名
+     */
+    public function content(string $filename)
+    {
+        $filename = $this->renderer->resolvePath($this->resolvePath($filename));
+        echo file_get_contents($filename);
     }
 
     /**

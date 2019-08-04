@@ -146,6 +146,17 @@ class Renderer
         }
     }
 
+    public function resolvePath($filename)
+    {
+        // compile ディレクトリ内で __DIR__ を使うとその絶対パスになっているので元のパスに読み替える
+        $filename = strtr(str_lchop($filename, $this->compileDir), [';' => ':']);
+
+        // 同上。デバッグ中や compile ディレクトリ未設定時は常にストリームラッパー経由になる
+        $filename = str_lchop($filename, $this->wrapperProtocol . '://dummy/');
+
+        return $filename;
+    }
+
     /**
      * テンプレートファイルのコンパイル
      *
@@ -161,11 +172,7 @@ class Renderer
             return $this->stats[$filename];
         }
 
-        // compile ディレクトリ内で __DIR__ を使うとその絶対パスになっているので元のパスに読み替える
-        $filename = strtr(str_lchop($filename, $this->compileDir), [';' => ':']);
-
-        // 同上。デバッグ中や compile ディレクトリ未設定時は常にストリームラッパー経由になる
-        $filename = str_lchop($filename, $this->wrapperProtocol . '://dummy/');
+        $filename = $this->resolvePath($filename);
 
         // デバッグ中はメタ情報埋め込みのためテンプレートファイル自体に手を出す
         if ($this->debug && is_writable($filename)) {

@@ -38,7 +38,7 @@ nesting
 ', $contents);
     }
 
-    function test_content()
+    function test_block()
     {
         $template = new Template(new Renderer([]), '');
 
@@ -52,7 +52,7 @@ nesting
         $this->assertEquals('contents1contents2', ob_get_clean());
     }
 
-    function test_content_parent()
+    function test_block_parent()
     {
         $template = new Template(new Renderer([]), '');
 
@@ -97,6 +97,16 @@ This is 2 body.
 
     function test_include()
     {
+        $actual = <<<CONTENT
+including
+&lt;tag&gt;hoge&lt;/tag&gt;
+&lt;tag&gt;hoge&lt;/tag&gt;
+&lt;tag&gt;fuga&lt;/tag&gt;
+
+CONTENT;
+
+
+        // debug:true 時はストリームラッパー経由になる
         $renderer = new Renderer([
             'debug'      => true,
             'compileDir' => self::COMPILE_DIR,
@@ -105,10 +115,48 @@ This is 2 body.
         $contents = $template->render([
             'variable' => "<tag>hoge</tag>",
         ]);
-        $this->assertEquals('including
-&lt;tag&gt;hoge&lt;/tag&gt;
-&lt;tag&gt;hoge&lt;/tag&gt;
-&lt;tag&gt;fuga&lt;/tag&gt;
-', $contents);
+        $this->assertEquals($actual, $contents);
+
+        // debug:false 時は COMPILE_DIR になる
+        $renderer = new Renderer([
+            'debug'      => false,
+            'compileDir' => self::COMPILE_DIR,
+        ]);
+        $template = new Template($renderer, self::TEMPLATE_DIR . '/container.phtml');
+        $contents = $template->render([
+            'variable' => "<tag>hoge</tag>",
+        ]);
+        $this->assertEquals($actual, $contents);
+    }
+
+    function test_content()
+    {
+        $actual = <<<CONTENT
+<style>body {
+    color: white;
+}
+</style>
+<script>(function (a) {
+    alert(a);
+})(1);
+</script>
+
+CONTENT;
+
+        // debug:true 時はストリームラッパー経由になる
+        $renderer = new Renderer([
+            'debug'      => true,
+            'compileDir' => self::COMPILE_DIR,
+        ]);
+        $template = new Template($renderer, self::TEMPLATE_DIR . '/content.phtml');
+        $this->assertEquals($actual, $template->render([]));
+
+        // debug:false 時は COMPILE_DIR になる
+        $renderer = new Renderer([
+            'debug'      => false,
+            'compileDir' => self::COMPILE_DIR,
+        ]);
+        $template = new Template($renderer, self::TEMPLATE_DIR . '/content.phtml');
+        $this->assertEquals($actual, $template->render([]));
     }
 }
