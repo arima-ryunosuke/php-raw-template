@@ -177,7 +177,7 @@ class Renderer
         // デバッグ中はメタ情報埋め込みのためテンプレートファイル自体に手を出す
         if ($this->debug && is_writable($filename)) {
             $content = file_get_contents($filename);
-            $source = new Source($content);
+            $source = new Source($content, $this->renderOptions['compatibleShortTag'] ? Source::SHORT_TAG_REPLACE : Source::SHORT_TAG_NOTHING);
 
             $meta = [];
             if ($this->gatherOptions['gatherVariable']) {

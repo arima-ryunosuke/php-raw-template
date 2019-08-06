@@ -57,16 +57,7 @@ class RewriteWrapper
 
     private function rewrite(string $source, array $options): string
     {
-        $source = new Source($source);
-
-        // short_open_tag が無効・廃止になっても動くように <? を強制的に <?pHP（偶然大文字タグがあるかもしれないので pHP） に変換
-        if ($options['compatibleShortTag'] && !ini_get('short_open_tag')) {
-            $source->replace([T_INLINE_HTML], function (Source $tokens) {
-                $tokens[0]->token = str_replace('<?', '<?pHP ', $tokens[0]->token);
-                return $tokens;
-            });
-            $source = new Source("$source");
-        }
+        $source = new Source($source, $options['compatibleShortTag'] ? Source::SHORT_TAG_REWRITE : Source::SHORT_TAG_NOTHING);
 
         $namespace = $source->namespace();
 

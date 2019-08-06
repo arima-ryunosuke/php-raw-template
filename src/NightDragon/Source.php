@@ -4,18 +4,38 @@ namespace ryunosuke\NightDragon;
 
 class Source implements \ArrayAccess, \IteratorAggregate, \Countable
 {
+    const SHORT_OPEN_TAG = '<?pHP ';
+
+    /// ショートタグ互換モード定数
+    const SHORT_TAG_NOTHING = 0; // <? に関して何もしない
+    const SHORT_TAG_REPLACE = 1; // <? を <?php に読み替えるがパース時のみで書き下しには影響しない
+    const SHORT_TAG_REWRITE = 2; // <? を <?php に読み替えてパース時だけでなく書き下しにも影響する
+
     /// matcher 定数
     const MATCH_ANY   = null;  // like: /./
     const MATCH_MANY0 = false; // like: /.*/
     const MATCH_MANY1 = true;  // like: /.+/
 
+    /** @var int ショートタグ互換モード */
+    private $compatibleShortTagMode;
+
     /** @var Token[] トークン配列 */
     private $tokens = [];
 
-    public function __construct($eitherCodeOrTokens)
+    public function __construct($eitherCodeOrTokens, int $compatibleShortTagMode = self::SHORT_TAG_NOTHING)
     {
+        // php.ini でショートタグが有効なら標準に身を任せてこのクラスでは何もしない
+        $this->compatibleShortTagMode = ini_get('short_open_tag') ? self::SHORT_TAG_NOTHING : $compatibleShortTagMode;
+
         $tokens = is_string($eitherCodeOrTokens) ? token_get_all($eitherCodeOrTokens) : array_values($eitherCodeOrTokens);
         foreach ($tokens as $i => $token) {
+            // ショートタグ互換ならそのインラインテキストを再パース
+            if ($this->compatibleShortTagMode > 0 && is_array($token) && $token[0] === T_INLINE_HTML) {
+                $inline = str_replace('<?', self::SHORT_OPEN_TAG, $token[1]);
+                $this->tokens = array_merge($this->tokens, (new self($inline, self::SHORT_TAG_NOTHING))->tokens);
+                continue;
+            }
+
             // 配列だったり文字列トークンだったりで統一性がないので配列に正規化する
             if (is_string($token)) {
                 // 次のトークンが T_WHITESPACE だったら行番号も同じ確率が**高い**（確実ではないので参考程度に）
@@ -32,14 +52,22 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
             else {
                 $token = Token::instance($token);
             }
-
             $this->tokens[] = $token;
         }
     }
 
     public function __toString()
     {
-        return implode('', array_column($this->tokens, 'token'));
+        $tokens = $this->tokens;
+        if ($this->compatibleShortTagMode === self::SHORT_TAG_REPLACE) {
+            $tokens = array_map(function (Token $token) {
+                if ($token->equals(self::SHORT_OPEN_TAG)) {
+                    $token->token = '<?';
+                }
+                return $token;
+            }, $tokens);
+        }
+        return implode('', array_column($tokens, 'token'));
     }
 
     public function offsetExists($offset)

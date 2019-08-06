@@ -45,6 +45,22 @@ class SourceTest extends \ryunosuke\Test\AbstractTestCase
         $this->assertCount(9, $source);
     }
 
+    function test_short_tag()
+    {
+        // token_get_all は short_open_tag の影響を受けるので分岐が必要
+        if (ini_get('short_open_tag')) {
+            $this->markTestSkipped('short_open_tag is disabled');
+        }
+
+        $source = new Source('<? $var = "prefix-" . "-middle-" . __FUNCTION__ . "-suffix";', Source::SHORT_TAG_REPLACE);
+        $this->assertEquals(Token::instance(T_OPEN_TAG, '<?pHP ', 1), $source[0]);
+        $this->assertEquals('<? $var = "prefix-" . "-middle-" . __FUNCTION__ . "-suffix";', (string) $source);
+
+        $source = new Source('<? $var = "prefix-" . "-middle-" . __FUNCTION__ . "-suffix";', Source::SHORT_TAG_REWRITE);
+        $this->assertEquals(Token::instance(T_OPEN_TAG, '<?pHP ', 1), $source[0]);
+        $this->assertEquals('<?pHP  $var = "prefix-" . "-middle-" . __FUNCTION__ . "-suffix";', (string) $source);
+    }
+
     function test_first_last_both()
     {
         $source = new Source('<?php $var = "prefix-" . "-middle-" . __FUNCTION__ . "-suffix";');
