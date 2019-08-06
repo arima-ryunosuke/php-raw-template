@@ -54,7 +54,8 @@
       "@php bin/export.php"
     ],
     "test": [
-      "vendor/bin/phpunit --configuration=tests/phpunit.xml"
+      "php -d short_open_tag=0 vendor/phpunit/phpunit/phpunit --configuration=tests/phpunit.xml",
+      "php -d short_open_tag=1 vendor/phpunit/phpunit/phpunit --configuration=tests/phpunit.xml"
     ],
     "demo": [
       "@php demo/run.php"
