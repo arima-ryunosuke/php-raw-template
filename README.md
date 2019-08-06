@@ -286,6 +286,7 @@ $renderer = new \ryunosuke\NightDragon\Renderer([
     'compileDir'      => null,
     // コンパイルオプション系
     'compatibleShortTag' => false,
+    'defaultNamespace'   => '\\',
     'defaultFilter'      => '\\' . Renderer::class . '::html',
     'defaultGetter'      => '\\' . Renderer::class . '::access',
     'defaultCloser'      => "\n",
@@ -403,9 +404,13 @@ compileDir に書き出したりせずとも opcache が有効になり、かつ
 このキーを true に設定すると ini の short_open_tag の設定に関わらず `<? ?>` タグが有効になります。
 ini の変更ができなかったり、 php 8.0 で short_open_tag が廃止されたりした状況を想定してますが、気休め程度のオプションなので原則的に false にしてください。
 
-#### defaultFilter, defaultGetter, defaultCloser
+#### defaultNamespace, defaultFilter, defaultGetter, defaultCloser
 
 同じくソース書き換えのオプションです。
+
+defaultNamespace はテンプレート内で名前解決が行われる際に探索・付与する名前空間を指定します。
+現在のところ `<?= $array | hoge ?>` の `hoge` を探索する際に使用されるのみです。
+ファイルの名前空間宣言は常に探索されます。
 
 defaultFilter は `<?= $string ?>` で変換されるデフォルトフィルタを指定します。
 可変引数を取る callable でかつ文字列である必要があります（クロージャは不可）。
