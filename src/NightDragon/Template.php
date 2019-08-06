@@ -32,6 +32,11 @@ class Template
         $this->original = $this;
     }
 
+    public function getFilename(): string
+    {
+        return $this->renderer->resolvePath($this->filename);
+    }
+
     /**
      * 変数を指定してレンダリング
      *

@@ -7,6 +7,25 @@ use ryunosuke\NightDragon\Template;
 
 class TemplateTest extends \ryunosuke\Test\AbstractTestCase
 {
+    function test_getFilename()
+    {
+        $FILENAME = self::TEMPLATE_DIR . '/simple.phtml';
+
+        $renderer = new Renderer([
+            'debug'      => true,
+            'compileDir' => self::COMPILE_DIR,
+        ]);
+        $template = new Template($renderer, $FILENAME);
+        $this->assertEquals($FILENAME, $template->getFilename());
+
+        $renderer = new Renderer([
+            'debug'      => false,
+            'compileDir' => self::COMPILE_DIR,
+        ]);
+        $template = new Template($renderer, $FILENAME);
+        $this->assertEquals($FILENAME, $template->getFilename());
+    }
+
     function test_render()
     {
         $renderer = new Renderer([
