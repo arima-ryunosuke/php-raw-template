@@ -63,8 +63,6 @@ class RendererTest extends \ryunosuke\Test\AbstractTestCase
 
     function test_compile_gather()
     {
-        require_once __DIR__ . '/../files/template/function.php';
-
         $VARS = [
             'int'    => 123,
             'bool'   => true,
@@ -92,9 +90,9 @@ class RendererTest extends \ryunosuke\Test\AbstractTestCase
         // 名前空間も問題ない
         $renderer->compile(self::TEMPLATE_DIR . '/namespace.phtml', []);
         $template = file_get_contents(self::TEMPLATE_DIR . '/namespace.phtml');
-        $this->assertContains("define('\\\\globaled', \\globaled(...[]))", $template);
-        $this->assertContains("define('\\\\template\\\\spaced', \\template\\spaced(...[]))", $template);
-        $this->assertContains("define('\\\\fully\\\\qualified', \\fully\\qualified(...[]))", $template);
+        $this->assertContains("define('globaled', globaled(...[]))", $template);
+        $this->assertContains("define('spaced', template\\spaced(...[]))", $template);
+        $this->assertContains("define('fully\\\\qualified', fully\\qualified(...[]))", $template);
 
         $renderer = new Renderer([
             'debug'          => true,

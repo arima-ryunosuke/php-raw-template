@@ -59,13 +59,13 @@ class RewriteWrapper
     {
         $source = new Source($source, $options['compatibleShortTag'] ? Source::SHORT_TAG_REWRITE : Source::SHORT_TAG_NOTHING);
 
-        $namespace = $source->namespace();
+        $options['defaultNamespace'][] = $source->namespace();
 
         $source->replace([
             [T_OPEN_TAG_WITH_ECHO, T_OPEN_TAG],
             Source::MATCH_MANY1,
             T_CLOSE_TAG,
-        ], function (Source $tokens) use ($namespace, $options) {
+        ], function (Source $tokens) use ($options) {
             // <?php タグは絶対に触らない
             $open_tag = substr($tokens[0]->token, 0, 5);
             if ($open_tag === '<?php') {
@@ -73,7 +73,7 @@ class RewriteWrapper
             }
 
             $this->rewriteAccessKey($tokens, $options['varAccessor'], $options['defaultGetter']);
-            $this->rewriteModifier($tokens, $options['varReceiver'], $options['varModifier'], $namespace);
+            $this->rewriteModifier($tokens, $options['varReceiver'], $options['varModifier'], $options['defaultNamespace']);
             $this->rewriteFilter($tokens, $options['defaultFilter'], $options['defaultCloser']);
 
             // <? タグは 7.4 で非推奨になるので警告が出るようになるが、せっかくプリプロセス的な処理をしてるので置換して警告を抑止する
@@ -118,7 +118,7 @@ class RewriteWrapper
         }, 0);
     }
 
-    private function rewriteModifier(Source $tokens, string $receiver, string $modifier, string $namespace)
+    private function rewriteModifier(Source $tokens, string $receiver, string $modifier, array $namespaces)
     {
         // @todo <?= ～ > でざっくりやってるのでもっと局所的に当てていくほうが良い
 
@@ -126,7 +126,7 @@ class RewriteWrapper
             T_OPEN_TAG_WITH_ECHO,
             Source::MATCH_MANY0,
             T_CLOSE_TAG,
-        ], function (Source $tokens) use ($receiver, $modifier, $namespace) {
+        ], function (Source $tokens) use ($receiver, $modifier, $namespaces) {
             list($open, $close) = $tokens->shrink();
 
             $sources = $tokens->split($modifier);
@@ -165,8 +165,13 @@ class RewriteWrapper
                     $stmt = (string) $parts;
                 }
 
-                if ($stmt[0] !== '\\' && !function_exists(strstr($stmt, '(', true))) {
-                    $stmt = concat($namespace, '\\') . $stmt;
+                if ($stmt[0] !== '\\') {
+                    foreach ($namespaces as $namespace) {
+                        if (function_exists("$namespace\\" . strstr($stmt, '(', true))) {
+                            $stmt = concat($namespace, '\\') . $stmt;
+                            break;
+                        }
+                    }
                 }
             }
 

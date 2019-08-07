@@ -94,6 +94,7 @@ class Renderer
             'compileDir'         => null,
             // コンパイルオプション系
             'compatibleShortTag' => false,
+            'defaultNamespace'   => '\\',
             'defaultFilter'      => '\\' . Renderer::class . '::html',
             'defaultGetter'      => '\\' . Renderer::class . '::access',
             'defaultCloser'      => "\n",
@@ -115,6 +116,7 @@ class Renderer
         ];
         $this->renderOptions = [
             'compatibleShortTag' => (bool) $options['compatibleShortTag'],
+            'defaultNamespace'   => (array) $options['defaultNamespace'],
             'defaultFilter'      => (string) $options['defaultFilter'],
             'defaultGetter'      => (string) $options['defaultGetter'],
             'defaultCloser'      => (string) $options['defaultCloser'],
@@ -186,7 +188,7 @@ class Renderer
                 $meta[] = array_sprintf($variables, '/** @var %s %s */', "\n");
             }
             if ($this->gatherOptions['gatherModifier'] || $this->gatherOptions['constFilename']) {
-                $modifiers = $this->gatherModifier($source, $this->renderOptions['varModifier']);
+                $modifiers = $this->gatherModifier($source, $this->renderOptions['varModifier'], $this->renderOptions['defaultNamespace']);
                 if ($this->gatherOptions['gatherModifier']) {
                     $meta[] = self::MODIFIER_FUNCTION_COMMENT;
                     $meta[] = array_sprintf($modifiers, 'true or define(%1$s, %2$s(...[]));', "\n");
@@ -306,9 +308,9 @@ class Renderer
         return $result;
     }
 
-    private function gatherModifier(Source $source, string $modifier): array
+    private function gatherModifier(Source $source, string $modifier, array $namespaces): array
     {
-        $namespace = $source->namespace();
+        $namespaces[] = $source->namespace();
 
         $result = [];
         foreach ($source->match([
@@ -317,12 +319,14 @@ class Renderer
             [T_CLOSE_TAG, $modifier],
         ]) as $tokens) {
             $tokens->shrink();
-            $funcname = (string) $tokens;
-            if ($funcname[0] !== '\\' && !function_exists($funcname)) {
-                $funcname = concat($namespace, '\\') . $funcname;
-            }
-            if (function_exists($funcname)) {
-                $result[$funcname] = var_export($funcname, true);
+            $stmt = (string) $tokens;
+            $stmt = strstr($stmt, '(', true) ?: $stmt;
+            foreach ($namespaces as $namespace) {
+                $funcname = ltrim("$namespace\\$stmt", '\\');
+                if (function_exists($funcname)) {
+                    $result[$funcname] = var_export(ltrim($stmt, '\\'), true);
+                    break;
+                }
             }
         }
         return $result;

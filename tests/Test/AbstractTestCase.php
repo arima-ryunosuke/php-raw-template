@@ -9,6 +9,13 @@ class AbstractTestCase extends TestCase
     const TEMPLATE_DIR = __DIR__ . '/files/template';
     const COMPILE_DIR  = __DIR__ . '/files/compile';
 
+    public function setUp()
+    {
+        parent::setUp();
+
+        require_once __DIR__ . '/files/template/function.php';
+    }
+
     /**
      * 例外が投げられたかアサーション
      *

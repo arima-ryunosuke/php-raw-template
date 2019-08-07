@@ -13,3 +13,13 @@ namespace fully {
 
     function qualified() { }
 }
+
+namespace hoge {
+
+    function f() { }
+}
+
+namespace fuga {
+
+    function f() { }
+}
