@@ -296,11 +296,9 @@ define("ns\\\\hoge2", "ns\\\\hoge2");
             'debug' => true,
         ]);
         try {
-            ob_start();
             $renderer->render(self::TEMPLATE_DIR . '/notice.phtml', []);
         }
         catch (\Throwable $e) {
-            $this->assertEquals('a', ob_get_clean());
             $this->assertEquals(0, $e->getCode());
             $this->assertEquals(self::TEMPLATE_DIR . '/notice.phtml', $e->getFile());
             $this->assertEquals('Undefined variable: undefined
@@ -319,17 +317,9 @@ near:
             'debug' => true,
         ]);
         try {
-            ob_start();
             $renderer->render(self::TEMPLATE_DIR . '/error.phtml', ['object' => new \stdClass()]);
         }
         catch (\Throwable $e) {
-            $this->assertEquals('dummy line 1
-dummy line 2
-dummy line 3
-dummy line 4
-dummy line 5
-dummy line 6
-', ob_get_clean());
             $this->assertEquals(0, $e->getCode());
             $this->assertEquals(self::TEMPLATE_DIR . '/error.phtml', $e->getFile());
             $this->assertEquals('Call to undefined method stdClass::undefinedMethod()
@@ -353,7 +343,6 @@ near:
             'debug' => true,
         ]);
         try {
-            ob_start();
             $renderer->render(self::TEMPLATE_DIR . '/error.phtml', [
                 'object' => new class
                 {
@@ -362,13 +351,6 @@ near:
             ]);
         }
         catch (\Throwable $e) {
-            $this->assertEquals('dummy line 1
-dummy line 2
-dummy line 3
-dummy line 4
-dummy line 5
-dummy line 6
-', ob_get_clean());
             $this->assertEquals(0, $e->getCode());
             $this->assertEquals(__FILE__, $e->getFile());
             $this->assertEquals('msg', $e->getMessage());
@@ -384,7 +366,6 @@ dummy line 6
             'debug' => true,
         ]);
         try {
-            ob_start();
             $renderer->render(self::TEMPLATE_DIR . '/error.phtml', [
                 'object' => new class
                 {
@@ -393,13 +374,6 @@ dummy line 6
             ]);
         }
         catch (\Throwable $e) {
-            $this->assertEquals('dummy line 1
-dummy line 2
-dummy line 3
-dummy line 4
-dummy line 5
-dummy line 6
-', ob_get_clean());
             $this->assertEquals(2, $e->getCode());
             $this->assertEquals(__FILE__, $e->getFile());
             $this->assertEquals('msg2', $e->getMessage());

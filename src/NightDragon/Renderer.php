@@ -448,7 +448,7 @@ class Renderer
         }
         finally {
             while (ob_get_level() > $ob_level) {
-                ob_end_flush();
+                ob_end_clean();
             }
             if ($this->errorHandling) {
                 restore_error_handler();
