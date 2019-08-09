@@ -70,16 +70,20 @@ action.phtml:
 色々変数を表示しています。
 
 これはただの文字列表示です（デフォルトで html エスケープされます）：<?= "this is $string" ?>
-ショート echo タグではなく、php タグではエスケープされません：<?php echo "this is $string" ?>
+ショート echo タグではなく、php タグはエスケープされません：<?php echo "this is $string" ?>
 ただの php タグは改行もされません（php のデフォルトです。ショート echo タグを使うとその挙動を抑制できます）。
 
 これは修飾子機能です（"|" でパイプ演算子のような挙動になります）：<?= $string | strtoupper ?>
 修飾子は繋げられるし、 $_ という特殊変数を使うと任意引数位置に適用できます：<?= $string | strtoupper | str_replace('TITLE', 'subject', $_) ?>
+登録しておけば静的メソッドも呼べます：<?= $string | upper ?>
 
 これは配列のアクセスです（"." で配列アクセスできます）：<?= $array.hoge ?>
-配列アクセスはネストできます：<?= $array.fuga.0 ?>
+配列アクセスはネストできます：<?= $array.fuga. 0 ?>
 オブジェクトもアクセスできます：<?= $object.hoge ?>
-混在しても OK です：<?= $object.fuga.0 ?>
+配列とオブジェクトは混在して OK です：<?= $object.fuga. 0 ?>
+
+上記2つの機能は「配列アクセス -> 修飾子」のときのみ組み合わせ可能です：<?= $array.fuga | implode(',', $_) ?>
+右記のような順番の組み合わせはできません：< ?= $string | str_split . 3 ? >
 
 おまけ：所詮素の php なのであらゆる表現が可能です。
 <?php foreach ($array as $key => $value): ?>
@@ -129,6 +133,7 @@ action.phtml:
 
 これは修飾子機能です（"|" でパイプ演算子のような挙動になります）：<?=\ryunosuke\NightDragon\Renderer::html(strtoupper($string)),"\n"?>
 修飾子は繋げられるし、 $_ という特殊変数を使うと任意引数位置に適用できます：<?=\ryunosuke\NightDragon\Renderer::html(str_replace('TITLE','subject',strtoupper($string))),"\n"?>
+登録しておけば静的メソッドも呼べます：<?=\ryunosuke\NightDragon\Renderer::html(\Modifier::upper($string)),"\n"?>
 
 これは配列のアクセスです（"." で配列アクセスできます）：<?=\ryunosuke\NightDragon\Renderer::html(\ryunosuke\NightDragon\Renderer::access($array,'hoge')),"\n"?>
 配列アクセスはネストできます：<?=\ryunosuke\NightDragon\Renderer::html(\ryunosuke\NightDragon\Renderer::access(\ryunosuke\NightDragon\Renderer::access($array,'fuga'),'0')),"\n"?>
@@ -170,6 +175,7 @@ action.phtml:
 
 これは修飾子機能です（"|" でパイプ演算子のような挙動になります）：THIS&#039;S TITLE
 修飾子は繋げられるし、 $_ という特殊変数を使うと任意引数位置に適用できます：THIS&#039;S subject
+登録しておけば静的メソッドも呼べます：THIS&#039;S TITLE
 
 これは配列のアクセスです（"." で配列アクセスできます）：HOGE
 配列アクセスはネストできます：X
@@ -234,8 +240,8 @@ action.phtml:
 `$_` がない場合は第1引数に適用されます。
 第1引数への適用だけであれば関数呼び出しの `()` は省略できます。
 
-修飾子に使用できるのは単一の関数だけです。制限付きですが名前空間関数も一応サポートしています。
-クラスの静的メソッドや文字列以外の callable 形式は使用できません。
+修飾子に使用できるのは単一の関数だけです。制限付きですが名前空間関数や静的メソッドも一応サポートしています。
+文字列以外の callable 形式は使用できません。
 
 - OK
     - `<?= $value | funcname($_) ?>` (=`funcname($value)`: 単純な呼び出し)
@@ -247,9 +253,11 @@ action.phtml:
     - `<?= $value | funcname1 | funcname2 | funcname3 ?>` (=`funcname3(funcname2(funcname1($value)))`: 修飾子はネスト可能で各段階では上記の記法すべてが使える)
     - `<?= $value | \namespace\func ?>` (=`\namespace\func($value)`: 絶対指定の名前空間関数呼び出し)
     - `<?= $value | subspace\func ?>` (=`\filespace\subspace\func($value)`: ファイルの名前空間での相対呼び出し)
+    - `<?= $value | func ?>` (=`\defaultNamespace\func($value)`: defaultNamespace で事前登録した名前空間の関数呼び出し)
+    - `<?= $value | method ?>` (=`\defaultClass::method($value)`: defaultClass で事前登録したクラスの静的メソッド呼び出し)
 - NG
     - `<?= $value | undefined ?>` (未定義関数。構文的にエラーではないが呼び出せない)
-    - `<?= $value | class::method ?>` (メソッドは呼び出し不可)
+    - `<?= $value | class::method ?>` (メソッド形式は呼び出し不可)
     - `<?= $value | $callable ?>` (変数に格納された callable は現状呼び出せるが、正式な仕様ではない)
 
 #### auto filter
@@ -287,6 +295,7 @@ $renderer = new \ryunosuke\NightDragon\Renderer([
     // コンパイルオプション系
     'compatibleShortTag' => false,
     'defaultNamespace'   => '\\',
+    'defaultClass'       => '',
     'defaultFilter'      => '\\' . Renderer::class . '::html',
     'defaultGetter'      => '\\' . Renderer::class . '::access',
     'defaultCloser'      => "\n",
@@ -337,7 +346,8 @@ echo $renderer->render(__DIR__ . '/action.phtml', [
 /** @var array $array */
 /** @var \stdClass $object */
 // using modifier functions:
-true or define('strtoupper', strtoupper(...[]));
+true or define('strtoupper', \strtoupper(...[]));
+true or define('upper', \Modifier::upper(...[]));
 // using array keys:
 true or define('hoge', 'hoge');
 true or define('fuga', 'fuga');
@@ -404,13 +414,24 @@ compileDir に書き出したりせずとも opcache が有効になり、かつ
 このキーを true に設定すると ini の short_open_tag の設定に関わらず `<? ?>` タグが有効になります。
 ini の変更ができなかったり、 php 8.0 で short_open_tag が廃止されたりした状況を想定してますが、気休め程度のオプションなので原則的に false にしてください。
 
-#### defaultNamespace, defaultFilter, defaultGetter, defaultCloser
+#### defaultNamespace, defaultClass
 
 同じくソース書き換えのオプションです。
 
-defaultNamespace はテンプレート内で名前解決が行われる際に探索・付与する名前空間を指定します。
+defaultNamespace はテンプレート内で名前解決が行われる際に探索・付与する名前空間を指定します。ファイルの名前空間宣言は常に探索されます。
 現在のところ `<?= $array | hoge ?>` の `hoge` を探索する際に使用されるのみです。
-ファイルの名前空間宣言は常に探索されます。
+defaultNamespace が指定されてかつその名前空間に `hoge` 関数が定義されているとこれは `<?= $array | \namespace\hoge ?>` と解釈されます。
+
+defaultClass はテンプレート内で名前解決が行われる際に探索・付与するクラスを指定します。
+現在のところ `<?= $array | hoge ?>` の `hoge` を探索する際に使用されるのみです。
+defaultClass が指定されてかつそのクラスに `hoge` 静的メソッドが定義されているとこれは `<?= $array | \classname::hoge ?>` と解釈されます。
+
+これらはそれぞれ複数指定できます。その際の探索順は指定順です。
+また、defaultNamespace と defaultClass の探索順は defaultClass -> defaultNamespace です。
+
+#### defaultFilter, defaultGetter, defaultCloser
+
+同じくソース書き換えのオプションです。
 
 defaultFilter は `<?= $string ?>` で変換されるデフォルトフィルタを指定します。
 可変引数を取る callable でかつ文字列である必要があります（クロージャは不可）。
@@ -477,14 +498,24 @@ varAccessor は `<?= $array.key ?>` における `.` を指定します。
 
 子テンプレートにおいて親の内容を参照します。
 
+#### $this->import(string $filename[, array $vars])
+
+指定したテンプレートを読み込みます。
+このメソッドはテンプレートファイルとしてレンダリングして読み込みます。
+
+つまり「テンプレートファイルの結果」を取り込むメソッドです。
+
 #### $this->include(string $filename[, array $vars])
 
 指定したテンプレートを読み込みます。
-このメソッドはレンダリングされます。
+このメソッドはテンプレートファイルとして埋め込みます。
+
+つまり「テンプレートファイルをそのまま」取り込むメソッドです。
+（極論すると「そこにファイルの中身をコピペ」したと同じ結果になります）。
 
 #### $this->content(string $filename)
 
-指定したファイルをを読み込みます。
+指定したファイルを読み込みます。
 このメソッドはレンダリングされません（js, css などを埋め込みたいときに使います）。
 
 ## Notes
