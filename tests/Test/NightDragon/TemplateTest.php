@@ -131,16 +131,15 @@ extend1/extend3
 ', $contents);
     }
 
-    function test_include()
+    function test_import()
     {
         $actual = <<<CONTENT
-including
+importing
 &lt;tag&gt;hoge&lt;/tag&gt;
 &lt;tag&gt;hoge&lt;/tag&gt;
 &lt;tag&gt;fuga&lt;/tag&gt;
 
 CONTENT;
-
 
         // debug:true 時はストリームラッパー経由になる
         $renderer = new Renderer([
@@ -160,6 +159,49 @@ CONTENT;
         ]);
         $template = new Template($renderer, self::TEMPLATE_DIR . '/container.phtml');
         $contents = $template->render([
+            'variable' => "<tag>hoge</tag>",
+        ]);
+        $this->assertEquals($actual, $contents);
+    }
+
+    function test_include()
+    {
+        $actual = <<<CONTENT
+<html lang="ja">
+<head>
+    <title>4 - That&#039;s Example</title>
+</head>
+<body>
+&lt;tag&gt;hoge&lt;/tag&gt;fuga
+extend1
+extend1/extend2
+extend1/extend2/extend3
+extend1/extend3
+</body>
+</html>
+
+CONTENT;
+
+        // debug:true 時はストリームラッパー経由になる
+        $renderer = new Renderer([
+            'debug'      => true,
+            'compileDir' => self::COMPILE_DIR,
+        ]);
+        $template = new Template($renderer, self::TEMPLATE_DIR . '/extend4.phtml');
+        $contents = $template->render([
+            'sitename' => "That's Example",
+            'variable' => "<tag>hoge</tag>",
+        ]);
+        $this->assertEquals($actual, $contents);
+
+        // debug:false 時は COMPILE_DIR になる
+        $renderer = new Renderer([
+            'debug'      => false,
+            'compileDir' => self::COMPILE_DIR,
+        ]);
+        $template = new Template($renderer, self::TEMPLATE_DIR . '/extend4.phtml');
+        $contents = $template->render([
+            'sitename' => "That's Example",
             'variable' => "<tag>hoge</tag>",
         ]);
         $this->assertEquals($actual, $contents);

@@ -47,13 +47,7 @@ class Template
     {
         $this->vars = $vars;
 
-        $compiled = $this->renderer->compile($this->filename, $vars);
-        $contents = (function () {
-            ob_start();
-            extract(func_get_arg(1));
-            require func_get_arg(0);
-            return ob_get_clean();
-        })($compiled, $vars);
+        $contents = $this->fetch($this->renderer->compile($this->filename, $vars), $vars);
 
         if ($this->parent) {
             return $this->parent->render($vars);
@@ -155,23 +149,42 @@ class Template
     }
 
     /**
-     * 指定ファイルを取り込む
+     * 指定ファイルを出力する
      *
      * ファイルはテンプレートファイルとしてレンダリングして取り込まれる。
+     * 極論すると別テンプレートの結果を出力する。 $this は $this ではないし、begin ～ end のブロックはそのテンプレートのものとなる。
+     * その分 $filename が継承をしていようと何をしていようとその出力が得られる。
      *
      * @param string $filename 読み込むファイル名
      * @param array $vars 変数配列
      */
-    public function include(string $filename, array $vars = [])
+    public function import(string $filename, array $vars = [])
     {
         $template = new static($this->renderer, $this->resolvePath($filename));
         echo $template->render($vars + $this->vars);
     }
 
     /**
-     * 指定ファイルをただのファイルとして読み込む
+     * 指定ファイルを取り込む
+     *
+     * ファイルはテンプレートファイルとして取り込まれる。
+     * 極論するとコピペと同じ。 $this は $this だし、begin ～ end のブロックも自身のブロックとして定義される。
+     * $filename が継承をしていたり（意図してない）ブロックを定義していたりするとおそらく意図通りには動かない。
+     *
+     * @param string $filename 読み込むファイル名
+     * @param array $vars 変数配列
+     */
+    public function include(string $filename, array $vars = [])
+    {
+        $vars += $this->vars;
+        echo $this->fetch($this->renderer->compile($this->resolvePath($filename), $vars), $vars);
+    }
+
+    /**
+     * 指定ファイルをただのファイルとして出力する
      *
      * ファイルはただのテキストファイルとして取り込まれる。
+     * 極論すると echo file_get_contents と同じ。
      *
      * @param string $filename 読み込むファイル名
      */
@@ -179,6 +192,23 @@ class Template
     {
         $filename = $this->renderer->resolvePath($this->resolvePath($filename));
         echo file_get_contents($filename);
+    }
+
+    /**
+     * 指定配列を展開しつつファイルを require するキモメソッド
+     *
+     * @param string $filename 読み込むファイル名
+     * @param array $vars 変数配列
+     * @return mixed 読み込んだコンテンツ
+     */
+    private function fetch(string $filename, array $vars = [])
+    {
+        return (function () {
+            ob_start();
+            extract(func_get_arg(1));
+            require func_get_arg(0);
+            return ob_get_clean();
+        })($filename, $vars);
     }
 
     /**
