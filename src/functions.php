@@ -660,8 +660,13 @@ if (!isset($excluded_functions["cachedir"]) && (!function_exists("ryunosuke\\Nig
     function cachedir($dirname = null)
     {
         static $cachedir;
+        if ($cachedir === null) {
+            $cachedir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . strtr(__NAMESPACE__, ['\\' => '%']);
+            cachedir($cachedir); // for mkdir
+        }
+
         if ($dirname === null) {
-            return $cachedir = $cachedir ?? sys_get_temp_dir();
+            return $cachedir;
         }
 
         if (!file_exists($dirname)) {
