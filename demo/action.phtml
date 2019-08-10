@@ -7,9 +7,8 @@
 /** @var array $array */
 /** @var \stdClass $object */
 // using modifier functions:
-true or define('strtoupper', strtoupper(...[]));
-true or define('str_replace', str_replace(...[]));
-true or define('implode', implode(...[]));
+true or define('strtoupper', \strtoupper(...[]));
+true or define('upper', \Modifier::upper(...[]));
 // using array keys:
 true or define('hoge', 'hoge');
 true or define('fuga', 'fuga');
@@ -29,6 +28,7 @@ true or define('fuga', 'fuga');
 
 これは修飾子機能です（"|" でパイプ演算子のような挙動になります）：<?= $string | strtoupper ?>
 修飾子は繋げられるし、 $_ という特殊変数を使うと任意引数位置に適用できます：<?= $string | strtoupper | str_replace('TITLE', 'subject', $_) ?>
+登録しておけば静的メソッドも呼べます：<?= $string | upper ?>
 
 これは配列のアクセスです（"." で配列アクセスできます）：<?= $array.hoge ?>
 配列アクセスはネストできます：<?= $array.fuga. 0 ?>

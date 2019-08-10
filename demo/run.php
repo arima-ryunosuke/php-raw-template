@@ -7,11 +7,19 @@ if (getenv('COMPOSER_BINARY')) {
     ob_start(function () { });
 }
 
+class Modifier
+{
+    public static function upper($string)
+    {
+        return strtoupper($string);
+    }
+}
+
 $renderer = new \ryunosuke\NightDragon\Renderer([
-    // デバッグ系
-    'debug'          => true,
-    'defineFilename' => __DIR__ . '/compiles/constant.php',
-    'compileDir'     => __DIR__ . '/compiles',
+    'debug'         => true,
+    'constFilename' => __DIR__ . '/compiles/constant.php',
+    'compileDir'    => __DIR__ . '/compiles',
+    'defaultClass'  => Modifier::class,
 ]);
 
 $renderer->assign([
