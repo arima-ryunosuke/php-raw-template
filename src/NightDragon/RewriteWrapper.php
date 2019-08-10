@@ -73,7 +73,7 @@ class RewriteWrapper
             }
 
             $this->rewriteAccessKey($tokens, $options['varAccessor'], $options['defaultGetter']);
-            $this->rewriteModifier($tokens, $options['varReceiver'], $options['varModifier'], $options['defaultNamespace']);
+            $this->rewriteModifier($tokens, $options['varReceiver'], $options['varModifier'], $options['defaultNamespace'], $options['defaultClass']);
             $this->rewriteFilter($tokens, $options['defaultFilter'], $options['defaultCloser']);
 
             // <? タグは 7.4 で非推奨になるので警告が出るようになるが、せっかくプリプロセス的な処理をしてるので置換して警告を抑止する
@@ -118,7 +118,7 @@ class RewriteWrapper
         }, 0);
     }
 
-    private function rewriteModifier(Source $tokens, string $receiver, string $modifier, array $namespaces)
+    private function rewriteModifier(Source $tokens, string $receiver, string $modifier, array $namespaces, array $classes)
     {
         // @todo <?= ～ > でざっくりやってるのでもっと局所的に当てていくほうが良い
 
@@ -126,7 +126,7 @@ class RewriteWrapper
             T_OPEN_TAG_WITH_ECHO,
             Source::MATCH_MANY0,
             T_CLOSE_TAG,
-        ], function (Source $tokens) use ($receiver, $modifier, $namespaces) {
+        ], function (Source $tokens) use ($receiver, $modifier, $namespaces, $classes) {
             list($open, $close) = $tokens->shrink();
 
             $sources = $tokens->split($modifier);
@@ -166,10 +166,17 @@ class RewriteWrapper
                 }
 
                 if ($stmt[0] !== '\\') {
+                    $stmtstr = strstr($stmt, '(', true);
+                    foreach ($classes as $class) {
+                        if (method_exists($class, $stmtstr)) {
+                            $stmt = '\\' . ltrim($class, '\\') . '::' . $stmt;
+                            continue 2;
+                        }
+                    }
                     foreach ($namespaces as $namespace) {
-                        if (function_exists("$namespace\\" . strstr($stmt, '(', true))) {
+                        if (function_exists("$namespace\\$stmtstr")) {
                             $stmt = concat($namespace, '\\') . $stmt;
-                            break;
+                            continue 2;
                         }
                     }
                 }

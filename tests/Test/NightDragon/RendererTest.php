@@ -72,15 +72,16 @@ class RendererTest extends \ryunosuke\Test\AbstractTestCase
         ];
 
         $renderer = new Renderer([
-            'debug'      => true,
-            'compileDir' => self::COMPILE_DIR,
+            'debug'        => true,
+            'compileDir'   => self::COMPILE_DIR,
+            'defaultClass' => \template\T::class
         ]);
 
         // 全メタ情報が埋め込まれる
         $renderer->compile(self::TEMPLATE_DIR . '/meta.phtml', $VARS);
         $template = file_get_contents(self::TEMPLATE_DIR . '/meta.phtml');
         $this->assertContains("define('x', 'x')", $template);
-        $this->assertContains("define('strtoupper', strtoupper(...[]))", $template);
+        $this->assertContains("define('strtoupper', \\strtoupper(...[]))", $template);
         $this->assertContains('@var integer $int', $template);
         $this->assertContains('@var boolean $bool', $template);
         $this->assertContains('@var string $string', $template);
@@ -90,9 +91,11 @@ class RendererTest extends \ryunosuke\Test\AbstractTestCase
         // 名前空間も問題ない
         $renderer->compile(self::TEMPLATE_DIR . '/namespace.phtml', []);
         $template = file_get_contents(self::TEMPLATE_DIR . '/namespace.phtml');
-        $this->assertContains("define('globaled', globaled(...[]))", $template);
-        $this->assertContains("define('spaced', template\\spaced(...[]))", $template);
-        $this->assertContains("define('fully\\\\qualified', fully\\qualified(...[]))", $template);
+        $this->assertContains("define('globaled', \\globaled(...[]))", $template);
+        $this->assertContains("define('spaced', \\template\\spaced(...[]))", $template);
+        $this->assertContains("define('fully\\\\qualified', \\fully\\qualified(...[]))", $template);
+        $this->assertContains("define('method', \\template\\T::method(...[]))", $template);
+        $this->assertNotContains("define('ucwords", $template); // 引数付きは埋め込まれない
 
         $renderer = new Renderer([
             'debug'          => true,

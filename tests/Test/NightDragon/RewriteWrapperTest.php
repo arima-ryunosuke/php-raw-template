@@ -11,6 +11,7 @@ class RewriteWrapperTest extends \ryunosuke\Test\AbstractTestCase
     const defaultOption = [
         'compatibleShortTag' => false,
         'defaultNamespace'   => ['\\'],
+        'defaultClass'       => [''],
         'defaultFilter'      => 'html',
         'defaultGetter'      => 'access',
         'defaultCloser'      => "\n",
@@ -183,11 +184,11 @@ class RewriteWrapperTest extends \ryunosuke\Test\AbstractTestCase
         $rewrite = $this->publishMethod(new RewriteWrapper(), 'rewriteModifier');
 
         $source = new Source('<?= $a | trim | trim($_, "X") | sprintf("z%sz", "$_") | sprintf("Z{$_}Z", "$_") ?>');
-        $rewrite($source, '$_', '|', []);
+        $rewrite($source, '$_', '|', [], []);
         $this->assertEquals('<?=sprintf("Z".sprintf("z%sz","".trim(trim($a),"X")."")."Z","".sprintf("z%sz","".trim(trim($a),"X")."")."")?>', (string) $source);
 
         $source = new Source('<?= $a >> trim >> trim($rrr, "X") >> sprintf("z%sz", "$rrr") >> sprintf("Z{$rrr}Z", "$rrr") ?>');
-        $rewrite($source, '$rrr', '>>', []);
+        $rewrite($source, '$rrr', '>>', [], []);
         $this->assertEquals('<?=sprintf("Z".sprintf("z%sz","".trim(trim($a),"X")."")."Z","".sprintf("z%sz","".trim(trim($a),"X")."")."")?>', (string) $source);
     }
 
@@ -197,20 +198,38 @@ class RewriteWrapperTest extends \ryunosuke\Test\AbstractTestCase
         $rewrite = $this->publishMethod(new RewriteWrapper(), 'rewriteModifier');
 
         $source = new Source('<?= $value | \\globaled | spaced | \\fully\\qualified ?>');
-        $rewrite($source, '$_', '|', []);
+        $rewrite($source, '$_', '|', [], []);
         $this->assertEquals('<?=\\fully\\qualified(spaced(\\globaled($value)))?>', (string) $source);
 
         $source = new Source('<?= $value | \\globaled | spaced | \\fully\\qualified ?>');
-        $rewrite($source, '$_', '|', ['\\template']);
+        $rewrite($source, '$_', '|', ['\\template'], []);
         $this->assertEquals('<?=\\fully\\qualified(\\template\\spaced(\\globaled($value)))?>', (string) $source);
 
         $source = new Source('<?= $value | f ?>');
-        $rewrite($source, '$_', '|', ['\\hoge', '\\fuga']);
+        $rewrite($source, '$_', '|', ['\\hoge', '\\fuga'], []);
         $this->assertEquals('<?=\hoge\f($value)?>', (string) $source);
 
         $source = new Source('<?= $value | f ?>');
-        $rewrite($source, '$_', '|', ['\\fuga', '\\hoge']);
+        $rewrite($source, '$_', '|', ['\\fuga', '\\hoge'], []);
         $this->assertEquals('<?=\fuga\f($value)?>', (string) $source);
+    }
+
+    function test_rewriteModifier_class()
+    {
+        /** @see RewriteWrapper::rewriteModifier() */
+        $rewrite = $this->publishMethod(new RewriteWrapper(), 'rewriteModifier');
+
+        $source = new Source('<?= $value | method ?>');
+        $rewrite($source, '$_', '|', [], []);
+        $this->assertEquals('<?=method($value)?>', (string) $source);
+
+        $source = new Source('<?= $value | method ?>');
+        $rewrite($source, '$_', '|', [], ['hoge\\T', 'fuga\\T']);
+        $this->assertEquals('<?=\\hoge\\T::method($value)?>', (string) $source);
+
+        $source = new Source('<?= $value | method ?>');
+        $rewrite($source, '$_', '|', [], ['fuga\\T', 'hoge\\T']);
+        $this->assertEquals('<?=\\fuga\\T::method($value)?>', (string) $source);
     }
 
     function test_rewriteModifier_default()
@@ -219,11 +238,11 @@ class RewriteWrapperTest extends \ryunosuke\Test\AbstractTestCase
         $rewrite = $this->publishMethod(new RewriteWrapper(), 'rewriteModifier');
 
         $source = new Source('<?= $value | funcA(1) ?>');
-        $rewrite($source, '$_', '|', []);
+        $rewrite($source, '$_', '|', [], []);
         $this->assertEquals('<?=funcA($value,1)?>', (string) $source);
 
         $source = new Source('<?= $value | funcA($_, 1) ?>');
-        $rewrite($source, '$_', '|', []);
+        $rewrite($source, '$_', '|', [], []);
         $this->assertEquals('<?=funcA($value,1)?>', (string) $source);
     }
 

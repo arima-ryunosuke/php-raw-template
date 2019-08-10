@@ -95,6 +95,7 @@ class Renderer
             // コンパイルオプション系
             'compatibleShortTag' => false,
             'defaultNamespace'   => '\\',
+            'defaultClass'       => '',
             'defaultFilter'      => '\\' . Renderer::class . '::html',
             'defaultGetter'      => '\\' . Renderer::class . '::access',
             'defaultCloser'      => "\n",
@@ -117,6 +118,7 @@ class Renderer
         $this->renderOptions = [
             'compatibleShortTag' => (bool) $options['compatibleShortTag'],
             'defaultNamespace'   => (array) $options['defaultNamespace'],
+            'defaultClass'       => (array) $options['defaultClass'],
             'defaultFilter'      => (string) $options['defaultFilter'],
             'defaultGetter'      => (string) $options['defaultGetter'],
             'defaultCloser'      => (string) $options['defaultCloser'],
@@ -178,17 +180,18 @@ class Renderer
 
         // デバッグ中はメタ情報埋め込みのためテンプレートファイル自体に手を出す
         if ($this->debug && is_writable($filename)) {
+            $ropt = $this->renderOptions;
             $content = file_get_contents($filename);
-            $source = new Source($content, $this->renderOptions['compatibleShortTag'] ? Source::SHORT_TAG_REPLACE : Source::SHORT_TAG_NOTHING);
+            $source = new Source($content, $ropt['compatibleShortTag'] ? Source::SHORT_TAG_REPLACE : Source::SHORT_TAG_NOTHING);
 
             $meta = [];
             if ($this->gatherOptions['gatherVariable']) {
-                $variables = $this->gatherVariable($source, $this->renderOptions['varReceiver'], $vars);
+                $variables = $this->gatherVariable($source, $ropt['varReceiver'], $vars);
                 $meta[] = self::VARIABLE_COMMENT;
                 $meta[] = array_sprintf($variables, '/** @var %s %s */', "\n");
             }
             if ($this->gatherOptions['gatherModifier'] || $this->gatherOptions['constFilename']) {
-                $modifiers = $this->gatherModifier($source, $this->renderOptions['varModifier'], $this->renderOptions['defaultNamespace']);
+                $modifiers = $this->gatherModifier($source, $ropt['varModifier'], $ropt['defaultNamespace'], $ropt['defaultClass']);
                 if ($this->gatherOptions['gatherModifier']) {
                     $meta[] = self::MODIFIER_FUNCTION_COMMENT;
                     $meta[] = array_sprintf($modifiers, 'true or define(%1$s, %2$s(...[]));', "\n");
@@ -198,7 +201,7 @@ class Renderer
                 }
             }
             if ($this->gatherOptions['gatherAccessor'] || $this->gatherOptions['constFilename']) {
-                $accessors = $this->gatherAccessor($source, $this->renderOptions['varAccessor']);
+                $accessors = $this->gatherAccessor($source, $ropt['varAccessor']);
                 if ($this->gatherOptions['gatherAccessor']) {
                     $meta[] = self::ACCESS_KEY_COMMENT;
                     $meta[] = array_sprintf($accessors, 'true or define(%1$s, %1$s);', "\n");
@@ -308,7 +311,7 @@ class Renderer
         return $result;
     }
 
-    private function gatherModifier(Source $source, string $modifier, array $namespaces): array
+    private function gatherModifier(Source $source, string $modifier, array $namespaces, array $classes): array
     {
         $namespaces[] = $source->namespace();
 
@@ -320,12 +323,18 @@ class Renderer
         ]) as $tokens) {
             $tokens->shrink();
             $stmt = (string) $tokens;
-            $stmt = strstr($stmt, '(', true) ?: $stmt;
+            foreach ($classes as $class) {
+                if (method_exists($class, $stmt)) {
+                    $funcname = ltrim("$class::$stmt", '\\');
+                    $result["\\$funcname"] = var_export(ltrim($stmt, '\\'), true);
+                    continue 2;
+                }
+            }
             foreach ($namespaces as $namespace) {
                 $funcname = ltrim("$namespace\\$stmt", '\\');
                 if (function_exists($funcname)) {
-                    $result[$funcname] = var_export(ltrim($stmt, '\\'), true);
-                    break;
+                    $result["\\$funcname"] = var_export(ltrim($stmt, '\\'), true);
+                    continue 2;
                 }
             }
         }

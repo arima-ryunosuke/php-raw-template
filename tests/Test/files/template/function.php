@@ -7,6 +7,11 @@ namespace {
 namespace template {
 
     function spaced() { }
+
+    class T
+    {
+        static function method() { }
+    }
 }
 
 namespace fully {
@@ -17,9 +22,19 @@ namespace fully {
 namespace hoge {
 
     function f() { }
+
+    class T
+    {
+        static function method() { }
+    }
 }
 
 namespace fuga {
 
     function f() { }
+
+    class T
+    {
+        static function method() { }
+    }
 }
