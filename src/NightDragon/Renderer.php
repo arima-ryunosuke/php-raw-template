@@ -353,18 +353,24 @@ class Renderer
 
     private function outputConstFile(string $filename, array $consts)
     {
+        if (!$consts['modifier'] && !$consts['accessor']) {
+            return false;
+        }
+
         // 既に保存されているならマージする
         if (file_exists($filename)) {
             $current = [];
             $source = new Source(file_get_contents($filename));
-            foreach ($source->match(['define', '(', T_CONSTANT_ENCAPSED_STRING, ',', Source::MATCH_ANY]) as $tokens) {
+            foreach ($source->match(['define', '(', T_CONSTANT_ENCAPSED_STRING, ',', Source::MATCH_MANY1, ';']) as $tokens) {
                 $code = $tokens[2]->token;
-                $name = eval("return $code;");
                 if ($tokens[4]->equals(T_CONSTANT_ENCAPSED_STRING)) {
+                    $name = eval("return $code;");
                     $current['accessor'][$name] = $code;
                 }
                 else {
-                    $current['modifier'][$name] = $code;
+                    $token = $tokens->match([',', Source::MATCH_MANY1, '('])[0];
+                    $token->shrink();
+                    $current['modifier']["$token"] = $code;
                 }
             }
 

@@ -197,6 +197,11 @@ class RendererTest extends \ryunosuke\Test\AbstractTestCase
         /** @see Renderer::outputConstFile() */
         $outputConstFile = $this->publishMethod($renderer, 'outputConstFile');
 
+        $this->assertFalse($outputConstFile($FILENAME, [
+            'accessor' => [],
+            'modifier' => [],
+        ]));
+
         $outputConstFile($FILENAME, [
             'accessor' => [
                 'hoge1' => '"hoge1"'
@@ -218,14 +223,14 @@ define("hoge1", "hoge1");
                 'over'      => '"over"',
             ],
             'modifier' => [
-                'ns\\fuga2' => '"ns\\\\fuga2"',
-                'over'      => '"over"',
+                '\\ns\\fuga2' => '"ns\\\\fuga2"',
+                'over'        => '"over"',
             ],
         ]);
         $this->assertStringEqualsFile($FILENAME, '<?php
 // using modifier functions:
+define("ns\\\\fuga2", \\ns\\fuga2(...[]));
 define("fuga1", fuga1(...[]));
-define("ns\\\\fuga2", ns\\fuga2(...[]));
 define("over", over(...[]));
 // using array keys:
 define("hoge1", "hoge1");
