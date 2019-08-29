@@ -99,6 +99,7 @@ class Renderer
             'defaultFilter'      => '\\' . Renderer::class . '::html',
             'defaultGetter'      => '\\' . Renderer::class . '::access',
             'defaultCloser'      => "\n",
+            'nofilter'           => '', // for compatible. In the future the default will be "@"
             'varModifier'        => '|',
             'varReceiver'        => '$_',
             'varAccessor'        => '.',
@@ -125,6 +126,7 @@ class Renderer
             'varModifier'        => (string) $options['varModifier'],
             'varReceiver'        => (string) $options['varReceiver'],
             'varAccessor'        => (string) $options['varAccessor'],
+            'nofilter'           => (string) $options['nofilter'],
         ];
 
         if (strlen($this->compileDir)) {

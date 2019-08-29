@@ -72,9 +72,15 @@ class RewriteWrapper
                 return false;
             }
 
+            $filter = $options['defaultFilter'];
+            if ($tokens[1]->token === $options['nofilter']) {
+                $filter = '';
+                unset($tokens[1]);
+            }
+
             $this->rewriteAccessKey($tokens, $options['varAccessor'], $options['defaultGetter']);
             $this->rewriteModifier($tokens, $options['varReceiver'], $options['varModifier'], $options['defaultNamespace'], $options['defaultClass']);
-            $this->rewriteFilter($tokens, $options['defaultFilter'], $options['defaultCloser']);
+            $this->rewriteFilter($tokens, $filter, $options['defaultCloser']);
 
             // <? タグは 7.4 で非推奨になるので警告が出るようになるが、せっかくプリプロセス的な処理をしてるので置換して警告を抑止する
             if (($open_tag[2] ?? '') !== '=') {
@@ -196,8 +202,9 @@ class RewriteWrapper
             list($open, $close) = $tokens->shrink();
 
             $nl = (strlen($closer) && !ctype_graph($close->token)) ? ',' . json_encode($closer) : '';
+            $content = $filter ? "$filter($tokens)$nl" : "$tokens$nl";
 
-            return [$open, "$filter($tokens)$nl", $close];
+            return [$open, $content, $close];
         });
     }
 }

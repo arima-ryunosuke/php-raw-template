@@ -15,6 +15,7 @@ class RewriteWrapperTest extends \ryunosuke\Test\AbstractTestCase
         'defaultFilter'      => 'html',
         'defaultGetter'      => 'access',
         'defaultCloser'      => "\n",
+        'nofilter'           => '',
         'varReceiver'        => '$_',
         'varModifier'        => '|',
         'varAccessor'        => '.',
@@ -42,6 +43,10 @@ class RewriteWrapperTest extends \ryunosuke\Test\AbstractTestCase
         $actual = "<?= ARRAYS.key1.key2 | f1 | f2 ?>\n";
         $expected = "<?=html(f2(f1(access(access(ARRAYS,'key1'),'key2')))),\"\\n\"?>\n";
         $this->assertEquals($expected, $rewrite($actual, self::defaultOption));
+
+        $actual = "<?= @ARRAYS.key1.key2 | f1 | f2 ?>\n";
+        $expected = "<?=f2(f1(access(access(ARRAYS,'key1'),'key2'))),\"\\n\"?>\n";
+        $this->assertEquals($expected, $rewrite($actual, ['nofilter' => '@'] + self::defaultOption));
     }
 
     function test_rewrite_eval()
@@ -151,7 +156,7 @@ class RewriteWrapperTest extends \ryunosuke\Test\AbstractTestCase
         $rewrite = $this->publishMethod(new RewriteWrapper(), 'rewrite');
 
         $actual = "<?= ARRAYS.key1.key2 >> f1 >> f2 ?>\n";
-        $expected = "<?=(ARRAYS.key1.key2>>f1>>f2)?>\n";
+        $expected = "<?=ARRAYS.key1.key2>>f1>>f2?>\n";
         $this->assertEquals($expected, $rewrite($actual, [
                 'defaultFilter' => '',
                 'defaultCloser' => '',
@@ -258,5 +263,9 @@ class RewriteWrapperTest extends \ryunosuke\Test\AbstractTestCase
         $source = new Source("<?= 'a' ?><?= 'b' ?> <?= 'c' ?>\n");
         $rewrite($source, 'json', '');
         $this->assertEquals("<?=json('a')?><?=json('b')?> <?=json('c')?>\n", (string) $source);
+
+        $source = new Source("<?= 'a' ?><?= 'b' ?> <?= 'c' ?>\n");
+        $rewrite($source, '', '');
+        $this->assertEquals("<?='a'?><?='b'?> <?='c'?>\n", (string) $source);
     }
 }
