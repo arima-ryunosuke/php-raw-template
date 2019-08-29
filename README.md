@@ -72,6 +72,7 @@ action.phtml:
 これはただの文字列表示です（デフォルトで html エスケープされます）：<?= "this is $string" ?>
 ショート echo タグではなく、php タグはエスケープされません：<?php echo "this is $string" ?>
 ただの php タグは改行もされません（php のデフォルトです。ショート echo タグを使うとその挙動を抑制できます）。
+これは自動エスケープの無効化です（@をつけると生出力になります）：<?= @"this is $string" ?>
 
 これは修飾子機能です（"|" でパイプ演算子のような挙動になります）：<?= $string | strtoupper ?>
 修飾子は繋げられるし、 $_ という特殊変数を使うと任意引数位置に適用できます：<?= $string | strtoupper | str_replace('TITLE', 'subject', $_) ?>
@@ -130,6 +131,7 @@ action.phtml:
 これはただの文字列表示です（デフォルトで html エスケープされます）：<?=\ryunosuke\NightDragon\Renderer::html("this is $string"),"\n"?>
 ショート echo タグではなく、php タグはエスケープされません：<?php echo "this is $string" ?>
 ただの php タグは改行もされません（php のデフォルトです。ショート echo タグを使うとその挙動を抑制できます）。
+これは自動エスケープの無効化です（@をつけると生出力になります）：<?="this is $string","\n"?>
 
 これは修飾子機能です（"|" でパイプ演算子のような挙動になります）：<?=\ryunosuke\NightDragon\Renderer::html(strtoupper($string)),"\n"?>
 修飾子は繋げられるし、 $_ という特殊変数を使うと任意引数位置に適用できます：<?=\ryunosuke\NightDragon\Renderer::html(str_replace('TITLE','subject',strtoupper($string))),"\n"?>
@@ -172,6 +174,7 @@ action.phtml:
 
 これはただの文字列表示です（デフォルトで html エスケープされます）：this is this&#039;s title
 ショート echo タグではなく、php タグはエスケープされません：this is this's titleただの php タグは改行もされません（php のデフォルトです。ショート echo タグを使うとその挙動を抑制できます）。
+これは自動エスケープの無効化です（@をつけると生出力になります）：this is this's title
 
 これは修飾子機能です（"|" でパイプ演算子のような挙動になります）：THIS&#039;S TITLE
 修飾子は繋げられるし、 $_ という特殊変数を使うと任意引数位置に適用できます：THIS&#039;S subject
@@ -264,8 +267,9 @@ action.phtml:
 
 `<?= $string ?>` で自動で html エスケープが施されます。
 これはショート echo タグだけが対象です。
+後述の `nofilter` オプションで「エスケープしない」ショートタグも表現できます。
 
-また、その際 `<?= ?>` の直後の改行は維持されます（php の標準の動作だと改行は削除される（正確には終了タグに改行が含まれてしまう））。
+なお、 `<?= ?>` の直後の改行は維持されます（php の標準の動作だと改行は削除される（正確には終了タグに改行が含まれてしまう））。
 
 - エスケープされる
     - `<?= $string ?>` (通常のタグ)
@@ -273,6 +277,7 @@ action.phtml:
     - `<?= $item.children | implode(',', $_) ?>` (キーアクセスや修飾子と併用)
 - エスケープされない
     - `<?php echo $string ?>` (<?php タグ)
+    - `<?= @$string ?>` (`nofilter` による抑止)
 
 ## Usage
 
@@ -299,6 +304,7 @@ $renderer = new \ryunosuke\NightDragon\Renderer([
     'defaultFilter'      => '\\' . Renderer::class . '::html',
     'defaultGetter'      => '\\' . Renderer::class . '::access',
     'defaultCloser'      => "\n",
+    'nofilter'           => '',
     'varModifier'        => '|',
     'varReceiver'        => '$_',
     'varAccessor'        => '.',
@@ -442,9 +448,13 @@ defaultGetter は `<?= $array.key ?>` されたときにキーを引く変換関
 defaultCloser は `<?= $string ?>` 時に挿入される改行文字を指定します。
 あまり指定することはないでしょうが、改行差し込みを無効にしたい場合は空文字を指定するといいでしょう。
 
-#### varModifier, varReceiver, varAccessor
+#### nofilter, varModifier, varReceiver, varAccessor
 
 同じくソース書き換えのオプションです。
+
+nofilter は `<?= $string ?>` で変換されるデフォルトフィルタを無効化する文字を指定します。
+例えば `@` を指定すると `<?= @$string ?>` でデフォルトフィルタが無効になります。
+空文字にすると無効機能が無効になり、常に変換されます。
 
 varModifier は `<?= $array | implode(',', $_) ?>` における `|` を指定します。
 例えば `>>` を指定するとこれを `<?= $array >> implode(',', $_) ?>` と記述できるようになります。
