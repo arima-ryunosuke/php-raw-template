@@ -20,6 +20,7 @@ $renderer = new \ryunosuke\NightDragon\Renderer([
     'constFilename' => __DIR__ . '/compiles/constant.php',
     'compileDir'    => __DIR__ . '/compiles',
     'defaultClass'  => Modifier::class,
+    'nofilter'      => '@',
 ]);
 
 $renderer->assign([
