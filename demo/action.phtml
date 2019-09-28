@@ -12,6 +12,9 @@ true or define('upper', \Modifier::upper(...[]));
 // using array keys:
 true or define('hoge', 'hoge');
 true or define('fuga', 'fuga');
+true or define('undefined', 'undefined');
+true or define('undefined1', 'undefined1');
+true or define('undefined2', 'undefined2');
 ?>
 <?php $this->extend('layout.phtml') ?>
 
@@ -35,6 +38,8 @@ true or define('fuga', 'fuga');
 配列アクセスはネストできます：<?= $array.fuga. 0 ?>
 オブジェクトもアクセスできます：<?= $object.hoge ?>
 配列とオブジェクトは混在して OK です：<?= $object.fuga. 0 ?>
+このように ?? 演算子とも併用できます：<?= $array.undefined ?? 'default' ?>
+オブジェクトも可能できます。共にネストも出来ます：<?= $object.undefined1.undefined2 ?? 'default' | strtoupper ?>
 
 上記2つの機能は「配列アクセス -> 修飾子」のときのみ組み合わせ可能です：<?= $array.fuga | implode(',', $_) ?>
 右記のような順番の組み合わせはできません：< ?= $string | str_split . 3 ? >
