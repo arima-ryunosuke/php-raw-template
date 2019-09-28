@@ -82,6 +82,8 @@ action.phtml:
 配列アクセスはネストできます：<?= $array.fuga. 0 ?>
 オブジェクトもアクセスできます：<?= $object.hoge ?>
 配列とオブジェクトは混在して OK です：<?= $object.fuga. 0 ?>
+このように ?? 演算子とも併用できます：<?= $array.undefined ?? 'default' ?>
+オブジェクトも可能できます。共にネストも出来ます：<?= $object.undefined1.undefined2 ?? 'default' | strtoupper ?>
 
 上記2つの機能は「配列アクセス -> 修飾子」のときのみ組み合わせ可能です：<?= $array.fuga | implode(',', $_) ?>
 右記のような順番の組み合わせはできません：< ?= $string | str_split . 3 ? >
@@ -141,6 +143,8 @@ action.phtml:
 配列アクセスはネストできます：<?=\ryunosuke\NightDragon\Renderer::html(\ryunosuke\NightDragon\Renderer::access(\ryunosuke\NightDragon\Renderer::access($array,'fuga'),'0')),"\n"?>
 オブジェクトもアクセスできます：<?=\ryunosuke\NightDragon\Renderer::html(\ryunosuke\NightDragon\Renderer::access($object,'hoge')),"\n"?>
 配列とオブジェクトは混在して OK です：<?=\ryunosuke\NightDragon\Renderer::html(\ryunosuke\NightDragon\Renderer::access(\ryunosuke\NightDragon\Renderer::access($object,'fuga'),'0')),"\n"?>
+このように ?? 演算子とも併用できます：<?=\ryunosuke\NightDragon\Renderer::html(\ryunosuke\NightDragon\Renderer::access($array,'undefined')??'default'),"\n"?>
+オブジェクトも可能できます。共にネストも出来ます：<?=\ryunosuke\NightDragon\Renderer::html(strtoupper(@\ryunosuke\NightDragon\Renderer::access(\ryunosuke\NightDragon\Renderer::access($object,'undefined1'),'undefined2')??'default')),"\n"?>
 
 上記2つの機能は「配列アクセス -> 修飾子」のときのみ組み合わせ可能です：<?=\ryunosuke\NightDragon\Renderer::html(implode(',',\ryunosuke\NightDragon\Renderer::access($array,'fuga'))),"\n"?>
 右記のような順番の組み合わせはできません：< ?= $string | str_split . 3 ? >
@@ -184,6 +188,8 @@ action.phtml:
 配列アクセスはネストできます：X
 オブジェクトもアクセスできます：HOGE
 配列とオブジェクトは混在して OK です：X
+このように ?? 演算子とも併用できます：default
+オブジェクトも可能できます。共にネストも出来ます：DEFAULT
 
 上記2つの機能は「配列アクセス -> 修飾子」のときのみ組み合わせ可能です：X,Y,Z
 右記のような順番の組み合わせはできません：< ?= $string | str_split . 3 ? >
@@ -223,13 +229,17 @@ action.phtml:
 
 `key` 部分に使用できるのはリテラル文字列、リテラル数値、単一変数だけです。式や通常の `[]` によるアクセスは混在できません。
 
+`??` 演算子も混ぜることが出来ます。
+ただし後述の `defaultGetter` を指定している場合は関数ベースでのアクセスとなるため、 `@` によるエラー抑制にフォールバックされます（関数ベースで構文レベルの `??` を模倣するのが不可能だからです。動作自体は変わりません）。
+
 - OK
     - `<?= $array.key1.key2 ?>` (単純なネスト)
     - `<?= $array.3 ?>` (リテラル数値)
     - `<?= $array.$key ?>` (単一変数)
+    - `<?= $array.undefined ?? 'default' ?>` (`??` 演算子との併用)
 - NG
     - `<?= $array.PATHINFO_EXTENSION ?>` (定数)
-    - `<?= $array['key1'].key2 ?>` ([] 混在)
+    - `<?= $array['key1'].key2 ?>` (`[]` 混在)
     - `<?= $array.strtoupper($key) ?>` (式)
 
 #### modifier
@@ -276,7 +286,7 @@ action.phtml:
     - `<?= ucfirst($string) ?>` (式)
     - `<?= $item.children | implode(',', $_) ?>` (キーアクセスや修飾子と併用)
 - エスケープされない
-    - `<?php echo $string ?>` (<?php タグ)
+    - `<?php echo $string ?>` (`<?php` タグ)
     - `<?= @$string ?>` (`nofilter` による抑止)
 
 ## Usage
@@ -357,6 +367,9 @@ true or define('upper', \Modifier::upper(...[]));
 // using array keys:
 true or define('hoge', 'hoge');
 true or define('fuga', 'fuga');
+true or define('undefined', 'undefined');
+true or define('undefined1', 'undefined1');
+true or define('undefined2', 'undefined2');
 ?>
 ```
 
@@ -370,7 +383,7 @@ gatherModifier を true にすると `<?= $string | strtoupper ?>` の `strtoupp
 これは phpstorm の警告を抑止と定義ジャンプのためです（実際に呼び出しているシンタックスなのでジャンプできます）。
 定義すること自体に具体的な意味はありません。
 
-gatherAccessor を true にすると <?= $array.key ?> の `key` が定数宣言されます。
+gatherAccessor を true にすると `<?= $array.key ?>` の `key` が定数宣言されます。
 これは phpstorm の警告を抑止するためです。
 定義すること自体に具体的な意味はありません。
 
@@ -394,7 +407,7 @@ php ソース書き換え用のカスタムストリームラッパー名を指�
 
 ただ、一つ特殊な使い方として「 `phar` を指定する」というものがあります。
 カスタムストリームラッパーは原則として [opcache が効かない](https://github.com/php/php-src/blob/php-7.3.7/ext/opcache/ZendAccelerator.c#L163)んですが、ここで phar を指定することで強制的に opcache を効かせることができます。
-compileDir に書き出したりせずとも opcache が有効になり、かつパスが書き換わらないので、開発がしやすくなります。推奨はしませんが結構おすすめです。
+compileDir に書き出したりせずとも opcache が有効になり、かつパスが書き換わらないので、開発がしやすくなります。本運用では推奨はしませんが開発時は結構おすすめです。
 
 ただしその代わり `phar` スキームが完全に無効になるので、他の箇所で phar を使うような場合には指定することはできません。
 
