@@ -118,10 +118,16 @@ class RewriteWrapper
                 $key = var_export("$key", true);
             }
             if (strlen($getter)) {
-                return "$getter($var,$key)";
+                return [-100, "$getter($var,$key)"];
             }
             return "{$var}[$key]";
         }, 0);
+
+        if (!!$tokens->match([T_COALESCE])) {
+            $tokens->replace([-100], function (Source $tokens) {
+                return '@' . $tokens;
+            });
+        }
     }
 
     private function rewriteModifier(Source $tokens, string $receiver, string $modifier, array $namespaces, array $classes)

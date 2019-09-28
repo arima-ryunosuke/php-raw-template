@@ -183,6 +183,16 @@ class RewriteWrapperTest extends \ryunosuke\Test\AbstractTestCase
         $this->assertEquals("<?= \$array['key']['3'] + .14 ?>", (string) $source);
     }
 
+    function test_rewriteAccessKey_default()
+    {
+        /** @see RewriteWrapper::rewriteAccessKey() */
+        $rewrite = $this->publishMethod(new RewriteWrapper(), 'rewriteAccessKey');
+
+        $source = new Source('<?= $array.key1.key2.3.key ?? "default" ?>');
+        $rewrite($source, '.', 'access');
+        $this->assertEquals("<?= @access(access(access(access(\$array,'key1'),'key2'),'3'),'key') ?? \"default\" ?>", (string) $source);
+    }
+
     function test_rewriteModifier()
     {
         /** @see RewriteWrapper::rewriteModifier() */
