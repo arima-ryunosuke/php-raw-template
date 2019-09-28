@@ -285,7 +285,7 @@ if (!isset($excluded_functions["path_is_absolute"]) && (!function_exists("ryunos
         }
 
         if (DIRECTORY_SEPARATOR === '\\') {
-            if (preg_match('#^([a-z]+:(\\\\|\\/|$)|\\\\)#i', $path) !== 0) {
+            if (preg_match('#^([a-z]+:(\\\\|/|$)|\\\\)#i', $path) !== 0) {
                 return true;
             }
         }
@@ -355,55 +355,55 @@ if (!isset($excluded_functions["delegate"]) && (!function_exists("ryunosuke\\Nig
      * @param \Closure $invoker クロージャを実行するためのクロージャ（実処理）
      * @param callable $callable 最終的に実行したいクロージャ
      * @param int $arity 引数の数
-     * @return \Closure $callable を実行するクロージャ
+     * @return callable $callable を実行するクロージャ
      */
     function delegate($invoker, $callable, $arity = null)
     {
-        // 「delegate 経由で作成されたクロージャ」であることをマーキングするための use 変数
-        $__rfunc_delegate_marker = true;
-        assert($__rfunc_delegate_marker === true); // phpstorm の警告解除
+        $arity = $arity ?? parameter_length($callable, true, true);
 
-        if ($arity === null) {
-            $arity = parameter_length($callable, true, true);
-        }
+        if (reflect_callable($callable)->isInternal()) {
+            static $cache = [];
+            $cache[$arity] = $cache[$arity] ?? evaluate('return new class()
+            {
+                private $invoker, $callable;
 
-        if (is_infinite($arity)) {
-            return eval('return function (...$_) use ($__rfunc_delegate_marker, $invoker, $callable) {
-                return $invoker($callable, func_get_args());
+                public function spawn($invoker, $callable)
+                {
+                    $that = clone($this);
+                    $that->invoker = $invoker;
+                    $that->callable = $callable;
+                    return $that;
+                }
+
+                public function __invoke(' . implode(',', is_infinite($arity)
+                        ? ['...$_']
+                        : array_map(function ($v) { return '$_' . $v; }, array_keys(array_fill(1, $arity, null)))
+                    ) . ')
+                {
+                    return ($this->invoker)($this->callable, func_get_args());
+                }
             };');
+            return $cache[$arity]->spawn($invoker, $callable);
         }
 
-        $arity = abs($arity);
-        switch ($arity) {
-            case 0:
-                return function () use ($__rfunc_delegate_marker, $invoker, $callable) {
-                    return $invoker($callable, func_get_args());
-                };
-            case 1:
-                return function ($_1) use ($__rfunc_delegate_marker, $invoker, $callable) {
-                    return $invoker($callable, func_get_args());
-                };
-            case 2:
-                return function ($_1, $_2) use ($__rfunc_delegate_marker, $invoker, $callable) {
-                    return $invoker($callable, func_get_args());
-                };
-            case 3:
-                return function ($_1, $_2, $_3) use ($__rfunc_delegate_marker, $invoker, $callable) {
-                    return $invoker($callable, func_get_args());
-                };
-            case 4:
-                return function ($_1, $_2, $_3, $_4) use ($__rfunc_delegate_marker, $invoker, $callable) {
-                    return $invoker($callable, func_get_args());
-                };
-            case 5:
-                return function ($_1, $_2, $_3, $_4, $_5) use ($__rfunc_delegate_marker, $invoker, $callable) {
-                    return $invoker($callable, func_get_args());
-                };
+        switch (true) {
+            case $arity === 0:
+                return function () use ($invoker, $callable) { return $invoker($callable, func_get_args()); };
+            case $arity === 1:
+                return function ($_1) use ($invoker, $callable) { return $invoker($callable, func_get_args()); };
+            case $arity === 2:
+                return function ($_1, $_2) use ($invoker, $callable) { return $invoker($callable, func_get_args()); };
+            case $arity === 3:
+                return function ($_1, $_2, $_3) use ($invoker, $callable) { return $invoker($callable, func_get_args()); };
+            case $arity === 4:
+                return function ($_1, $_2, $_3, $_4) use ($invoker, $callable) { return $invoker($callable, func_get_args()); };
+            case $arity === 5:
+                return function ($_1, $_2, $_3, $_4, $_5) use ($invoker, $callable) { return $invoker($callable, func_get_args()); };
+            case is_infinite($arity):
+                return function (...$_) use ($invoker, $callable) { return $invoker($callable, func_get_args()); };
             default:
-                $argstring = array_map(function ($v) { return '$_' . $v; }, range(1, $arity));
-                return eval('return function (' . implode(', ', $argstring) . ') use ($__rfunc_delegate_marker, $invoker, $callable) {
-                    return $invoker($callable, func_get_args());
-                };');
+                $args = implode(',', array_map(function ($v) { return '$_' . $v; }, array_keys(array_fill(1, $arity, null))));
+                return eval('return function (' . $args . ') use ($invoker, $callable) { return $invoker($callable, func_get_args()); };');
         }
     }
 }
@@ -512,7 +512,6 @@ if (!isset($excluded_functions["func_user_func_array"]) && (!function_exists("ry
      * パラメータ定義数に応じて呼び出し引数を可変にしてコールする
      *
      * デフォルト引数はカウントされない。必須パラメータの数で呼び出す。
-     * もちろん可変引数は未対応。
      *
      * $callback に null を与えると例外的に「第1引数を返すクロージャ」を返す。
      *
@@ -526,7 +525,7 @@ if (!isset($excluded_functions["func_user_func_array"]) && (!function_exists("ry
      * ```
      *
      * @param callable $callback 呼び出すクロージャ
-     * @return \Closure 引数ぴったりで呼び出すクロージャ
+     * @return callable 引数ぴったりで呼び出すクロージャ
      */
     function func_user_func_array($callback)
     {
@@ -536,9 +535,8 @@ if (!isset($excluded_functions["func_user_func_array"]) && (!function_exists("ry
         }
         // クロージャはユーザ定義しかありえないので調べる必要がない
         if ($callback instanceof \Closure) {
-            // が、組み込みをバイパスする delegate はクロージャなのでそれだけは除外
-            $uses = reflect_callable($callback)->getStaticVariables();
-            if (!isset($uses['__rfunc_delegate_marker'])) {
+            // と思ったが、\Closure::fromCallable で作成されたクロージャは内部属性が伝播されるようなので除外
+            if (reflect_callable($callback)->isUserDefined()) {
                 return $callback;
             }
         }
@@ -648,6 +646,79 @@ if (!isset($excluded_functions["str_lchop"]) && (!function_exists("ryunosuke\\Ni
 }
 if (function_exists("ryunosuke\\NightDragon\\str_lchop") && !defined("ryunosuke\\NightDragon\\str_lchop")) {
     define("ryunosuke\\NightDragon\\str_lchop", "ryunosuke\\NightDragon\\str_lchop");
+}
+
+if (!isset($excluded_functions["evaluate"]) && (!function_exists("ryunosuke\\NightDragon\\evaluate") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\evaluate"))->isInternal()))) {
+    /**
+     * eval のプロキシ関数
+     *
+     * 一度ファイルに吐いてから require した方が opcache が効くので抜群に速い。
+     * また、素の eval は ParseError が起こったときの表示がわかりにくすぎるので少し見やすくしてある。
+     *
+     * 関数化してる以上 eval におけるコンテキストの引き継ぎはできない。
+     * ただし、引数で変数配列を渡せるようにしてあるので get_defined_vars を併用すれば基本的には同じ（$this はどうしようもない）。
+     *
+     * 短いステートメントだと opcode が少ないのでファイルを経由せず直接 eval したほうが速いことに留意。
+     * 一応引数で指定できるようにはしてある。
+     *
+     * Example:
+     * ```php
+     * $a = 1;
+     * $b = 2;
+     * $phpcode = ';
+     * $c = $a + $b;
+     * return $c * 3;
+     * ';
+     * assertSame(evaluate($phpcode, get_defined_vars()), 9);
+     * ```
+     *
+     * @param string $phpcode 実行する php コード
+     * @param array $contextvars コンテキスト変数配列
+     * @param int $cachesize キャッシュするサイズ
+     * @return mixed eval の return 値
+     */
+    function evaluate($phpcode, $contextvars = [], $cachesize = 256)
+    {
+        $cachefile = null;
+        if ($cachesize && strlen($phpcode) >= $cachesize) {
+            $cachefile = cachedir() . '/' . rawurlencode(__FUNCTION__) . '-' . sha1($phpcode) . '.php';
+            if (!file_exists($cachefile)) {
+                file_put_contents($cachefile, "<?php $phpcode", LOCK_EX);
+            }
+        }
+
+        try {
+            if ($cachefile) {
+                return (static function () {
+                    extract(func_get_arg(1));
+                    return require func_get_arg(0);
+                })($cachefile, $contextvars);
+            }
+            else {
+                return (static function () {
+                    extract(func_get_arg(1));
+                    return eval(func_get_arg(0));
+                })($phpcode, $contextvars);
+            }
+        }
+        catch (\ParseError $ex) {
+            $errline = $ex->getLine();
+            $errline_1 = $errline - 1;
+            $codes = preg_split('#\\R#u', $phpcode);
+            $codes[$errline_1] = '>>> ' . $codes[$errline_1];
+
+            $N = 5; // 前後の行数
+            $message = $ex->getMessage();
+            $message .= "\n" . implode("\n", array_slice($codes, max(0, $errline_1 - $N), $N * 2 + 1));
+            if ($cachefile) {
+                $message .= "\n in " . realpath($cachefile) . " on line " . $errline . "\n";
+            }
+            throw new \ParseError($message, $ex->getCode(), $ex);
+        }
+    }
+}
+if (function_exists("ryunosuke\\NightDragon\\evaluate") && !defined("ryunosuke\\NightDragon\\evaluate")) {
+    define("ryunosuke\\NightDragon\\evaluate", "ryunosuke\\NightDragon\\evaluate");
 }
 
 if (!isset($excluded_functions["cachedir"]) && (!function_exists("ryunosuke\\NightDragon\\cachedir") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\cachedir"))->isInternal()))) {
