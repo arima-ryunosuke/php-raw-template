@@ -19,6 +19,87 @@ class RendererTest extends \ryunosuke\Test\AbstractTestCase
         $this->assertEquals('X', Renderer::access(new \ArrayObject(['x' => 'X']), 'x'));
     }
 
+    function test_strip()
+    {
+        $this->assertEquals('hello world', Renderer::strip(' hello world '));
+        $this->assertEquals('あいうえお', Renderer::strip(' あいうえお '));
+        $this->assertEquals('<div><span class="x y z">hello world</span></div>', Renderer::strip('
+<div>
+    <span
+      class="x y z"
+      >
+      hello world
+    </span>
+</div>
+', ['placeholder' => '']));
+
+        $this->assertEquals('test nightdragonboundary<div><strong id="strong1" class="hoge fuga piyo"><? $multiline ?><br><?php foreach($array as $k=>$v) {
+            echo $k, $v;
+        }
+        ?></strong><pre>
+      line1
+        line2
+          line3
+    </pre><textarea>
+      line1
+        line2
+          line3
+    </textarea><script>
+      var a = 0;
+      if (a >= 0)
+        alert(a);
+    </script><strong id="strong2" class="hoge fuga piyo"><span>asd</span>line1 line2 line3</strong></div>', Renderer::strip('
+
+test
+nightdragonboundary
+<div>
+    <strong
+        id   = "strong1"
+        class= "hoge fuga piyo"
+    >
+        <? $multiline ?>
+        <br>
+        <?php foreach($array as $k=>$v) {
+            echo $k, $v;
+        }
+        ?>
+    </strong>
+    <pre>
+      line1
+        line2
+          line3
+    </pre>
+    <textarea>
+      line1
+        line2
+          line3
+    </textarea>
+    <script>
+      var a = 0;
+      if (a >= 0)
+        alert(a);
+    </script>
+    <strong
+        id=\'strong2\'
+        class="hoge fuga piyo"
+    >
+    
+    <span>
+    asd
+</span>
+        line1
+line2
+
+line3
+    </strong>
+</div>
+
+', ['placeholder' => '']));
+
+        $this->assertEquals('<div><s>content</s></div>', @Renderer::strip('<div><s>content</div>', ['noerror' => false]));
+        $this->assertEquals("Opening and ending tag mismatch: div and s", trim(error_get_last()['message']));
+    }
+
     function test___construct_phar()
     {
         $renderer = new Renderer([
