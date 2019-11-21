@@ -57,6 +57,17 @@ class RewriteWrapper
 
     private function rewrite(string $source, array $options): string
     {
+        $tags = implode('|', array_keys($options['customTagHandler'] ?? []));
+        $source = preg_replace_callback("#<($tags)(.*?)>(.*?)</\\1>#su", function ($m) use ($options) {
+            $sxe = simplexml_load_string('<attrnode ' . $m[2] . '></attrnode>');
+            $attrs = [];
+            foreach ($sxe->attributes() as $a => $b) {
+                $attrs[$a] = (string) $b;
+            }
+            $result = $options['customTagHandler'][$m[1]]($m[3], $attrs);
+            return $result;
+        }, $source);
+
         $source = new Source($source, $options['compatibleShortTag'] ? Source::SHORT_TAG_REWRITE : Source::SHORT_TAG_NOTHING);
 
         $options['defaultNamespace'][] = $source->namespace();

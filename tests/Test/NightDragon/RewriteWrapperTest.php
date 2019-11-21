@@ -9,6 +9,7 @@ use function ryunosuke\NightDragon\is_arrayable;
 class RewriteWrapperTest extends \ryunosuke\Test\AbstractTestCase
 {
     const defaultOption = [
+        'customTagHandler'   => [''],
         'compatibleShortTag' => false,
         'defaultNamespace'   => ['\\'],
         'defaultClass'       => [''],
@@ -83,6 +84,28 @@ class RewriteWrapperTest extends \ryunosuke\Test\AbstractTestCase
                 'defaultGetter' => '$getter',
             ] + self::defaultOption);
         $this->assertEquals('ZZHELLO(space)WORLDZZ', eval('ob_start(); ?>' . $code . '<?php return ob_get_clean();'), $code);
+    }
+
+    function test_rewrite_customTag()
+    {
+        /** @see RewriteWrapper::rewrite() */
+        $rewrite = $this->publishMethod(new RewriteWrapper(), 'rewrite');
+
+        $actual = '
+<hoge>simple tag</hoge>
+<hoge attr1="hoge" attr2=\'あああ\'	attr3="hoge">attr tag1</hoge>
+<hoge attr1 = "" attr2 = "a b c" data-attr3="hoge">space attr tag2</hoge>';
+        $expected = '
+[]simple tag
+{"attr1":"hoge","attr2":"あああ","attr3":"hoge"}attr tag1
+{"attr1":"","attr2":"a b c","data-attr3":"hoge"}space attr tag2';
+        $this->assertEquals($expected, $rewrite($actual, [
+                'customTagHandler' => [
+                    'hoge' => function ($contents, $attrs) {
+                        return json_encode($attrs, JSON_UNESCAPED_UNICODE) . $contents;
+                    },
+                ]
+            ] + self::defaultOption));
     }
 
     function test_rewrite_compatible_shortTag()
