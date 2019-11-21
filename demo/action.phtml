@@ -6,6 +6,7 @@
 /** @var string $string */
 /** @var array $array */
 /** @var \stdClass $object */
+/** @var string $multiline */
 // using modifier functions:
 true or define('strtoupper', \strtoupper(...[]));
 true or define('upper', \Modifier::upper(...[]));
@@ -40,6 +41,18 @@ true or define('undefined2', 'undefined2');
 配列とオブジェクトは混在して OK です：<?= $object.fuga. 0 ?>
 このように ?? 演算子とも併用できます：<?= $array.undefined ?? 'default' ?>
 オブジェクトも可能できます。共にネストも出来ます：<?= $object.undefined1.undefined2 ?? 'default' | strtoupper ?>
+
+タグのコールバックを登録すると特定タグに対してコールバックが実行されます。
+デフォルトでは strip タグが登録されていて、空白を除去できます（Smarty の {strip} に相当） 。
+<strip>
+    このタグ内の空白はすべて除去されます。ただし、変数の中身には関与しません。
+    <div
+        id="stripping"
+        class="hoge fuga piyo"
+    >
+        <?= $multiline ?>
+    </div>
+</strip>
 
 上記2つの機能は「配列アクセス -> 修飾子」のときのみ組み合わせ可能です：<?= $array.fuga | implode(',', $_) ?>
 右記のような順番の組み合わせはできません：< ?= $string | str_split . 3 ? >
