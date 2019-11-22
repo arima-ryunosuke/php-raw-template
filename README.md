@@ -85,6 +85,18 @@ action.phtml:
 このように ?? 演算子とも併用できます：<?= $array.undefined ?? 'default' ?>
 オブジェクトも可能できます。共にネストも出来ます：<?= $object.undefined1.undefined2 ?? 'default' | strtoupper ?>
 
+タグのコールバックを登録すると特定タグに対してコールバックが実行されます。
+デフォルトでは strip タグが登録されていて、空白を除去できます（Smarty の {strip} に相当） 。
+<strip>
+    このタグ内の空白はすべて除去されます。ただし、変数の中身には関与しません。
+    <div
+        id="stripping"
+        class="hoge fuga piyo"
+    >
+        <?= $multiline ?>
+    </div>
+</strip>
+
 上記2つの機能は「配列アクセス -> 修飾子」のときのみ組み合わせ可能です：<?= $array.fuga | implode(',', $_) ?>
 右記のような順番の組み合わせはできません：< ?= $string | str_split . 3 ? >
 
@@ -146,6 +158,10 @@ action.phtml:
 このように ?? 演算子とも併用できます：<?=\ryunosuke\NightDragon\Renderer::html(\ryunosuke\NightDragon\Renderer::access($array,'undefined')??'default'),"\n"?>
 オブジェクトも可能できます。共にネストも出来ます：<?=\ryunosuke\NightDragon\Renderer::html(strtoupper(@\ryunosuke\NightDragon\Renderer::access(\ryunosuke\NightDragon\Renderer::access($object,'undefined1'),'undefined2')??'default')),"\n"?>
 
+タグのコールバックを登録すると特定タグに対してコールバックが実行されます。
+デフォルトでは strip タグが登録されていて、空白を除去できます（Smarty の {strip} に相当） 。
+このタグ内の空白はすべて除去されます。ただし、変数の中身には関与しません。<div id="stripping" class="hoge fuga piyo" ><?=\ryunosuke\NightDragon\Renderer::html($multiline)?></div>
+
 上記2つの機能は「配列アクセス -> 修飾子」のときのみ組み合わせ可能です：<?=\ryunosuke\NightDragon\Renderer::html(implode(',',\ryunosuke\NightDragon\Renderer::access($array,'fuga'))),"\n"?>
 右記のような順番の組み合わせはできません：< ?= $string | str_split . 3 ? >
 
@@ -191,6 +207,12 @@ action.phtml:
 このように ?? 演算子とも併用できます：default
 オブジェクトも可能できます。共にネストも出来ます：DEFAULT
 
+タグのコールバックを登録すると特定タグに対してコールバックが実行されます。
+デフォルトでは strip タグが登録されていて、空白を除去できます（Smarty の {strip} に相当） 。
+このタグ内の空白はすべて除去されます。ただし、変数の中身には関与しません。<div id="stripping" class="hoge fuga piyo" >line1
+line2
+line3</div>
+
 上記2つの機能は「配列アクセス -> 修飾子」のときのみ組み合わせ可能です：X,Y,Z
 右記のような順番の組み合わせはできません：< ?= $string | str_split . 3 ? >
 
@@ -217,7 +239,7 @@ action.phtml:
 ただし、実験的な機能であり、今のところこのような配列アクセス機能だけが有効です（修飾子は使えない）。
 
 さらに `<? ?>` は非推奨の機能でもあります。
-7.4 で `<? ?>` が非推奨になりますが、処理は `token_get_all` に頼っているため、いざ廃止されたときにまともに動かなくなります。
+というのも `<? ?>` 自体が php 本体側で非推奨になるような傾向があり、処理は `token_get_all` に頼っているため、いざ廃止されたときにまともに動かなくなるためです。
 また、 `token_get_all` は ini の short_open_tag 設定の影響を受けるため、環境により動作が異なることになります。
 
 後述のオプションで short_open_tag の設定によらずにショートタグを使えるようにすることもできますが、かなりドラスティックな機能です。
@@ -253,7 +275,7 @@ action.phtml:
 `$_` がない場合は第1引数に適用されます。
 第1引数への適用だけであれば関数呼び出しの `()` は省略できます。
 
-修飾子に使用できるのは単一の関数だけです。制限付きですが名前空間関数や静的メソッドも一応サポートしています。
+原則として修飾子に使用できるのは単一の関数だけです。制限付きですが名前空間関数や静的メソッドも一応サポートしています。
 文字列以外の callable 形式は使用できません。
 
 - OK
@@ -262,7 +284,7 @@ action.phtml:
     - `<?= $value | funcname(3) ?>` (=`funcname($value, 3)`: `$_` は自動で第1引数に適用される)
     - `<?= $value | funcname(3, $_) ?>` (=`funcname(3, $value)`: $value を第2引数に適用)
     - `<?= $value | funcname($_, $_) ?>` (=`funcname($value, $value)`: `$_` は何度でも使える)
-    - `<?= $value | funcname(3, "pre-{$_}-fix") ?>` (=`funcname(3, "pre-{$_}-fix")`: `$_` は普通の変数のように使用できる)
+    - `<?= $value | funcname(3, "pre-{$_}-fix") ?>` (=`funcname(3, "pre-{$value}-fix")`: `$_` は普通の変数のように使用できる)
     - `<?= $value | funcname1 | funcname2 | funcname3 ?>` (=`funcname3(funcname2(funcname1($value)))`: 修飾子はネスト可能で各段階では上記の記法すべてが使える)
     - `<?= $value | \namespace\func ?>` (=`\namespace\func($value)`: 絶対指定の名前空間関数呼び出し)
     - `<?= $value | subspace\func ?>` (=`\filespace\subspace\func($value)`: ファイルの名前空間での相対呼び出し)
@@ -308,6 +330,9 @@ $renderer = new \ryunosuke\NightDragon\Renderer([
     // ディレクトリ系
     'compileDir'      => null,
     // コンパイルオプション系
+    'customTagHandler'   => [
+        'strip' => '\\' . Renderer::class . '::strip',
+    ],
     'compatibleShortTag' => false,
     'defaultNamespace'   => '\\',
     'defaultClass'       => '',
@@ -327,9 +352,10 @@ $renderer->assign([
 
 echo $renderer->render(__DIR__ . '/action.phtml', [
     // テンプレートにアサインする変数
-    'string' => "this's title",
-    'array'  => ['hoge' => 'HOGE', 'fuga' => ['X', 'Y', 'Z']],
-    'object' => (object) ['hoge' => 'HOGE', 'fuga' => ['X', 'Y', 'Z']],
+    'string'    => "this's title",
+    'multiline' => "line1\nline2\nline3",
+    'array'     => ['hoge' => 'HOGE', 'fuga' => ['X', 'Y', 'Z']],
+    'object'    => (object) ['hoge' => 'HOGE', 'fuga' => ['X', 'Y', 'Z']],
 ]);
 ```
 
@@ -361,6 +387,7 @@ echo $renderer->render(__DIR__ . '/action.phtml', [
 /** @var string $string */
 /** @var array $array */
 /** @var \stdClass $object */
+/** @var string $multiline */
 // using modifier functions:
 true or define('strtoupper', \strtoupper(...[]));
 true or define('upper', \Modifier::upper(...[]));
@@ -425,6 +452,16 @@ compileDir に書き出したりせずとも opcache が有効になり、かつ
 
 別に必須ではありません。未指定の場合はストリームラッパー経由でそのまま実行されます。
 未指定で素の状態だと opcache が効きませんが、 wrapperProtocol を `phar` にすることで強制的に効かせることができます。
+
+#### customTagHandler
+
+html ソース書き換えのオプションです。
+
+`[タグ名 => 文字列callable]` のような配列を指定しておくと、文字列的にそのタグ（配列のキー）に出くわしたときにコールバックが実行されます。
+コールバックは `(タグコンテンツ, タグ属性配列)` が引数として渡ってきます。
+
+デフォルトで `strip` が登録されています。
+これは html 中の空白を削除して（基本的に）1行化するコールバックです。
 
 #### compatibleShortTag
 
