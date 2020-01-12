@@ -136,8 +136,6 @@ line3
         ]);
         $fileid = $renderer->compile(self::TEMPLATE_DIR . '/dummy.phtml', []);
 
-        // debug 中の戻り値は RewriteWrapper スキーム
-        $this->assertStringStartsWith(Renderer::DEFAULT_PROTOCOL, $fileid);
         // キャッシュが使用される
         $this->assertEquals($fileid, $renderer->compile(self::TEMPLATE_DIR . '/dummy.phtml', []));
     }

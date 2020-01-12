@@ -198,12 +198,13 @@ class Renderer
             'nofilter'           => (string) $options['nofilter'],
         ];
 
-        if (strlen($this->compileDir)) {
-            mkdir_p($this->compileDir);
-            // Windows では {C:\compile}\C;\path\to\file, Linux では {/compile}/path/to/file となり、DS の有無が異なる
-            // （Windows だと DS も含めないとフルパスにならない、Linux だと DS を含めるとフルパスにならない）
-            $this->compileDir = realpath($this->compileDir) . (DIRECTORY_SEPARATOR === '\\' ? '\\' : '');
+        if (!strlen($this->compileDir)) {
+            $this->compileDir = sys_get_temp_dir() . '/' . $this->wrapperProtocol;
         }
+        mkdir_p($this->compileDir);
+        // Windows では {C:\compile}\C;\path\to\file, Linux では {/compile}/path/to/file となり、DS の有無が異なる
+        // （Windows だと DS も含めないとフルパスにならない、Linux だと DS を含めるとフルパスにならない）
+        $this->compileDir = realpath($this->compileDir) . (DIRECTORY_SEPARATOR === '\\' ? '\\' : '');
 
         // スキームが phar は特別扱いで登録解除する（phar にすることでダイレクトに opcache を有効化できるメリットがある）
         if ($this->wrapperProtocol === 'phar' && in_array($this->wrapperProtocol, stream_get_wrappers(), true)) {
@@ -225,9 +226,6 @@ class Renderer
     {
         // compile ディレクトリ内で __DIR__ を使うとその絶対パスになっているので元のパスに読み替える
         $filename = strtr(str_lchop($filename, $this->compileDir), [';' => ':']);
-
-        // 同上。デバッグ中や compile ディレクトリ未設定時は常にストリームラッパー経由になる
-        $filename = str_lchop($filename, $this->wrapperProtocol . '://dummy/');
 
         return $filename;
     }
@@ -297,29 +295,17 @@ class Renderer
             }
         }
 
-        // キャッシュディレクトリが有効なら保存しておく＋実際の読み込みファイル名はそのキャッシュファイルにする
-        if (strlen($this->compileDir)) {
-            $fileid = $this->compileDir . strtr($filename, [':' => ';']);
-            if ($this->debug || !file_exists($fileid)) {
-                file_set_contents($fileid, file_get_contents($this->wrapperPath($filename)));
-            }
-        }
-        else {
-            $fileid = $this->wrapperPath($filename);
+        $fileid = $this->compileDir . strtr($filename, [':' => ';']);
+        if ($this->debug || !file_exists($fileid)) {
+            $path = "$this->wrapperProtocol://dummy/$filename?" . http_build_query($this->renderOptions);
+            file_set_contents($fileid, file_get_contents($path));
         }
 
-        // 過程はどうあれデバッグ時はラッパー経由で直接実行する。さらにアサイン変数を溜め込んでおく
         if ($this->debug) {
-            $fileid = $this->wrapperPath($filename);
             $this->assignedVars += $vars;
         }
 
         return $this->stats[$filename] = $fileid;
-    }
-
-    private function wrapperPath(string $path): string
-    {
-        return "$this->wrapperProtocol://dummy/$path?" . http_build_query($this->renderOptions);
     }
 
     private function detectType($var): string

@@ -17,13 +17,6 @@ class TemplateTest extends \ryunosuke\Test\AbstractTestCase
         ]);
         $template = new Template($renderer, $FILENAME);
         $this->assertEquals($FILENAME, $template->getFilename());
-
-        $renderer = new Renderer([
-            'debug'      => false,
-            'compileDir' => self::COMPILE_DIR,
-        ]);
-        $template = new Template($renderer, $FILENAME);
-        $this->assertEquals($FILENAME, $template->getFilename());
     }
 
     function test_render()
@@ -141,20 +134,8 @@ importing
 
 CONTENT;
 
-        // debug:true 時はストリームラッパー経由になる
         $renderer = new Renderer([
             'debug'      => true,
-            'compileDir' => self::COMPILE_DIR,
-        ]);
-        $template = new Template($renderer, self::TEMPLATE_DIR . '/container.phtml');
-        $contents = $template->render([
-            'variable' => "<tag>hoge</tag>",
-        ]);
-        $this->assertEquals($actual, $contents);
-
-        // debug:false 時は COMPILE_DIR になる
-        $renderer = new Renderer([
-            'debug'      => false,
             'compileDir' => self::COMPILE_DIR,
         ]);
         $template = new Template($renderer, self::TEMPLATE_DIR . '/container.phtml');
@@ -182,21 +163,8 @@ extend1/extend3
 
 CONTENT;
 
-        // debug:true 時はストリームラッパー経由になる
         $renderer = new Renderer([
             'debug'      => true,
-            'compileDir' => self::COMPILE_DIR,
-        ]);
-        $template = new Template($renderer, self::TEMPLATE_DIR . '/extend4.phtml');
-        $contents = $template->render([
-            'sitename' => "That's Example",
-            'variable' => "<tag>hoge</tag>",
-        ]);
-        $this->assertEquals($actual, $contents);
-
-        // debug:false 時は COMPILE_DIR になる
-        $renderer = new Renderer([
-            'debug'      => false,
             'compileDir' => self::COMPILE_DIR,
         ]);
         $template = new Template($renderer, self::TEMPLATE_DIR . '/extend4.phtml');
@@ -221,17 +189,8 @@ CONTENT;
 
 CONTENT;
 
-        // debug:true 時はストリームラッパー経由になる
         $renderer = new Renderer([
             'debug'      => true,
-            'compileDir' => self::COMPILE_DIR,
-        ]);
-        $template = new Template($renderer, self::TEMPLATE_DIR . '/content.phtml');
-        $this->assertEquals($actual, $template->render([]));
-
-        // debug:false 時は COMPILE_DIR になる
-        $renderer = new Renderer([
-            'debug'      => false,
             'compileDir' => self::COMPILE_DIR,
         ]);
         $template = new Template($renderer, self::TEMPLATE_DIR . '/content.phtml');
