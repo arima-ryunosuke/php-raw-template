@@ -9,7 +9,7 @@ class TemplateTest extends \ryunosuke\Test\AbstractTestCase
 {
     function test_getFilename()
     {
-        $FILENAME = self::TEMPLATE_DIR . '/simple.phtml';
+        $FILENAME = realpath(self::TEMPLATE_DIR . '/simple.phtml');
 
         $renderer = new Renderer([
             'debug'      => true,

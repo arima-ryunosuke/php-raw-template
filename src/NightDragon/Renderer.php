@@ -87,8 +87,6 @@ class Renderer
      */
     public static function strip($html, $attrs = [])
     {
-        $lines = substr_count($html, "\n");
-
         $IDENTIFIER = 'nightdragonboundary';
         while (strpos($html, $IDENTIFIER) !== false) {
             $IDENTIFIER .= rand(1000, 9999);
@@ -135,9 +133,7 @@ class Renderer
         };
         $traverse($dom->documentElement);
 
-        // エラー行数がズレてしまうため補正して返す（$attrs.placeholder で判断）
-        $html = strtr($dom->saveHTML($dom->documentElement), $mapper);
-        return $html . str_repeat($attrs['placeholder'] ?? "\n", $lines - substr_count($html, "\n"));
+        return strtr($dom->saveHTML($dom->documentElement), $mapper);
     }
 
     public function __construct(array $options)
@@ -221,7 +217,7 @@ class Renderer
         // compile ディレクトリ内で __DIR__ を使うとその絶対パスになっているので元のパスに読み替える
         $filename = strtr(str_lchop($filename, $this->compileDir), [';' => ':']);
 
-        return $filename;
+        return realpath($filename);
     }
 
     /**
@@ -526,33 +522,35 @@ class Renderer
     {
         // @memo 例外の属性をリフレクションで書き換えるのはどうかと思うけど、投げ方を工夫するより後から書き換えたほうが楽だと思う
 
-        $internal = function ($file) {
-            return (parse_url($file)['scheme'] ?? '') === $this->wrapperProtocol;
+        $refile = function ($file) {
+            $innerfile = $this->resolvePath($file);
+            return $innerfile === $file ? null : $innerfile;
         };
-        $refile = function ($file) use ($internal) {
-            return $internal($file) ? substr(parse_url($file)['path'] ?? '/', 1) : $file;
-        };
-        $nearest = function ($file, $line) {
+
+        $remessage = function ($file, $line) {
             $LENGTH = 3;
             $partial = array_slice(file($file), max(0, $line - $LENGTH - 1), $LENGTH * 2, true);
             foreach ($partial as $n => $row) {
                 $partial[$n] = ($n === $line - 1 ? '*' : ' ') . $row;
             }
-            return rtrim(implode('', $partial)) . "\n";
+            return "\nnear:\n" . rtrim(implode('', $partial)) . "\n";
         };
 
         $rewritten = [];
 
         // 投げ元がテンプレート（パースエラーとか変数の undefined とか）なら自身のファイル名とメッセージを書き換える
-        if ($internal($ex->getFile())) {
-            $rewritten['file'] = $refile($ex->getFile());
-            $rewritten['message'] = $ex->getMessage() . "\nnear:\n" . $nearest($ex->getFile(), $ex->getLine());
+        if ($innerfile = $refile($ex->getFile())) {
+            $innerline = RewriteWrapper::getLineMapping($innerfile, $ex->getLine());
+            $rewritten['file'] = $innerfile;
+            $rewritten['line'] = $innerline;
+            $rewritten['message'] = $ex->getMessage() . $remessage($innerfile, $innerline);
         }
 
         // スタックトレースは共通で書き換えてしまう
         $rewritten['trace'] = array_map(function ($trace) use ($refile) {
-            if (isset($trace['file'])) {
-                $trace['file'] = $refile($trace['file']);
+            if (isset($trace['file'], $trace['line']) && $innerfile = $refile($trace['file'])) {
+                $trace['file'] = $innerfile ?? $trace['file'];
+                $trace['line'] = RewriteWrapper::getLineMapping($innerfile, $trace['line']);
             }
             return $trace;
         }, $ex->getTrace());

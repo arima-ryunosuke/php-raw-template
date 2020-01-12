@@ -120,10 +120,10 @@ line3
             'debug'      => true,
             'compileDir' => self::COMPILE_DIR,
         ]);
-        $fileid = $renderer->compile(self::TEMPLATE_DIR . '/dummy.phtml', []);
+        $fileid = $renderer->compile(realpath(self::TEMPLATE_DIR . '/dummy.phtml'), []);
 
         // キャッシュが使用される
-        $this->assertEquals($fileid, $renderer->compile(self::TEMPLATE_DIR . '/dummy.phtml', []));
+        $this->assertEquals($fileid, $renderer->compile(realpath(self::TEMPLATE_DIR . '/dummy.phtml'), []));
     }
 
     function test_compile_gather()
@@ -373,10 +373,10 @@ define("ns\\\\hoge2", "ns\\\\hoge2");
         }
         catch (\Throwable $e) {
             $this->assertEquals(0, $e->getCode());
-            $this->assertEquals(self::TEMPLATE_DIR . '/notice.phtml', $e->getFile());
+            $this->assertEquals(realpath(self::TEMPLATE_DIR . '/notice.phtml'), $e->getFile());
             $this->assertEquals('Undefined variable: undefined
 near:
-*a<?=\ryunosuke\NightDragon\Renderer::html($undefined)?>z
+*a<?= $undefined ?>z
 ', $e->getMessage());
             $this->assertNotContains(' ' . Renderer::DEFAULT_PROTOCOL, $e->getTraceAsString());
             return;
@@ -394,15 +394,15 @@ near:
         }
         catch (\Throwable $e) {
             $this->assertEquals(0, $e->getCode());
-            $this->assertEquals(self::TEMPLATE_DIR . '/error.phtml', $e->getFile());
+            $this->assertEquals(realpath(self::TEMPLATE_DIR . '/error.phtml'), $e->getFile());
             $this->assertEquals('Call to undefined method stdClass::undefinedMethod()
 near:
- dummy line 4
- dummy line 5
- dummy line 6
-*<?=\ryunosuke\NightDragon\Renderer::html($object->undefinedMethod()),"\n"?>
+ dummy line 3
+ <?php
+ // dummy line
+*$object->undefinedMethod()
+ ?>
  dummy line 8
- dummy line 9
 ', $e->getMessage());
             $this->assertNotContains(' ' . Renderer::DEFAULT_PROTOCOL, $e->getTraceAsString());
             return;
@@ -428,6 +428,57 @@ near:
             $this->assertEquals(__FILE__, $e->getFile());
             $this->assertEquals('msg', $e->getMessage());
             $this->assertNotContains(' ' . Renderer::DEFAULT_PROTOCOL, $e->getTraceAsString());
+            return;
+        }
+        $this->fail();
+    }
+
+    function test_errorHandling_nest_error()
+    {
+        $renderer = new Renderer([
+            'debug' => true,
+        ]);
+        try {
+            $renderer->render(self::TEMPLATE_DIR . '/error-nest.phtml', [
+                'object' => new class
+                {
+                    public function undefinedMethod($arg = []) { return $arg['undefined']; }
+                },
+            ]);
+        }
+        catch (\Throwable $e) {
+            $this->assertEquals(0, $e->getCode());
+            $this->assertEquals('Undefined index: undefined', $e->getMessage());
+            $this->assertStringContainsString('error-nest9.phtml(12)', $e->getTraceAsString());
+            $this->assertStringContainsString('error-nest2.phtml(6)', $e->getTraceAsString());
+            $this->assertStringContainsString('error-nest1.phtml(6)', $e->getTraceAsString());
+            $this->assertStringContainsString('error-nest.phtml(6)', $e->getTraceAsString());
+            return;
+        }
+        $this->fail();
+    }
+
+    function test_errorHandling_nest_exception()
+    {
+        $renderer = new Renderer([
+            'debug' => true,
+        ]);
+        try {
+            $renderer->render(self::TEMPLATE_DIR . '/error-nest.phtml', [
+                'object' => new class
+                {
+                    public function undefinedMethod() { throw new \Exception('msg'); }
+                },
+            ]);
+        }
+        catch (\Throwable $e) {
+            $this->assertEquals(0, $e->getCode());
+            $this->assertEquals(__FILE__, $e->getFile());
+            $this->assertEquals('msg', $e->getMessage());
+            $this->assertStringContainsString('error-nest9.phtml(12)', $e->getTraceAsString());
+            $this->assertStringContainsString('error-nest2.phtml(6)', $e->getTraceAsString());
+            $this->assertStringContainsString('error-nest1.phtml(6)', $e->getTraceAsString());
+            $this->assertStringContainsString('error-nest.phtml(6)', $e->getTraceAsString());
             return;
         }
         $this->fail();
@@ -469,11 +520,11 @@ near:
             'debug' => true,
         ]);
         try {
-            $renderer->render(self::TEMPLATE_DIR . '/syntax.phtml');
+            $renderer->render(self::TEMPLATE_DIR . '/syntax.html');
         }
         catch (\Throwable $e) {
             $this->assertEquals(0, $e->getCode());
-            $this->assertEquals(self::TEMPLATE_DIR . '/syntax.phtml', $e->getFile());
+            $this->assertEquals(realpath(self::TEMPLATE_DIR . '/syntax.html'), $e->getFile());
             $this->assertEquals('syntax error, unexpected \'is\' (T_STRING)
 near:
  dummy line 1
