@@ -16,9 +16,9 @@ if (!isset($excluded_functions["is_hasharray"]) && (!function_exists("ryunosuke\
      *
      * Example:
      * ```php
-     * assertFalse(is_hasharray([]));
-     * assertFalse(is_hasharray([1, 2, 3]));
-     * assertTrue(is_hasharray(['x' => 'X']));
+     * that(is_hasharray([]))->isFalse();
+     * that(is_hasharray([1, 2, 3]))->isFalse();
+     * that(is_hasharray(['x' => 'X']))->isTrue();
      * ```
      *
      * @param array $array 調べる配列
@@ -55,11 +55,11 @@ if (!isset($excluded_functions["array_explode"]) && (!function_exists("ryunosuke
      * Example:
      * ```php
      * // null 要素で分割
-     * assertSame(array_explode(['a', null, 'b', 'c'], null), [['a'], [2 => 'b', 3 => 'c']]);
+     * that(array_explode(['a', null, 'b', 'c'], null))->isSame([['a'], [2 => 'b', 3 => 'c']]);
      * // クロージャで分割（大文字で分割）
-     * assertSame(array_explode(['a', 'B', 'c', 'D', 'e'], function($v){return ctype_upper($v);}), [['a'], [2 => 'c'], [4 => 'e']]);
+     * that(array_explode(['a', 'B', 'c', 'D', 'e'], function($v){return ctype_upper($v);}))->isSame([['a'], [2 => 'c'], [4 => 'e']]);
      * // 負数指定
-     * assertSame(array_explode(['a', null, 'b', null, 'c'], null, -2), [[0 => 'a', 1 => null, 2 => 'b'], [4 => 'c']]);
+     * that(array_explode(['a', null, 'b', null, 'c'], null, -2))->isSame([[0 => 'a', 1 => null, 2 => 'b'], [4 => 'c']]);
      * ```
      *
      * @param iterable $array 対象配列
@@ -132,17 +132,17 @@ if (!isset($excluded_functions["array_sprintf"]) && (!function_exists("ryunosuke
      * ```php
      * $array = ['key1' => 'val1', 'key2' => 'val2'];
      * // key, value を利用した sprintf
-     * assertSame(array_sprintf($array, '%2$s=%1$s'), ['key1=val1', 'key2=val2']);
+     * that(array_sprintf($array, '%2$s=%1$s'))->isSame(['key1=val1', 'key2=val2']);
      * // 第3引数を与えるとさらに implode される
-     * assertSame(array_sprintf($array, '%2$s=%1$s', ' '), 'key1=val1 key2=val2');
+     * that(array_sprintf($array, '%2$s=%1$s', ' '))->isSame('key1=val1 key2=val2');
      * // クロージャを与えるとコールバック動作になる
      * $closure = function($v, $k){return "$k=" . strtoupper($v);};
-     * assertSame(array_sprintf($array, $closure, ' '), 'key1=VAL1 key2=VAL2');
+     * that(array_sprintf($array, $closure, ' '))->isSame('key1=VAL1 key2=VAL2');
      * // 省略すると vsprintf になる
-     * assertSame(array_sprintf([
+     * that(array_sprintf([
      *     'str:%s,int:%d' => ['sss', '3.14'],
      *     'single:%s'     => 'str',
-     * ], null, '|'), 'str:sss,int:3|single:str');
+     * ], null, '|'))->isSame('str:sss,int:3|single:str');
      * ```
      *
      * @param iterable $array 対象配列
@@ -187,7 +187,7 @@ if (!isset($excluded_functions["file_set_contents"]) && (!function_exists("ryuno
      * Example:
      * ```php
      * file_set_contents(sys_get_temp_dir() . '/not/filename.ext', 'hoge');
-     * assertSame(file_get_contents(sys_get_temp_dir() . '/not/filename.ext'), 'hoge');
+     * that(file_get_contents(sys_get_temp_dir() . '/not/filename.ext'))->isSame('hoge');
      * ```
      *
      * @param string $filename 書き込むファイル名
@@ -257,12 +257,12 @@ if (!isset($excluded_functions["path_is_absolute"]) && (!function_exists("ryunos
      *
      * Example:
      * ```php
-     * assertTrue(path_is_absolute('/absolute/path'));
-     * assertFalse(path_is_absolute('relative/path'));
+     * that(path_is_absolute('/absolute/path'))->isTrue();
+     * that(path_is_absolute('relative/path'))->isFalse();
      * // Windows 環境では下記も true になる
      * if (DIRECTORY_SEPARATOR === '\\') {
-     *     assertTrue(path_is_absolute('\\absolute\\path'));
-     *     assertTrue(path_is_absolute('C:\\absolute\\path'));
+     *     that(path_is_absolute('\\absolute\\path'))->isTrue();
+     *     that(path_is_absolute('C:\\absolute\\path'))->isTrue();
      * }
      * ```
      *
@@ -307,9 +307,9 @@ if (!isset($excluded_functions["path_normalize"]) && (!function_exists("ryunosuk
      * Example:
      * ```php
      * $DS = DIRECTORY_SEPARATOR;
-     * assertSame(path_normalize('/path/to/something'), "{$DS}path{$DS}to{$DS}something");
-     * assertSame(path_normalize('/path/through/../something'), "{$DS}path{$DS}something");
-     * assertSame(path_normalize('./path/current/./through/../something'), "path{$DS}current{$DS}something");
+     * that(path_normalize('/path/to/something'))->isSame("{$DS}path{$DS}to{$DS}something");
+     * that(path_normalize('/path/through/../something'))->isSame("{$DS}path{$DS}something");
+     * that(path_normalize('./path/current/./through/../something'))->isSame("path{$DS}current{$DS}something");
      * ```
      *
      * @param string $path パス文字列
@@ -417,8 +417,8 @@ if (!isset($excluded_functions["reflect_callable"]) && (!function_exists("ryunos
      *
      * Example:
      * ```php
-     * assertInstanceof(\ReflectionFunction::class, reflect_callable('sprintf'));
-     * assertInstanceof(\ReflectionMethod::class, reflect_callable('\Closure::bind'));
+     * that(reflect_callable('sprintf'))->isInstanceOf(\ReflectionFunction::class);
+     * that(reflect_callable('\Closure::bind'))->isInstanceOf(\ReflectionMethod::class);
      * ```
      *
      * @param callable $callable 対象 callable
@@ -460,9 +460,9 @@ if (!isset($excluded_functions["parameter_length"]) && (!function_exists("ryunos
      * Example:
      * ```php
      * // trim の引数は2つ
-     * assertSame(parameter_length('trim'), 2);
+     * that(parameter_length('trim'))->isSame(2);
      * // trim の必須引数は1つ
-     * assertSame(parameter_length('trim', true), 1);
+     * that(parameter_length('trim', true))->isSame(1);
      * ```
      *
      * @param callable $callable 対象 callable
@@ -521,7 +521,7 @@ if (!isset($excluded_functions["func_user_func_array"]) && (!function_exists("ry
      * ```php
      * // strlen に2つの引数を渡してもエラーにならない
      * $strlen = func_user_func_array('strlen');
-     * assertSame($strlen('abc', null), 3);
+     * that($strlen('abc', null))->isSame(3);
      * ```
      *
      * @param callable $callback 呼び出すクロージャ
@@ -566,8 +566,8 @@ if (!isset($excluded_functions["concat"]) && (!function_exists("ryunosuke\\Night
      * 可変引数なので 端的に言えば mysql の CONCAT みたいな動作になる（あっちは NULL だが）。
      *
      * ```php
-     * assertSame(concat('prefix-', 'middle', '-suffix'), 'prefix-middle-suffix');
-     * assertSame(concat('prefix-', '', '-suffix'), '');
+     * that(concat('prefix-', 'middle', '-suffix'))->isSame('prefix-middle-suffix');
+     * that(concat('prefix-', '', '-suffix'))->isSame('');
      * ```
      *
      * @param mixed $variadic 結合する文字列（可変引数）
@@ -597,7 +597,7 @@ if (!isset($excluded_functions["str_chop"]) && (!function_exists("ryunosuke\\Nig
      * ```php
      * // 文字列からパス文字列と拡張子を削ぎ落とす
      * $PATH = '/path/to/something';
-     * assertSame(str_chop("$PATH/hoge.php", "$PATH/", '.php'), 'hoge');
+     * that(str_chop("$PATH/hoge.php", "$PATH/", '.php'))->isSame('hoge');
      * ```
      *
      * @param string $string 対象文字列
@@ -631,7 +631,7 @@ if (!isset($excluded_functions["str_lchop"]) && (!function_exists("ryunosuke\\Ni
      * ```php
      * // 文字列からパス文字列を削ぎ落とす
      * $PATH = '/path/to/something';
-     * assertSame(str_lchop("$PATH/hoge.php", "$PATH/"), 'hoge.php');
+     * that(str_lchop("$PATH/hoge.php", "$PATH/"))->isSame('hoge.php');
      * ```
      *
      * @param string $string 対象文字列
@@ -669,7 +669,7 @@ if (!isset($excluded_functions["evaluate"]) && (!function_exists("ryunosuke\\Nig
      * $c = $a + $b;
      * return $c * 3;
      * ';
-     * assertSame(evaluate($phpcode, get_defined_vars()), 9);
+     * that(evaluate($phpcode, get_defined_vars()))->isSame(9);
      * ```
      *
      * @param string $phpcode 実行する php コード
@@ -767,11 +767,11 @@ if (!isset($excluded_functions["cache"]) && (!function_exists("ryunosuke\\NightD
      * // 乱数を返す処理だが、キャッシュされるので同じ値になる
      * $rand1 = cache('rand', $provider);
      * $rand2 = cache('rand', $provider);
-     * assertSame($rand1, $rand2);
+     * that($rand1)->isSame($rand2);
      * // $provider に null を与えると削除される
      * cache('rand', null);
      * $rand3 = cache('rand', $provider);
-     * assertNotSame($rand1, $rand3);
+     * that($rand1)->isNotSame($rand3);
      * ```
      *
      * @param string $key キャッシュのキー
@@ -872,6 +872,9 @@ if (!isset($excluded_functions["cache"]) && (!function_exists("ryunosuke\\NightD
 
         // flush (for test)
         if ($key === null) {
+            if ($provider === null) {
+                $cacheobject->clear();
+            }
             $cacheobject = null;
             return;
         }
@@ -906,14 +909,14 @@ if (!isset($excluded_functions["arrayval"]) && (!function_exists("ryunosuke\\Nig
      * Example:
      * ```php
      * // キャストなので基本的には配列化される
-     * assertSame(arrayval(123), [123]);
-     * assertSame(arrayval('str'), ['str']);
-     * assertSame(arrayval([123]), [123]); // 配列は配列のまま
+     * that(arrayval(123))->isSame([123]);
+     * that(arrayval('str'))->isSame(['str']);
+     * that(arrayval([123]))->isSame([123]); // 配列は配列のまま
      *
      * // $recursive = false にしない限り再帰的に適用される
      * $stdclass = stdclass(['key' => 'val']);
-     * assertSame(arrayval([$stdclass], true), [['key' => 'val']]); // true なので中身も配列化される
-     * assertSame(arrayval([$stdclass], false), [$stdclass]);       // false なので中身は変わらない
+     * that(arrayval([$stdclass], true))->isSame([['key' => 'val']]); // true なので中身も配列化される
+     * that(arrayval([$stdclass], false))->isSame([$stdclass]);       // false なので中身は変わらない
      * ```
      *
      * @param mixed $var array 化する値
@@ -960,12 +963,12 @@ if (!isset($excluded_functions["is_primitive"]) && (!function_exists("ryunosuke\
      *
      * Example:
      * ```php
-     * assertTrue(is_primitive(null));
-     * assertTrue(is_primitive(false));
-     * assertTrue(is_primitive(123));
-     * assertTrue(is_primitive(STDIN));
-     * assertFalse(is_primitive(new \stdClass));
-     * assertFalse(is_primitive(['array']));
+     * that(is_primitive(null))->isTrue();
+     * that(is_primitive(false))->isTrue();
+     * that(is_primitive(123))->isTrue();
+     * that(is_primitive(STDIN))->isTrue();
+     * that(is_primitive(new \stdClass))->isFalse();
+     * that(is_primitive(['array']))->isFalse();
      * ```
      *
      * @param mixed $var 調べる値
@@ -986,9 +989,9 @@ if (!isset($excluded_functions["is_arrayable"]) && (!function_exists("ryunosuke\
      *
      * Example:
      * ```php
-     * assertTrue(is_arrayable([]));
-     * assertTrue(is_arrayable(new \ArrayObject()));
-     * assertFalse(is_arrayable(new \stdClass()));
+     * that(is_arrayable([]))->isTrue();
+     * that(is_arrayable(new \ArrayObject()))->isTrue();
+     * that(is_arrayable(new \stdClass()))->isFalse();
      * ```
      *
      * @param array $var 調べる値
