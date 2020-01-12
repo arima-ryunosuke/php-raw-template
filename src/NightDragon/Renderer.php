@@ -206,17 +206,11 @@ class Renderer
         // （Windows だと DS も含めないとフルパスにならない、Linux だと DS を含めるとフルパスにならない）
         $this->compileDir = realpath($this->compileDir) . (DIRECTORY_SEPARATOR === '\\' ? '\\' : '');
 
-        // スキームが phar は特別扱いで登録解除する（phar にすることでダイレクトに opcache を有効化できるメリットがある）
-        if ($this->wrapperProtocol === 'phar' && in_array($this->wrapperProtocol, stream_get_wrappers(), true)) {
-            stream_wrapper_unregister($this->wrapperProtocol);
-        }
         RewriteWrapper::register($this->wrapperProtocol);
     }
 
     public function __destruct()
     {
-        // @todo `stream_wrapper_restore('phar')` したいけど複数インスタンスで誤作動しそうなので保留中
-
         if ($this->debug && strlen($this->gatherOptions['constFilename'])) {
             $this->outputConstFile($this->gatherOptions['constFilename'], $this->consts);
         }

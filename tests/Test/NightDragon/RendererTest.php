@@ -100,20 +100,6 @@ line3
         $this->assertEquals("Opening and ending tag mismatch: div and s", trim(error_get_last()['message']));
     }
 
-    function test___construct_phar()
-    {
-        $renderer = new Renderer([
-            'debug'           => true,
-            'wrapperProtocol' => 'phar',
-            'defaultFilter'   => 'filter',
-            'defaultGetter'   => 'getter',
-        ]);
-        $fileid = $renderer->compile(self::TEMPLATE_DIR . '/dummy.phtml', []);
-
-        $this->assertStringStartsWith('phar://', $fileid);
-        $this->assertStringEqualsFile($fileid, "<?=filter(explode(implode(getter(getter(getter(\$value,'key1'),'key2'),'3'))))?>");
-    }
-
     function test___destruct()
     {
         @unlink(self::COMPILE_DIR . '/defined.php');
