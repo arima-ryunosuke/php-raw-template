@@ -65,7 +65,9 @@ action.phtml:
 <?php $this->begin('title') ?>title<?php $this->end() ?>
 
 <?php $this->begin('main') ?>
+parent メソッドを使用して親コンテンツを表示します。
 <?php $this->parent() ?>
+
 これは子供コンテンツです。
 色々変数を表示しています。
 
@@ -78,15 +80,18 @@ action.phtml:
 修飾子は繋げられるし、 $_ という特殊変数を使うと任意引数位置に適用できます：<?= $string | strtoupper | str_replace('TITLE', 'subject', $_) ?>
 登録しておけば静的メソッドも呼べます：<?= $string | upper ?>
 
-これは配列のアクセスです（"." で配列アクセスできます）：<?= $array.hoge ?>
-配列アクセスはネストできます：<?= $array.fuga. 0 ?>
-オブジェクトもアクセスできます：<?= $object.hoge ?>
-配列とオブジェクトは混在して OK です：<?= $object.fuga. 0 ?>
-このように ?? 演算子とも併用できます：<?= $array.undefined ?? 'default' ?>
-オブジェクトも可能できます。共にネストも出来ます：<?= $object.undefined1.undefined2 ?? 'default' | strtoupper ?>
+これは配列のアクセスです（"." で配列アクセスできます）：<?= $array . hoge ?>
+配列アクセスはネストできます：<?= $array . fuga . 0 ?>
+オブジェクトもアクセスできます：<?= $object . hoge ?>
+配列とオブジェクトは混在して OK です：<?= $object . fuga . 0 ?>
+このように ?? 演算子とも併用できます：<?= $array . undefined ?? 'default' ?>
+オブジェクトも可能できます。共にネストも出来ます：<?= $object . undefined1 . undefined2 ?? 'default' | strtoupper ?>
+
+上記2つの機能は「配列アクセス -> 修飾子」のときのみ組み合わせ可能です：<?= $array . fuga | implode(',', $_) ?>
+右記のような順番の組み合わせはできません：< ?= $string | str_split . 3 ? >
 
 タグのコールバックを登録すると特定タグに対してコールバックが実行されます。
-デフォルトでは strip タグが登録されていて、空白を除去できます（Smarty の {strip} に相当） 。
+例えばデフォルトでは strip タグが登録されていて、空白を除去できます（Smarty の {strip} に相当） 。
 <strip>
     このタグ内の空白はすべて除去されます。ただし、変数の中身には関与しません。
     <div
@@ -96,9 +101,6 @@ action.phtml:
         <?= $multiline ?>
     </div>
 </strip>
-
-上記2つの機能は「配列アクセス -> 修飾子」のときのみ組み合わせ可能です：<?= $array.fuga | implode(',', $_) ?>
-右記のような順番の組み合わせはできません：< ?= $string | str_split . 3 ? >
 
 おまけ：所詮素の php なのであらゆる表現が可能です。
 <?php foreach ($array as $key => $value): ?>
@@ -113,7 +115,7 @@ action.phtml:
 
 一見すると意味不明なコードですが、これは完全に valid な php コードであり、IDE の支援をフルに受けることができます。
 
-これをレンダリングするとソースコードが下記のように書き換えられます。
+これをレンダリングするとソースコードが内部的に下記のように書き換えられます。
 
 layout.phtml:
 
@@ -138,7 +140,9 @@ action.phtml:
 <?php $this->begin('title') ?>title<?php $this->end() ?>
 
 <?php $this->begin('main') ?>
+parent メソッドを使用して親コンテンツを表示します。
 <?php $this->parent() ?>
+
 これは子供コンテンツです。
 色々変数を表示しています。
 
@@ -155,15 +159,15 @@ action.phtml:
 配列アクセスはネストできます：<?=\ryunosuke\NightDragon\Renderer::html(\ryunosuke\NightDragon\Renderer::access(\ryunosuke\NightDragon\Renderer::access($array,'fuga'),'0')),"\n"?>
 オブジェクトもアクセスできます：<?=\ryunosuke\NightDragon\Renderer::html(\ryunosuke\NightDragon\Renderer::access($object,'hoge')),"\n"?>
 配列とオブジェクトは混在して OK です：<?=\ryunosuke\NightDragon\Renderer::html(\ryunosuke\NightDragon\Renderer::access(\ryunosuke\NightDragon\Renderer::access($object,'fuga'),'0')),"\n"?>
-このように ?? 演算子とも併用できます：<?=\ryunosuke\NightDragon\Renderer::html(\ryunosuke\NightDragon\Renderer::access($array,'undefined')??'default'),"\n"?>
+このように ?? 演算子とも併用できます：<?=\ryunosuke\NightDragon\Renderer::html(@\ryunosuke\NightDragon\Renderer::access($array,'undefined')??'default'),"\n"?>
 オブジェクトも可能できます。共にネストも出来ます：<?=\ryunosuke\NightDragon\Renderer::html(strtoupper(@\ryunosuke\NightDragon\Renderer::access(\ryunosuke\NightDragon\Renderer::access($object,'undefined1'),'undefined2')??'default')),"\n"?>
-
-タグのコールバックを登録すると特定タグに対してコールバックが実行されます。
-デフォルトでは strip タグが登録されていて、空白を除去できます（Smarty の {strip} に相当） 。
-このタグ内の空白はすべて除去されます。ただし、変数の中身には関与しません。<div id="stripping" class="hoge fuga piyo" ><?=\ryunosuke\NightDragon\Renderer::html($multiline)?></div>
 
 上記2つの機能は「配列アクセス -> 修飾子」のときのみ組み合わせ可能です：<?=\ryunosuke\NightDragon\Renderer::html(implode(',',\ryunosuke\NightDragon\Renderer::access($array,'fuga'))),"\n"?>
 右記のような順番の組み合わせはできません：< ?= $string | str_split . 3 ? >
+
+タグのコールバックを登録すると特定タグに対してコールバックが実行されます。
+例えばデフォルトでは strip タグが登録されていて、空白を除去できます（Smarty の {strip} に相当） 。
+このタグ内の空白はすべて除去されます。ただし、変数の中身には関与しません。<div id="stripping" class="hoge fuga piyo"><?=\ryunosuke\NightDragon\Renderer::html($multiline)?></div>
 
 おまけ：所詮素の php なのであらゆる表現が可能です。
 <?php foreach ($array as $key => $value): ?>
@@ -176,7 +180,7 @@ action.phtml:
 <?php $this->end() ?>
 ```
 
-なお、 `<?php # meta template data ?>` というコメントがあると、テンプレート自体にも手が加わります。
+なお、 `<?php # meta template data ?>` というコメントがあると、テンプレート自体にも手が加わります（後述）。
 具体的には「使用している変数情報」「定数情報」などがメタ情報として書き込まれます。
 これにより phpstorm のジャンプや補完を最大限に活かすことができます。
 
@@ -188,7 +192,9 @@ action.phtml:
     <title>title - サイト名</title>
 </head>
 <body>
+parent メソッドを使用して親コンテンツを表示します。
 これは親コンテンツです。
+
 これは子供コンテンツです。
 色々変数を表示しています。
 
@@ -207,14 +213,14 @@ action.phtml:
 このように ?? 演算子とも併用できます：default
 オブジェクトも可能できます。共にネストも出来ます：DEFAULT
 
-タグのコールバックを登録すると特定タグに対してコールバックが実行されます。
-デフォルトでは strip タグが登録されていて、空白を除去できます（Smarty の {strip} に相当） 。
-このタグ内の空白はすべて除去されます。ただし、変数の中身には関与しません。<div id="stripping" class="hoge fuga piyo" >line1
-line2
-line3</div>
-
 上記2つの機能は「配列アクセス -> 修飾子」のときのみ組み合わせ可能です：X,Y,Z
 右記のような順番の組み合わせはできません：< ?= $string | str_split . 3 ? >
+
+タグのコールバックを登録すると特定タグに対してコールバックが実行されます。
+例えばデフォルトでは strip タグが登録されていて、空白を除去できます（Smarty の {strip} に相当） 。
+このタグ内の空白はすべて除去されます。ただし、変数の中身には関与しません。<div id="stripping" class="hoge fuga piyo">line1
+line2
+line3</div>
 
 おまけ：所詮素の php なのであらゆる表現が可能です。
             HOGE です        ショートタグが使いたいなぁ        
@@ -371,7 +377,7 @@ echo $renderer->render(__DIR__ . '/action.phtml', [
 #### errorHandling
 
 テンプレート内でエラーや例外が起こった場合にハンドリングするかを bool で指定します。
-ハンドリングを有効にするとテンプレートの前後行やリライト後のコードが表示されるようになります。
+ハンドリングを有効にするとテンプレートの前後行が表示されたり見やすくなります。
 
 #### gatherVariable, gatherModifier, gatherAccessor
 
@@ -432,12 +438,6 @@ gatherAccessor を true にすると `<?= $array.key ?>` の `key` が定数宣�
 php ソース書き換え用のカスタムストリームラッパー名を指定します。
 デフォルトは `RewriteWrapper` です。基本的に指定する必要はありません（被ったときとかに指定してください）。
 
-ただ、一つ特殊な使い方として「 `phar` を指定する」というものがあります。
-カスタムストリームラッパーは原則として [opcache が効かない](https://github.com/php/php-src/blob/php-7.3.7/ext/opcache/ZendAccelerator.c#L163)んですが、ここで phar を指定することで強制的に opcache を効かせることができます。
-compileDir に書き出したりせずとも opcache が有効になり、かつパスが書き換わらないので、開発がしやすくなります。本運用では推奨はしませんが開発時は結構おすすめです。
-
-ただしその代わり `phar` スキームが完全に無効になるので、他の箇所で phar を使うような場合には指定することはできません。
-
 #### templateClass
 
 テンプレートクラスを外部から注入できます。
@@ -448,10 +448,9 @@ compileDir に書き出したりせずとも opcache が有効になり、かつ
 #### compileDir
 
 書き換えられたソースが格納されるコンパイル済みディレクトリです。
-指定してかつ存在しない場合は自動で作成されます。
+別に必須ではありません。未指定の場合は sys_get_temp_dir が設定されます。
 
-別に必須ではありません。未指定の場合はストリームラッパー経由でそのまま実行されます。
-未指定で素の状態だと opcache が効きませんが、 wrapperProtocol を `phar` にすることで強制的に効かせることができます。
+存在しない場合は自動で作成されます。
 
 #### customTagHandler
 
@@ -462,6 +461,9 @@ html ソース書き換えのオプションです。
 
 デフォルトで `strip` が登録されています。
 これは html 中の空白を削除して（基本的に）1行化するコールバックです。
+
+他に例えば haml や markdown のようなタグを登録しておけば html 中で部分的に haml や markdown で記述できるようになります。
+FAQ やガイドなど、静的な部分が多くなるページでかなり有用です。
 
 #### compatibleShortTag
 

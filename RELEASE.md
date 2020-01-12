@@ -21,6 +21,14 @@
 - nikic/php-parser に移行したいけど AST でショートタグが正規化されてしまう？
 - パス周りがメチャクチャなので正規化して realpath したい
 
+## 1.1.4
+
+- [feature][Renderer] エラーハンドリングがやりやすいように例外を書き換え
+- [change][Renderer] compileDir のデフォルトを設定
+  - 一時ディレクトリに設定するので互換性は壊れない
+- [change][Renderer] phar の特別扱いを除去
+  - 直接実行がなくなるだけなので互換性は壊れない
+
 ## 1.1.3
 
 - [feature][RewriteWrapper] カスタムタグハンドラを実装
