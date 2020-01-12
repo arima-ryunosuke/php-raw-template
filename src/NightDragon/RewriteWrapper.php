@@ -4,9 +4,33 @@ namespace ryunosuke\NightDragon;
 
 class RewriteWrapper
 {
+    private static $lineMapping = [];
+
+    private $path;
     private $pos;
     private $stat;
     private $data;
+
+    public static function getLineMapping(string $file, int $line)
+    {
+        $lines = self::$lineMapping[(string) realpath($file)] ?? [];
+
+        // 完全一致するならそれを返せば良い
+        if (isset($lines[$line])) {
+            return $lines[$line];
+        }
+
+        // php コードが複数行ある場合は一致しないが、近傍範囲にズレを加算すれば求められる
+        foreach ($lines as $from => $to) {
+            if ($from > $line && isset($delta)) {
+                return $line + $delta;
+            }
+            $delta = $to - $from;
+        }
+
+        // 書き換えてないとかとんでもなく複雑なコードだとかの場合は本当に確定できない。その場合はそのまま返す
+        return $line;
+    }
 
     public static function register(string $scheme)
     {
@@ -21,14 +45,14 @@ class RewriteWrapper
         $parts = parse_url($path);
         parse_str($parts['query'] ?? '', $option);
 
-        $path = substr($parts['path'], 1);
-        $data = file_get_contents($path);
+        $this->path = realpath(substr($parts['path'], 1));
+        $data = file_get_contents($this->path);
         if ($data === false) {
             return false;
         }
 
         $this->pos = 0;
-        $this->stat = stat($path);
+        $this->stat = stat($this->path);
         $this->data = $this->rewrite($data, $option);
         return true;
     }
@@ -57,6 +81,14 @@ class RewriteWrapper
 
     private function rewrite(string $source, array $options): string
     {
+        $froms = [];
+        $source = new Source($source, $options['compatibleShortTag'] ? Source::SHORT_TAG_REWRITE : Source::SHORT_TAG_NOTHING);
+        foreach ($source as $i => $token) {
+            if ($token->equals([T_OPEN_TAG_WITH_ECHO, T_OPEN_TAG])) {
+                $froms[$i] = $token->line;
+            }
+        }
+
         $tags = implode('|', array_keys($options['customTagHandler'] ?? []));
         $source = preg_replace_callback("#<($tags)(.*?)>(.*?)</\\1>#su", function ($m) use ($options) {
             $sxe = simplexml_load_string('<attrnode ' . $m[2] . '></attrnode>');
@@ -69,6 +101,12 @@ class RewriteWrapper
         }, $source);
 
         $source = new Source($source, $options['compatibleShortTag'] ? Source::SHORT_TAG_REWRITE : Source::SHORT_TAG_NOTHING);
+
+        foreach ($source as $i => $token) {
+            if ($token->equals([T_OPEN_TAG_WITH_ECHO, T_OPEN_TAG])) {
+                self::$lineMapping[$this->path][$token->line] = $froms[$i];
+            }
+        }
 
         $options['defaultNamespace'][] = $source->namespace();
 

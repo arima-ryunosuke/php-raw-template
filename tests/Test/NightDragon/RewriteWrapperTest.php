@@ -22,6 +22,84 @@ class RewriteWrapperTest extends \ryunosuke\Test\AbstractTestCase
         'varAccessor'        => '.',
     ];
 
+    function test_getLineMapping()
+    {
+        /** @see RewriteWrapper::rewrite() */
+        $rewrite = $this->publishMethod(new RewriteWrapper(), 'rewrite');
+
+        $actual = '
+<?php "simple" ?>
+<delete>
+dummy
+</delete>
+<?php [
+    "multi",
+    "line",
+] ?>
+<delete>
+dummy
+</delete>
+<?php
+    // comment
+    $v = [
+        // comment
+        "multi",
+        // comment
+        "line",
+    ]
+?>
+<delete>
+dummy
+</delete>
+<?php "simple" ?>
+';
+        $expected = '
+<?php "simple" ?>
+
+<?php [
+    "multi",
+    "line",
+] ?>
+
+<?php
+    // comment
+    $v = [
+        // comment
+        "multi",
+        // comment
+        "line",
+    ]
+?>
+
+<?php "simple" ?>
+';
+        $this->assertEquals($expected, $rewrite($actual, [
+                'customTagHandler' => [
+                    'delete' => function ($contents, $attrs) { },
+                ]
+            ] + self::defaultOption));
+        $this->assertEquals(1, RewriteWrapper::getLineMapping("undefined", 1));
+        $this->assertEquals(2, RewriteWrapper::getLineMapping("undefined", 2));
+        $this->assertEquals(3, RewriteWrapper::getLineMapping("undefined", 3));
+        $this->assertEquals(6, RewriteWrapper::getLineMapping("undefined", 4));
+        $this->assertEquals(7, RewriteWrapper::getLineMapping("undefined", 5));
+        $this->assertEquals(8, RewriteWrapper::getLineMapping("undefined", 6));
+        $this->assertEquals(9, RewriteWrapper::getLineMapping("undefined", 7));
+        $this->assertEquals(10, RewriteWrapper::getLineMapping("undefined", 8));
+        $this->assertEquals(13, RewriteWrapper::getLineMapping("undefined", 9));
+        $this->assertEquals(14, RewriteWrapper::getLineMapping("undefined", 10));
+        $this->assertEquals(15, RewriteWrapper::getLineMapping("undefined", 11));
+        $this->assertEquals(16, RewriteWrapper::getLineMapping("undefined", 12));
+        $this->assertEquals(17, RewriteWrapper::getLineMapping("undefined", 13));
+        $this->assertEquals(18, RewriteWrapper::getLineMapping("undefined", 14));
+        $this->assertEquals(19, RewriteWrapper::getLineMapping("undefined", 15));
+        $this->assertEquals(20, RewriteWrapper::getLineMapping("undefined", 16));
+        $this->assertEquals(21, RewriteWrapper::getLineMapping("undefined", 17));
+        $this->assertEquals(22, RewriteWrapper::getLineMapping("undefined", 18));
+        $this->assertEquals(25, RewriteWrapper::getLineMapping("undefined", 19));
+        $this->assertEquals(20, RewriteWrapper::getLineMapping("undefined", 20));
+    }
+
     function test_stream()
     {
         RewriteWrapper::register('hogera');
