@@ -52,7 +52,7 @@ class Renderer
      * @param string|null ...$strings 文字列
      * @return string html 文字列
      */
-    public static function html(?string ...$strings): string
+    public static function html(...$strings): string
     {
         $result = '';
         foreach ($strings as $string) {
@@ -83,7 +83,7 @@ class Renderer
      *
      * @param string $html タグコンテンツ
      * @param array $attrs タグの属性配列
-     * @return mixed キーの値
+     * @return string 空白除去された文字列
      */
     public static function strip($html, $attrs = [])
     {
