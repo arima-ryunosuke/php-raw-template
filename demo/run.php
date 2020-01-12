@@ -16,7 +16,7 @@ class Modifier
 }
 
 $renderer = new \ryunosuke\NightDragon\Renderer([
-    'debug'         => true,
+    'debug'         => defined('DEBUG') ? DEBUG : false,
     'constFilename' => __DIR__ . '/compiles/constant.php',
     'compileDir'    => __DIR__ . '/compiles',
     'defaultClass'  => Modifier::class,
