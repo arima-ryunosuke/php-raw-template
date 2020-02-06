@@ -190,7 +190,7 @@ class Template
      */
     public function content(string $filename)
     {
-        $filename = $this->renderer->resolvePath($this->resolvePath($filename));
+        $filename = $this->resolvePath($filename);
         echo file_get_contents($filename);
     }
 
@@ -223,9 +223,9 @@ class Template
     private function resolvePath(string $filename): string
     {
         if (path_is_absolute($filename)) {
-            return $filename;
+            return $this->renderer->resolvePath($filename);
         }
-        return dirname($this->filename) . "/$filename";
+        return dirname($this->getFilename()) . "/$filename";
     }
 
     /**

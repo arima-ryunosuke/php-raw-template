@@ -124,6 +124,9 @@ line3
 
         // キャッシュが使用される
         $this->assertEquals($fileid, $renderer->compile(realpath(self::TEMPLATE_DIR . '/dummy.phtml'), []));
+
+        // 存在しないと例外が飛ぶ
+        $this->assertException('notfound-file is not readable', [$renderer, 'compile'], 'notfound-file', []);
     }
 
     function test_compile_gather()

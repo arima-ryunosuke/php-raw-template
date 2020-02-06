@@ -217,7 +217,7 @@ class Renderer
         // compile ディレクトリ内で __DIR__ を使うとその絶対パスになっているので元のパスに読み替える
         $filename = strtr(str_lchop($filename, $this->compileDir), [';' => ':']);
 
-        return realpath($filename);
+        return $filename;
     }
 
     /**
@@ -236,6 +236,9 @@ class Renderer
         }
 
         $filename = $this->resolvePath($filename);
+        if (!is_readable($filename)) {
+            throw new \InvalidArgumentException("$filename is not readable.");
+        }
 
         // デバッグ中はメタ情報埋め込みのためテンプレートファイル自体に手を出す
         if ($this->debug && is_writable($filename)) {
