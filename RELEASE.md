@@ -21,6 +21,12 @@
 - nikic/php-parser に移行したいけど AST でショートタグが正規化されてしまう？
 - パス周りがメチャクチャなので正規化して realpath したい
 
+## 1.1.5
+
+- [all] composer update
+- [feature][Template] load メソッドを追加
+- [fixbug][Renderer] ファイルが存在しない時に妙なエラーになる不具合を修正
+
 ## 1.1.4
 
 - [feature][Renderer] エラーハンドリングがやりやすいように例外を書き換え
