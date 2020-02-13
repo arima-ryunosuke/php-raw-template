@@ -196,4 +196,50 @@ CONTENT;
         $template = new Template($renderer, self::TEMPLATE_DIR . '/content.phtml');
         $this->assertEquals($actual, $template->render([]));
     }
+
+    function test_load()
+    {
+        $actual = <<<CONTENT
+loading1
+<style type="text/css">body {
+    color: black;
+}
+</style><script type="text/javascript">(function () {
+    alert(1);
+})();
+</script>rawphp
+echophp&lt;b&gt;bold&lt;/b&gt;
+loading2
+<style type="text/css">body {
+    color: black;
+}
+</style><script type="text/javascript">(function () {
+    alert(1);
+})();
+</script>rawphp
+echophp&lt;b&gt;bold&lt;/b&gt;
+loading3
+<script type="text/javascript">(function () {
+    alert(1);
+})();
+</script><style type="text/css">body {
+    color: black;
+}
+</style>loading4
+<style type="text/css">body {
+    color: black;
+}
+</style><script type="text/javascript">(function () {
+    alert(1);
+})();
+</script>
+CONTENT;
+
+        $renderer = new Renderer([
+            'debug'      => true,
+            'compileDir' => self::COMPILE_DIR,
+        ]);
+        $template = new Template($renderer, self::TEMPLATE_DIR . '/load/all.phtml');
+        $this->assertEquals($actual, $template->render([]));
+    }
 }

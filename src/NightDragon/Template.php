@@ -195,6 +195,41 @@ class Template
     }
 
     /**
+     * 拡張子に基づいてよしなに取り込んで出力する
+     *
+     * - .php: php ファイルとして単純に require する
+     * - .css: css ファイルとして style タグで囲んで出力する
+     * - .js: js ファイルとして script タグで囲んで出力する
+     * - 自身と同じ拡張子: テンプレートファイルとして import する
+     * - glob 記法: マッチしたファイルで上記が全て呼ばれる
+     * - その他: 現在の実装ではスルーされる
+     *
+     * @param string $filename 読み込むファイル名
+     */
+    public function load(string $filename)
+    {
+        $curExt = pathinfo($this->getFilename(), PATHINFO_EXTENSION);
+        $filename = $this->resolvePath($filename);
+        $files = glob($filename, GLOB_BRACE | GLOB_NOSORT);
+        foreach ($files as $file) {
+            switch (pathinfo($file, PATHINFO_EXTENSION)) {
+                case $curExt:
+                    $this->import($file);
+                    break;
+                case 'php':
+                    require($file);
+                    break;
+                case 'js':
+                    echo '<script type="text/javascript">' . file_get_contents($file) . '</script>';
+                    break;
+                case 'css':
+                    echo '<style type="text/css">' . file_get_contents($file) . '</style>';
+                    break;
+            }
+        }
+    }
+
+    /**
      * 指定配列を展開しつつファイルを require するキモメソッド
      *
      * @param string $filename 読み込むファイル名
