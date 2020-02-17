@@ -414,7 +414,7 @@ class Renderer
             foreach ($source->match(['define', '(', T_CONSTANT_ENCAPSED_STRING, ',', Source::MATCH_MANY1, ';']) as $tokens) {
                 $code = $tokens[2]->token;
                 if ($tokens[4]->equals(T_CONSTANT_ENCAPSED_STRING)) {
-                    $name = eval("return $code;");
+                    $name = eval($eval = "return $code;");
                     $current['accessor'][$name] = $code;
                 }
                 else {

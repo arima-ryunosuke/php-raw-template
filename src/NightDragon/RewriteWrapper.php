@@ -147,7 +147,7 @@ class RewriteWrapper
         // "." の場合は $array.123 のような記述が T_DNUMBER として得られてしまうので特別扱いで対応（"." はデフォルトオプションなので面倒見る）
         if ($accessor === '.') {
             $tokens->replace([T_DNUMBER], function (Source $tokens) {
-                list($int, $float) = explode('.', $tokens[0]->token);
+                [$int, $float] = explode('.', $tokens[0]->token);
 
                 if ($int !== '') {
                     return $tokens;
@@ -161,7 +161,7 @@ class RewriteWrapper
             $accessor,
             [T_STRING, T_LNUMBER, T_VARIABLE],
         ], function (Source $tokens) use ($getter) {
-            list($var, $key) = $tokens->shrink();
+            [$var, $key] = $tokens->shrink();
 
             if ($key->id !== T_VARIABLE) {
                 $key = var_export("$key", true);
@@ -188,7 +188,7 @@ class RewriteWrapper
             Source::MATCH_MANY0,
             T_CLOSE_TAG,
         ], function (Source $tokens) use ($receiver, $modifier, $namespaces, $classes) {
-            list($open, $close) = $tokens->shrink();
+            [$open, $close] = $tokens->shrink();
 
             $sources = $tokens->split($modifier);
             $stmt = (string) array_shift($sources);
@@ -254,7 +254,7 @@ class RewriteWrapper
             Source::MATCH_MANY0,
             T_CLOSE_TAG,
         ], function (Source $tokens) use ($filter, $closer) {
-            list($open, $close) = $tokens->shrink();
+            [$open, $close] = $tokens->shrink();
 
             $nl = (strlen($closer) && !ctype_graph($close->token)) ? ',' . json_encode($closer) : '';
             $content = $filter ? "$filter($tokens)$nl" : "$tokens$nl";

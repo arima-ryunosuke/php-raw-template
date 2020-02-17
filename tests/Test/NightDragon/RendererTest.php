@@ -219,26 +219,21 @@ line3
         $this->assertEquals('\\Exception', $detectType(new \Exception()));
 
         // 素の匿名クラスは object
-        $this->assertEquals('object', $detectType(new class
-        {
+        $this->assertEquals('object', $detectType(new class {
         }));
         // 継承していばそいつ
-        $this->assertEquals('\\stdClass', $detectType(new class extends \stdClass
-        {
+        $this->assertEquals('\\stdClass', $detectType(new class extends \stdClass {
         }));
         // 実装していばそいつ
-        $this->assertEquals('\\Countable', $detectType(new class implements \Countable
-        {
+        $this->assertEquals('\\Countable', $detectType(new class implements \Countable {
             public function count() { }
         }));
         // 継承も実装もしてれば | で両方
-        $this->assertEquals('\\stdClass|\\Countable', $detectType(new class extends \stdClass implements \Countable
-        {
+        $this->assertEquals('\\stdClass|\\Countable', $detectType(new class extends \stdClass implements \Countable {
             public function count() { }
         }));
         // ただし継承元に実装メソッドが含まれている場合は含まれない
-        $this->assertEquals('\\ArrayObject|\\JsonSerializable', $detectType(new class extends \ArrayObject implements \Countable, \JsonSerializable
-        {
+        $this->assertEquals('\\ArrayObject|\\JsonSerializable', $detectType(new class extends \ArrayObject implements \Countable, \JsonSerializable {
             public function jsonSerialize() { }
         }));
 
@@ -420,8 +415,7 @@ near:
         ]);
         try {
             $renderer->render(self::TEMPLATE_DIR . '/error.phtml', [
-                'object' => new class
-                {
+                'object' => new class {
                     public function undefinedMethod() { throw new \Exception('msg'); }
                 }
             ]);
@@ -443,8 +437,7 @@ near:
         ]);
         try {
             $renderer->render(self::TEMPLATE_DIR . '/error-nest.phtml', [
-                'object' => new class
-                {
+                'object' => new class {
                     public function undefinedMethod($arg = []) { return $arg['undefined']; }
                 },
             ]);
@@ -468,8 +461,7 @@ near:
         ]);
         try {
             $renderer->render(self::TEMPLATE_DIR . '/error-nest.phtml', [
-                'object' => new class
-                {
+                'object' => new class {
                     public function undefinedMethod() { throw new \Exception('msg'); }
                 },
             ]);
@@ -494,8 +486,7 @@ near:
         ]);
         try {
             $renderer->render(self::TEMPLATE_DIR . '/error.phtml', [
-                'object' => new class
-                {
+                'object' => new class {
                     public function undefinedMethod() { throw new \Exception('msg2', 2, new \Exception('msg1', 1)); }
                 }
             ]);
