@@ -330,6 +330,7 @@ $renderer = new \ryunosuke\NightDragon\Renderer([
     'gatherModifier'     => $debug,
     'gatherAccessor'     => $debug,
     'constFilename'      => null,
+    'typeMapping'        => [],
     // インジェクション系
     'wrapperProtocol'    => Renderer::DEFAULT_PROTOCOL,
     'templateClass'      => Template::class,
@@ -432,6 +433,11 @@ gatherAccessor を true にすると `<?= $array.key ?>` の `key` が定数宣�
 
 用途は主にデバッグ用です。
 プロジェクトメンバー間で差異が生まれやすいファイルなので、プロジェクト内のどこかに配置して gitignore で無視すると良いかもしれません。
+
+#### typeMapping
+
+ここで `[original => alias]` という配列を指定すると、 gatherVariable で挿入される型情報を上書きすることができます。
+「実際は array なんだけど、深遠な理由で ArrayObject として扱いたい」のようなかなり特殊な状況で使用します。
 
 #### wrapperProtocol
 
@@ -542,8 +548,6 @@ varAccessor は `<?= $array.key ?>` における `.` を指定します。
 
 ブロックを定義します。
 定義されたブロックは子テンプレート側で参照することができます。
-
-ブロックのネストはできません。
 
 #### $this->end()
 
