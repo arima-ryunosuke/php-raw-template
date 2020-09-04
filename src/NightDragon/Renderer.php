@@ -277,7 +277,7 @@ class Renderer
                 $newcontent = (string) $source->replace([
                     T_OPEN_TAG,
                     function (Token $token) { return $token->id === T_COMMENT && trim($token->token) === self::META_COMMENT; },
-                    Source::MATCH_MANY0,
+                    Source::MATCH_MANY,
                     T_CLOSE_TAG,
                 ], "<?php\n" . self::META_COMMENT . "\n" . implode("\n", $meta) . "\n?>\n");
 
@@ -368,10 +368,12 @@ class Renderer
         $result = [];
         foreach ($source->match([
             $modifier,
-            Source::MATCH_MANY1,
+            Source::MATCH_ANY,
+            Source::MATCH_MANY,
             [T_CLOSE_TAG, $modifier],
         ]) as $tokens) {
             $tokens->shrink();
+            $tokens->strip();
             $stmt = (string) $tokens;
             foreach ($classes as $class) {
                 if (method_exists($class, $stmt)) {
@@ -411,14 +413,15 @@ class Renderer
         if (file_exists($filename)) {
             $current = [];
             $source = new Source(file_get_contents($filename));
-            foreach ($source->match(['define', '(', T_CONSTANT_ENCAPSED_STRING, ',', Source::MATCH_MANY1, ';']) as $tokens) {
+            foreach ($source->match(['define', '(', T_CONSTANT_ENCAPSED_STRING, ',', Source::MATCH_ANY, Source::MATCH_MANY, ';']) as $tokens) {
+                $tokens->strip();
                 $code = $tokens[2]->token;
                 if ($tokens[4]->equals(T_CONSTANT_ENCAPSED_STRING)) {
                     $name = eval($eval = "return $code;");
                     $current['accessor'][$name] = $code;
                 }
                 else {
-                    $token = $tokens->match([',', Source::MATCH_MANY1, '('])[0];
+                    $token = $tokens->match([',', Source::MATCH_ANY, Source::MATCH_MANY, '('])[0];
                     $token->shrink();
                     $current['modifier']["$token"] = $code;
                 }

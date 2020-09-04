@@ -200,16 +200,16 @@ dummy
 <? foreach($array.key1.key2 as $k => $v): ?>
 <? endforeach ?>';
         $expected = "
-<?php foreach(access(access(\$array,'key1'),'key2')as\$k=>\$v):?>
-<?php endforeach?>";
+<?php foreach(access(access(\$array,'key1'),'key2') as \$k => \$v): ?>
+<?php endforeach ?>";
         $this->assertEquals($expected, $rewrite($actual, ['compatibleShortTag' => true] + self::defaultOption));
 
         $actual = '
 <? foreach($array | array_slice): ?>
 <? endforeach ?>';
         $expected = "
-<?php foreach(\$array|array_slice):?>
-<?php endforeach?>";
+<?php foreach(\$array | array_slice): ?>
+<?php endforeach ?>";
         $this->assertEquals($expected, $rewrite($actual, ['compatibleShortTag' => true] + self::defaultOption));
     }
 
@@ -238,16 +238,16 @@ dummy
 <? foreach($array.key1.key2 as $k => $v): ?>
 <? endforeach ?>';
         $expected = "
-<?php foreach(access(access(\$array,'key1'),'key2')as\$k=>\$v):?>
-<?php endforeach?>";
+<?php foreach(access(access(\$array,'key1'),'key2') as \$k => \$v): ?>
+<?php endforeach ?>";
         $this->assertEquals($expected, $rewrite($actual, self::defaultOption));
 
         $actual = '
 <? foreach($array | array_slice): ?>
 <? endforeach ?>';
         $expected = "
-<?php foreach(\$array|array_slice):?>
-<?php endforeach?>";
+<?php foreach(\$array | array_slice): ?>
+<?php endforeach ?>";
         $this->assertEquals($expected, $rewrite($actual, self::defaultOption));
     }
 
@@ -257,7 +257,7 @@ dummy
         $rewrite = $this->publishMethod(new RewriteWrapper(), 'rewrite');
 
         $actual = "<?= ARRAYS.key1.key2 >> f1 >> f2 ?>\n";
-        $expected = "<?=ARRAYS.key1.key2>>f1>>f2?>\n";
+        $expected = "<?=ARRAYS.key1.key2 >> f1 >> f2?>\n";
         $this->assertEquals($expected, $rewrite($actual, [
                 'defaultFilter' => '',
                 'defaultCloser' => '',

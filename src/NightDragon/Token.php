@@ -70,6 +70,9 @@ class Token
             }
             return false;
         }
+        if (is_bool($that)) {
+            return $that;
+        }
         if (is_scalar($that)) {
             return $this->id === $that || $this->token === $that;
         }

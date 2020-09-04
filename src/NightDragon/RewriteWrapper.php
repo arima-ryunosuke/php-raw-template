@@ -112,7 +112,8 @@ class RewriteWrapper
 
         $source->replace([
             [T_OPEN_TAG_WITH_ECHO, T_OPEN_TAG],
-            Source::MATCH_MANY1,
+            Source::MATCH_ANY,
+            Source::MATCH_MANY,
             T_CLOSE_TAG,
         ], function (Source $tokens) use ($options) {
             // <?php タグは絶対に触らない
@@ -133,7 +134,7 @@ class RewriteWrapper
 
             // <? タグは 7.4 で非推奨になるので警告が出るようになるが、せっかくプリプロセス的な処理をしてるので置換して警告を抑止する
             if (($open_tag[2] ?? '') !== '=') {
-                $tokens[0]->token = '<?php ';
+                $tokens[0]->token = '<?php';
             }
 
             return $tokens;
@@ -185,14 +186,17 @@ class RewriteWrapper
 
         $tokens->replace([
             T_OPEN_TAG_WITH_ECHO,
-            Source::MATCH_MANY0,
+            Source::MATCH_ANY,
+            Source::MATCH_MANY,
             T_CLOSE_TAG,
         ], function (Source $tokens) use ($receiver, $modifier, $namespaces, $classes) {
             [$open, $close] = $tokens->shrink();
+            $tokens->trim();
 
             $sources = $tokens->split($modifier);
-            $stmt = (string) array_shift($sources);
+            $stmt = trim((string) array_shift($sources));
             foreach ($sources as $parts) {
+                $parts->strip();
                 // () がないなら単純呼び出し
                 if (!$parts->match(['('])) {
                     $stmt = $parts . "($stmt)";
@@ -251,10 +255,12 @@ class RewriteWrapper
     {
         $tokens->replace([
             T_OPEN_TAG_WITH_ECHO,
-            Source::MATCH_MANY0,
+            Source::MATCH_ANY,
+            Source::MATCH_MANY,
             T_CLOSE_TAG,
         ], function (Source $tokens) use ($filter, $closer) {
             [$open, $close] = $tokens->shrink();
+            $tokens->trim();
 
             $nl = (strlen($closer) && !ctype_graph($close->token)) ? ',' . json_encode($closer) : '';
             $content = $filter ? "$filter($tokens)$nl" : "$tokens$nl";

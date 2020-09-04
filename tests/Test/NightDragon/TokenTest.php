@@ -56,14 +56,17 @@ class TokenTest extends \ryunosuke\Test\AbstractTestCase
         $this->assertTrue($token->equals([T_OPEN_TAG => '<?', -1 => 'hoge']));
         $this->assertTrue($token->equals([T_OPEN_TAG, '<?php']));
         $this->assertTrue($token->equals([T_CLOSE_TAG, '<?']));
+        $this->assertFalse($token->equals(false));
         $this->assertTrue($token->equals(T_OPEN_TAG));
         $this->assertTrue($token->equals('<?'));
         $this->assertTrue($token->equals($token));
         $this->assertTrue($token->equals(function ($v) { return true; }));
+        $this->assertTrue($token->equals(true));
 
         $this->assertFalse($token->equals([T_OPEN_TAG => '<?php']));
         $this->assertFalse($token->equals([T_OPEN_TAG => '<?php', T_CLOSE_TAG => '<?']));
         $this->assertFalse($token->equals([T_CLOSE_TAG, '<?php']));
+        $this->assertFalse($token->equals(false));
         $this->assertFalse($token->equals(T_CLOSE_TAG));
         $this->assertFalse($token->equals('hoge'));
         $this->assertFalse($token->equals(Token::instance([T_OPEN_TAG, '<?php'])));

@@ -13,36 +13,32 @@ class SourceTest extends \ryunosuke\Test\AbstractTestCase
 
         // ArrayAccess#offsetGet
         $this->assertEquals(Token::instance(T_OPEN_TAG, '<?php ', 1), $source[0]);
-        $this->assertEquals(Token::instance(T_STRING, 'C', 1), $source[9]);
+        $this->assertEquals(Token::instance(T_STRING, 'C', 1), $source[5]);
 
         // ArrayAccess#offsetSet
-        $this->assertFalse(isset($source[10]));
-        $source[] = 'hoge';
-        $this->assertTrue(isset($source[10]));
-        $source[1] = 'hoge';
+        $this->assertFalse(isset($source[6]));
+        $source[] = Token::instance(T_STRING, 'hoge', 1);
+        $this->assertTrue(isset($source[6]));
+        $source[1] = Token::instance(T_STRING, 'hoge', 1);
         $this->assertEquals('hoge', $source[1]);
 
         // ArrayAccess#offsetUnset
-        unset($source[10]);
-        $this->assertFalse(isset($source[10]));
+        unset($source[6]);
+        $this->assertFalse(isset($source[6]));
         unset($source[1]);
-        $this->assertFalse(isset($source[9]));
+        $this->assertFalse(isset($source[5]));
 
         // IteratorAggregate
         $this->assertEquals([
             Token::instance(T_OPEN_TAG, "<?php ", 1),
-            Token::instance(T_WHITESPACE, " ", 1),
             Token::instance(-1, "+", 1),
-            Token::instance(T_WHITESPACE, " ", 1),
             Token::instance(T_STRING, "B", 1),
-            Token::instance(T_WHITESPACE, " ", 1),
             Token::instance(-1, "+", 1),
-            Token::instance(T_WHITESPACE, " ", 1),
             Token::instance(T_STRING, "C", 1),
         ], iterator_to_array($source));
 
         // Countable
-        $this->assertCount(9, $source);
+        $this->assertCount(5, $source);
     }
 
     function test_short_tag()
@@ -59,39 +55,6 @@ class SourceTest extends \ryunosuke\Test\AbstractTestCase
         $source = new Source('<? $var = "prefix-" . "-middle-" . __FUNCTION__ . "-suffix";', Source::SHORT_TAG_REWRITE);
         $this->assertEquals(Token::instance(T_OPEN_TAG, '<?pHP ', 1), $source[0]);
         $this->assertEquals('<?pHP  $var = "prefix-" . "-middle-" . __FUNCTION__ . "-suffix";', (string) $source);
-    }
-
-    function test_first_last_both()
-    {
-        $source = new Source('<?php $var = "prefix-" . "-middle-" . __FUNCTION__ . "-suffix";');
-
-        $this->assertEquals(Token::instance(T_OPEN_TAG, '<?php ', 1), $source->first());
-        $this->assertEquals(Token::instance(T_OPEN_TAG, '<?php ', 1), $source->first());
-
-        $this->assertEquals(Token::instance(-1, ';', null), $source->last());
-        $this->assertEquals(Token::instance(-1, ';', null), $source->last());
-
-        $this->assertEquals([
-            Token::instance(T_OPEN_TAG, '<?php ', 1),
-            Token::instance(-1, ';', null),
-        ], $source->both());
-
-        $this->assertEquals('<?php $var = "prefix-" . "-middle-" . __FUNCTION__ . "-suffix";', (string) $source);
-
-        $source = new Source('');
-
-        $this->assertEquals(null, $source->first());
-        $this->assertEquals(null, $source->first());
-
-        $this->assertEquals(null, $source->last());
-        $this->assertEquals(null, $source->last());
-
-        $this->assertEquals([
-            null,
-            null,
-        ], $source->both());
-
-        $this->assertEquals('', (string) $source);
     }
 
     function test_shift_pop_shrink()
@@ -138,6 +101,18 @@ class SourceTest extends \ryunosuke\Test\AbstractTestCase
         $this->assertEquals('', (string) $source);
     }
 
+    function test_strip()
+    {
+        $source = new Source(' <?php $var = "prefix-" . "-middle-" . __FUNCTION__ . "-suffix"; ');
+        $this->assertEquals(' <?php $var="prefix-"."-middle-".__FUNCTION__."-suffix";', (string) $source->strip());
+    }
+
+    function test_trim()
+    {
+        $source = new Source(' <?php $var = "prefix-" . "-middle-" . __FUNCTION__ . "-suffix"; ');
+        $this->assertEquals(' <?php $var = "prefix-" . "-middle-" . __FUNCTION__ . "-suffix";', (string) $source->trim());
+    }
+
     function test_split()
     {
         $source = new Source('<?php $var = "prefix-" . "-middle-" . __FUNCTION__ . "-suffix";');
@@ -168,7 +143,7 @@ class SourceTest extends \ryunosuke\Test\AbstractTestCase
         $this->assertEquals('"-suffix"', (string) $matched[1]);
 
         $matched = $source->match([T_CONSTANT_ENCAPSED_STRING, '.', T_FUNC_C]);
-        $this->assertEquals('"prefix-".__FUNCTION__', (string) $matched[0]);
+        $this->assertEquals('"prefix-" . __FUNCTION__', (string) $matched[0]);
     }
 
     function test_match_multi()
@@ -176,81 +151,96 @@ class SourceTest extends \ryunosuke\Test\AbstractTestCase
         $source = new Source('<?php $var = A . A . A . A . A;');
         $matched = $source->match(['A', '.', 'A']);
         $this->assertCount(4, $matched);
-        $this->assertEquals('A.A', (string) $matched[0]);
-        $this->assertEquals('A.A', (string) $matched[1]);
-        $this->assertEquals('A.A', (string) $matched[2]);
-        $this->assertEquals('A.A', (string) $matched[3]);
+        $this->assertEquals('A . A', (string) $matched[0]);
+        $this->assertEquals('A . A', (string) $matched[1]);
+        $this->assertEquals('A . A', (string) $matched[2]);
+        $this->assertEquals('A . A', (string) $matched[3]);
+    }
+
+    function test_match_whitespace()
+    {
+        $source = new Source('<?php $var = "prefix-".__FUNCTION__."-suffix"; ');
+        $matched = $source->match(['$var', true]);
+        $this->assertEquals('$var =', (string) $matched[0]);
+        $matched = $source->match(['$var', Source::MATCH_MANY]);
+        $this->assertEquals('$var = "prefix-".__FUNCTION__."-suffix";', (string) $matched[0]);
     }
 
     function test_match_any()
     {
         $source = new Source('<?php $var = "prefix-" . "-suffix";');
         $matched = $source->match(['"prefix-"', Source::MATCH_ANY, '"-suffix"']);
-        $this->assertEquals('"prefix-"."-suffix"', (string) $matched[0]);
+        $this->assertEquals('"prefix-" . "-suffix"', (string) $matched[0]);
 
         $source = new Source('<?php $var = "prefix-" , "-suffix";');
         $matched = $source->match(['"prefix-"', Source::MATCH_ANY, '"-suffix"']);
-        $this->assertEquals('"prefix-","-suffix"', (string) $matched[0]);
+        $this->assertEquals('"prefix-" , "-suffix"', (string) $matched[0]);
 
         $source = new Source('<?php $var = "prefix-" "-suffix";');
         $matched = $source->match(['"prefix-"', Source::MATCH_ANY, '"-suffix"']);
         $this->assertEmpty($matched);
     }
 
-    function test_match_many0()
+    function test_match_many()
     {
         $source = new Source('<?php $var = "prefix-" . __FUNCTION__ . "-suffix";');
-        $matched = $source->match(['"prefix-"', Source::MATCH_MANY0, '"-suffix"']);
-        $this->assertEquals('"prefix-".__FUNCTION__."-suffix"', (string) $matched[0]);
+        $matched = $source->match(['"prefix-"', Source::MATCH_MANY, '"-suffix"']);
+        $this->assertEquals('"prefix-" . __FUNCTION__ . "-suffix"', (string) $matched[0]);
 
         $source = new Source('<?= $this->begin() + $this->hoge() + $this->end()');
-        $matched = $source->match(['$this', '->', 'begin', Source::MATCH_MANY0, '->', 'end']);
-        $this->assertEquals('$this->begin()+$this->hoge()+$this->end', (string) $matched[0]);
+        $matched = $source->match(['$this', '->', 'begin', Source::MATCH_MANY, '->', 'end']);
+        $this->assertEquals('$this->begin() + $this->hoge() + $this->end', (string) $matched[0]);
 
         $source = new Source('<?php $var = "prefix-" "-suffix";');
-        $matched = $source->match(['"prefix-"', Source::MATCH_MANY0, '"-suffix"']);
-        $this->assertEquals('"prefix-""-suffix"', (string) $matched[0]);
-    }
-
-    function test_match_many1()
-    {
-        $source = new Source('<?php $var = "prefix-" . __FUNCTION__ . "-suffix";');
-        $matched = $source->match(['"prefix-"', Source::MATCH_MANY1, '"-suffix"']);
-        $this->assertEquals('"prefix-".__FUNCTION__."-suffix"', (string) $matched[0]);
-
-        $source = new Source('<?= $this->begin() + $this->hoge() + $this->end()');
-        $matched = $source->match(['$this', '->', 'begin', Source::MATCH_MANY1, '->', 'end']);
-        $this->assertEquals('$this->begin()+$this->hoge()+$this->end', (string) $matched[0]);
-
-        $source = new Source('<?php $var = "prefix-" "-suffix";');
-        $matched = $source->match(['"prefix-"', Source::MATCH_MANY1, '"-suffix"']);
-        $this->assertEmpty($matched);
+        $matched = $source->match(['"prefix-"', Source::MATCH_MANY, '"-suffix"']);
+        $this->assertEquals('"prefix-" "-suffix"', (string) $matched[0]);
     }
 
     function test_match_many_only()
     {
         $source = new Source('<?php $var="prefix-".__FUNCTION__."-suffix";');
-        $matched = $source->match([Source::MATCH_MANY0]);
+        $matched = $source->match([Source::MATCH_MANY]);
         $this->assertEquals('<?php $var="prefix-".__FUNCTION__."-suffix";', (string) $matched[0]);
+    }
 
-        $source = new Source('<?php $var="prefix-".__FUNCTION__."-suffix";');
-        $matched = $source->match([Source::MATCH_MANY1]);
-        $this->assertEquals('<?php $var="prefix-".__FUNCTION__."-suffix";', (string) $matched[0]);
+    function test_match_many_token()
+    {
+        $source = new Source('<?php $var = 123 + 1.23 - - "123";');
+        $matched = $source->match(['=', [Source::MATCH_MANY => true, T_LNUMBER, T_DNUMBER, '+']]);
+        $this->assertEquals('= 123 + 1.23', (string) $matched[0]);
+        $matched = $source->match(['=', [Source::MATCH_MANY => true, T_LNUMBER, T_DNUMBER, '+'], [Source::MATCH_MANY => true, '-']]);
+        $this->assertEquals('= 123 + 1.23 - -', (string) $matched[0]);
+        $matched = $source->match(['=', [Source::MATCH_MANY => true, T_LNUMBER, T_DNUMBER, '+'], '-']);
+        $this->assertEquals('= 123 + 1.23 -', (string) $matched[0]);
+        $matched = $source->match(['=', [Source::MATCH_MANY => true, T_LNUMBER, T_DNUMBER, '+'], '*']);
+        $this->assertEmpty($matched);
     }
 
     function test_match_many_se()
     {
         $source = new Source('<?php $var="prefix-".__FUNCTION__."-suffix";');
-        $matched = $source->match(['$var', Source::MATCH_MANY0]);
+        $matched = $source->match(['$var', Source::MATCH_MANY]);
         $this->assertEquals('$var="prefix-".__FUNCTION__."-suffix";', (string) $matched[0]);
-        $matched = $source->match([Source::MATCH_MANY0, T_FUNC_C]);
+        $matched = $source->match([Source::MATCH_MANY, T_FUNC_C]);
         $this->assertEquals('<?php $var="prefix-".__FUNCTION__', (string) $matched[0]);
+    }
 
+    function test_match_not()
+    {
         $source = new Source('<?php $var="prefix-".__FUNCTION__."-suffix";');
-        $matched = $source->match(['$var', Source::MATCH_MANY1]);
-        $this->assertEquals('$var="prefix-".__FUNCTION__."-suffix";', (string) $matched[0]);
-        $matched = $source->match([Source::MATCH_MANY1, T_FUNC_C]);
-        $this->assertEquals('<?php $var="prefix-".__FUNCTION__', (string) $matched[0]);
+        $matched = $source->match(['=', [Source::MATCH_NOT => true, T_FUNC_C]]);
+        $this->assertEquals('="prefix-"', (string) $matched[0]);
+        $matched = $source->match(['=', [Source::MATCH_NOT => true, T_FUNC_C, T_CONSTANT_ENCAPSED_STRING]]);
+        $this->assertEmpty($matched);
+    }
+
+    function test_match_nocapture()
+    {
+        $source = new Source('<?php $var="prefix-".__FUNCTION__."-suffix";');
+        $matched = $source->match(['=', T_CONSTANT_ENCAPSED_STRING, [Source::MATCH_NOCAPTURE => true, Source::MATCH_MANY => true], T_CONSTANT_ENCAPSED_STRING]);
+        $this->assertEquals('="prefix-""-suffix"', (string) $matched[0]);
+        $matched = $source->match(['=', [Source::MATCH_NOCAPTURE => true, Source::MATCH_NOT => true, T_FUNC_C]]);
+        $this->assertEquals('=', (string) $matched[0]);
     }
 
     function test_replace_string()
@@ -322,7 +312,7 @@ class SourceTest extends \ryunosuke\Test\AbstractTestCase
     function test_replace_false()
     {
         $source = new Source('<?php A + B + C');
-        $source->replace([Source::MATCH_MANY1], function ($tokens) {
+        $source->replace([Source::MATCH_MANY], function ($tokens) {
             return false;
         });
         $this->assertEquals('<?php A + B + C', (string) $source);

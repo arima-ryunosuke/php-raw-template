@@ -12,9 +12,10 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
     const SHORT_TAG_REWRITE = 2; // <? を <?php に読み替えてパース時だけでなく書き下しにも影響する
 
     /// matcher 定数
-    const MATCH_ANY   = null;  // like: /./
-    const MATCH_MANY0 = false; // like: /.*/
-    const MATCH_MANY1 = true;  // like: /.+/
+    const MATCH_ANY       = true; // 任意のトークンにマッチ
+    const MATCH_MANY      = -1;   // 指定トークンに量的マッチ
+    const MATCH_NOT       = -98;  // 否定フラグ
+    const MATCH_NOCAPTURE = -99;  // キャプチャしないフラグ
 
     /** @var int ショートタグ互換モード */
     private $compatibleShortTagMode;
@@ -70,18 +71,34 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
         return implode('', array_column($tokens, 'token'));
     }
 
+    private function actualOffset($offset)
+    {
+        $n = 0;
+        foreach ($this->tokens as $i => $token) {
+            if (!$token->isWhitespace()) {
+                if ($offset === $n++) {
+                    return $i;
+                }
+            }
+        }
+        return null;
+    }
+
     public function offsetExists($offset)
     {
+        $offset = $this->actualOffset($offset);
         return isset($this->tokens[$offset]);
     }
 
     public function offsetGet($offset)
     {
+        $offset = $this->actualOffset($offset);
         return $this->tokens[$offset];
     }
 
     public function offsetSet($offset, $value)
     {
+        $offset = $this->actualOffset($offset);
         assert(!($offset !== null && !isset($this->tokens[$offset])));
 
         if ($offset === null) {
@@ -94,6 +111,7 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
 
     public function offsetUnset($offset)
     {
+        $offset = $this->actualOffset($offset);
         unset($this->tokens[$offset]);
         $this->tokens = array_values($this->tokens);
     }
@@ -103,76 +121,37 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
      */
     public function getIterator()
     {
-        foreach ($this->tokens as $i => $token) {
-            yield $i => $token;
+        $n = 0;
+        foreach ($this->tokens as $token) {
+            if (!$token->isWhitespace()) {
+                yield $n++ => $token;
+            }
         }
     }
 
     public function count()
     {
-        return count($this->tokens);
-    }
-
-    /**
-     * トークン先頭から1つ返す
-     *
-     * T_WHITESPACE はスキップ。取り出したトークンは失われない。
-     *
-     * @return Token|null 先頭トークン
-     */
-    public function first(): ?Token
-    {
-        for ($i = 0; $i < count($this->tokens); $i++) {
-            if (!$this->tokens[$i]->isWhitespace()) {
-                return $this->tokens[$i];
+        $count = 0;
+        foreach ($this->tokens as $token) {
+            if (!$token->isWhitespace()) {
+                $count++;
             }
         }
-        return null;
-    }
-
-    /**
-     * トークン末尾から1つ返す
-     *
-     * T_WHITESPACE はスキップ。取り出したトークンは失われない。
-     *
-     * @return Token|null 末尾トークン
-     */
-    public function last(): ?Token
-    {
-        for ($i = count($this->tokens) - 1; $i >= 0; $i--) {
-            if (!$this->tokens[$i]->isWhitespace()) {
-                return $this->tokens[$i];
-            }
-        }
-        return null;
-    }
-
-    /**
-     * トークン先頭・末尾から1つ返す
-     *
-     * T_WHITESPACE はスキップ。取り出したトークンは失われる。
-     *
-     * @return Token[] トークン配列（[前, 後]）
-     */
-    public function both()
-    {
-        return [
-            $this->first(),
-            $this->last(),
-        ];
+        return $count;
     }
 
     /**
      * トークン先頭から1つ取り出す
      *
-     * T_WHITESPACE はスキップ。取り出したトークンは失われる。
+     * 取り出したトークンは失われる。
      *
+     * @param mixed $type 無視トークン
      * @return Token|null 先頭トークン
      */
-    public function shift(): ?Token
+    public function shift($type = T_WHITESPACE): ?Token
     {
         while ($token = array_shift($this->tokens)) {
-            if (!$token->isWhitespace()) {
+            if (!$token->equals($type)) {
                 return $token;
             }
         }
@@ -182,14 +161,15 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
     /**
      * トークン末尾から1つ取り出す
      *
-     * T_WHITESPACE はスキップ。取り出したトークンは失われる。
+     * 取り出したトークンは失われる。
      *
+     * @param mixed $type 無視トークン
      * @return Token|null 末尾トークン
      */
-    public function pop(): ?Token
+    public function pop($type = T_WHITESPACE): ?Token
     {
         while ($token = array_pop($this->tokens)) {
-            if (!$token->isWhitespace()) {
+            if (!$token->equals($type)) {
                 return $token;
             }
         }
@@ -199,16 +179,56 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
     /**
      * トークン先頭・末尾から1つ取り出す
      *
-     * T_WHITESPACE はスキップ。取り出したトークンは失われる。
+     * 取り出したトークンは失われる。
      *
+     * @param mixed $type 無視トークン
      * @return Token[] トークン配列（[前, 後]）
      */
-    public function shrink()
+    public function shrink($type = T_WHITESPACE)
     {
         return [
-            $this->shift(),
-            $this->pop(),
+            $this->shift($type),
+            $this->pop($type),
         ];
+    }
+
+    /**
+     * 全ての T_WHITESPACE を除去する
+     *
+     * @param mixed $type 除去トークン
+     * @return $this
+     */
+    public function strip($type = T_WHITESPACE)
+    {
+        $this->tokens = array_values(array_filter($this->tokens, function (Token $token) use ($type) { return !$token->equals($type); }));
+        return $this;
+    }
+
+    /**
+     * 前後の T_WHITESPACE を除去する
+     *
+     * @param mixed $type 除去トークン
+     * @return $this
+     */
+    public function trim($type = T_WHITESPACE)
+    {
+        for ($i = count($this->tokens) - 1; $i >= 0; $i--) {
+            if (!$this->tokens[$i]->equals($type)) {
+                break;
+            }
+            unset($this->tokens[$i]);
+        }
+
+        for ($i = 0; $i < count($this->tokens); $i++) {
+            if (!$this->tokens[$i]->equals($type)) {
+                break;
+            }
+            unset($this->tokens[$i]);
+        }
+
+        $this->tokens = array_values($this->tokens);
+
+        return $this;
     }
 
     /**
@@ -238,10 +258,10 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
      */
     public function namespace(): string
     {
-        $namespace_parts = $this->match([T_NAMESPACE, Source::MATCH_MANY1, ';']);
+        $namespace_parts = $this->match([T_NAMESPACE, Source::MATCH_ANY, Source::MATCH_MANY, ';']);
         if ($namespace_parts) {
             $namespace_parts[0]->shrink();
-            return '\\' . $namespace_parts[0];
+            return '\\' . $namespace_parts[0]->strip();
         }
 
         return '';
@@ -258,16 +278,14 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
      * - [TOKEN_ID => "TOKEN"]: ID, トークン文字列の AND でマッチする（複数指定すると OR になる）
      * - [TOKEN_ID, "TOKEN"]: ID, トークン文字列の OR でマッチする（複数指定すると OR になる）
      * - MATCH_ANY: 任意のトークンにマッチする
-     * - MATCH_MANY0: 消費しない量的マッチ（自身を含まず次の要素にマッチするまでマッチし続ける）
-     * - MATCH_MANY1: 消費する量的マッチ（自身を含んで次の要素にマッチするまでマッチし続ける）
+     * - MATCH_MANY: 量的マッチ（自身を含まず次の要素にマッチするまでマッチし続ける）
      *
      * 上記を配列で与え、それが連続してマッチする場合にマッチとみなす。
      * いくつか具体例をあげると下記のようになる。
      *
      * - [T_LNUMBER, '+', T_LNUMBER]: 整数リテラル同士の加算トークンが得られる
      * - [T_LNUMBER, MATCH_ANY, T_LNUMBER]: 整数リテラル同士の何らかの式トークンが得られる（整数で囲まれたなにか、とも言える）
-     * - [T_NAMESPACE, MATCH_MANY1 ';']: namespace 文 ～ ";" までが得られる（つまり名前空間宣言が得られる）
-     * - [T_STRING, MATCH_MANY0 ';']: T_STRING ～ ";" までが得られる（上記と違いその間に何もなくてもマッチする）
+     * - [T_NAMESPACE, MATCH_MANY ';']: namespace 文 ～ ";" までが得られる（つまり名前空間宣言が得られる）
      *
      * @param array $matchers マッチ条件
      * @return self[]
@@ -304,7 +322,7 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
      */
     public function replace(array $matchers, $replace, int $skip = null)
     {
-        $this->scan($matchers, function ($matched) use ($replace, $skip) {
+        return $this->scan($matchers, function ($matched) use ($replace, $skip) {
             if ($replace instanceof \Closure) {
                 $replace = $replace(new self($matched), $skip);
             }
@@ -343,66 +361,92 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
             }
             return $skip - 1;
         });
-        return $this;
     }
 
     private function scan(array $matchers, \Closure $callback)
     {
-        // @todo T_WHITESPACE が死ぬほど邪魔でいちいちループしてるのをなんとかしたい
-
-        $next = function (&$tindex, $mindex) use (&$match) {
-            for (; $tindex < count($this->tokens); $tindex++) {
-                if ($this->tokens[$tindex]->isWhitespace()) {
-                    continue;
+        $options = [];
+        foreach ($matchers as $mindex => $matcher) {
+            $option = [
+                self::MATCH_MANY      => false,
+                self::MATCH_NOCAPTURE => false,
+                self::MATCH_NOT       => false,
+            ];
+            if (is_array($matcher)) {
+                foreach ($option as $name => $default) {
+                    $option[$name] = $matcher[$name] ?? $default;
+                    unset($matcher[$name]);
                 }
-
-                $matched = [];
-                if ($match($tindex, $mindex, $matched)) {
-                    return array_filter($matched, function (Token $token) { return !$token->isWhitespace(); });
+                if (!$matcher) {
+                    $matcher = true;
                 }
             }
-        };
-        $match = function ($tindex, $mindex, &$result) use (&$next, &$match, $matchers) {
+            elseif ($matcher === self::MATCH_MANY) {
+                $option[self::MATCH_MANY] = true;
+                $matcher = true;
+            }
+            $matchers[$mindex] = $matcher;
+            $options[$mindex] = $option;
+        }
+
+        $match = function ($tindex, $mindex, &$result = []) use (&$match, $matchers, $options) {
             if (!array_key_exists($mindex, $matchers)) {
-                // 一つ前が量的指定ならすべて結合しなればならない
-                if (in_array($matchers[$mindex - 1] ?? null, [self::MATCH_MANY0, self::MATCH_MANY1], true)) {
-                    $result += array_slice($this->tokens, $tindex, null, true);
-                }
                 return true;
+            }
+            if (!array_key_exists($tindex, $this->tokens)) {
+                return false;
             }
 
             $matcher = $matchers[$mindex];
-            for ($i = $tindex; $i < count($this->tokens); $i++) {
-                $token = $this->tokens[$i];
-                if ($token->isWhitespace()) {
-                    continue;
+            $option = $options[$mindex];
+            $token = $this->tokens[$tindex];
+
+            if ($token->isWhitespace()) {
+                $result[$tindex] = $token;
+                return $match($tindex + 1, $mindex, $result);
+            }
+            elseif ($option[self::MATCH_NOT] xor $token->equals($matcher)) {
+                // MATCH_MANY は先読み
+                if ($option[self::MATCH_MANY]) {
+                    for ($n = $tindex; $n < count($this->tokens); $n++) {
+                        if (array_key_exists($mindex + 1, $matchers)) {
+                            if ($match($n, $mindex + 1)) {
+                                break;
+                            }
+                        }
+                        elseif (!$match($n + 1, $mindex)) {
+                            $n++;
+                            break;
+                        }
+                    }
+                }
+                else {
+                    $n = $tindex + 1;
                 }
 
-                if ($matcher === self::MATCH_ANY || $token->equals($matcher)) {
-                    $result[$i] = $token;
-                    return $match($i + 1, $mindex + 1, $result);
+                if (!$option[self::MATCH_NOCAPTURE]) {
+                    $result += array_slice($this->tokens, $tindex, $n - $tindex, true);
                 }
-                elseif ($matcher === self::MATCH_MANY0) {
-                    $n = $i;
-                    if ($next($n, $mindex + 1)) {
-                        $result += array_slice($this->tokens, $i, $n - $i, true);
-                        return $match($n, $mindex + 1, $result);
-                    }
-                }
-                elseif ($matcher === self::MATCH_MANY1) {
-                    $n = $i + 1;
-                    if ($next($n, $mindex + 1)) {
-                        $result += array_slice($this->tokens, $i, $n - $i, true);
-                        return $match($n, $mindex + 1, $result);
-                    }
-                }
-                break;
+                return $match($n, $mindex + 1, $result);
             }
             return false;
         };
 
-        for ($start = 0; $matched = $next($start, 0); $start++) {
-            $start += $callback($matched);
+        for ($tindex = 0; $tindex < count($this->tokens); $tindex++) {
+            if (!$this->tokens[$tindex]->isWhitespace()) {
+                $matched = [];
+                if ($match($tindex, 0, $matched)) {
+                    foreach (array_reverse($matched, true) as $i => $token) {
+                        if (!$token->isWhitespace()) {
+                            break;
+                        }
+                        unset($matched[$i]);
+                    }
+                    $tindex += $callback($matched);
+                }
+            }
         }
+
+        return $this;
     }
 }
