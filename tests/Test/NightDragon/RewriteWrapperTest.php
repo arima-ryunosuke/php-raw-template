@@ -275,6 +275,10 @@ dummy
         $rewrite($source, '.', 'access');
         $this->assertEquals("<?= access(access(access(access(\$array,'key1'),'key2'),'3'),'key') + 3.14 ?>", (string) $source);
 
+        $source = new Source('<?= $object->field ?><?= $object->method() ?><?= $object->method($object->field) ?>');
+        $rewrite($source, '->', 'access');
+        $this->assertEquals("<?= access(\$object,'field') ?><?= \$object->method() ?><?= \$object->method(access(\$object,'field')) ?>", (string) $source);
+
         $source = new Source('<?= $array.key1.key2.3 + 3.14 ?>');
         $rewrite($source, '.', '');
         $this->assertEquals("<?= \$array['key1']['key2']['3'] + 3.14 ?>", (string) $source);

@@ -161,6 +161,7 @@ class RewriteWrapper
             Source::MATCH_ANY,
             $accessor,
             [T_STRING, T_LNUMBER, T_VARIABLE],
+            [Source::MATCH_NOCAPTURE => true, Source::MATCH_NOT => true, '('],
         ], function (Source $tokens) use ($getter) {
             [$var, $key] = $tokens->shrink();
 
