@@ -335,9 +335,7 @@ class Renderer
                 }
             }
             if ($type) {
-                return array_sprintf(explode('|', $type), function ($v) use ($map) {
-                    return $map($v) . '[]';
-                }, '|');
+                return array_sprintf(explode('|', $type), '%s[]', '|');
             }
         }
 
