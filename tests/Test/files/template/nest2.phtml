@@ -1,0 +1,11 @@
+<?php $this->extend('nest1.phtml') ?>
+
+<?php $this->begin('main') ?>
+<?php $this->parent() ?>
+
+This is child main
+<?php $this->end() ?>
+
+<?php $this->begin('sub1') ?><?php $this->parent() ?>/This is child sub1<?php $this->end() ?>
+
+<?php $this->begin('sub2') ?><?php $this->parent() ?>/This is child sub2<?php $this->end() ?>

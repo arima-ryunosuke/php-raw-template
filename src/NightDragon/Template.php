@@ -22,8 +22,8 @@ class Template
     /** @var string[][] 宣言されたブロック配列 */
     private $blocks = [];
 
-    /** @var string begin で始められた現在のブロック名 */
-    private $currentBlock;
+    /** @var array begin で始められた現在のブロック名 */
+    private $currentBlocks = [];
 
     public function __construct(Renderer $renderer, string $filename)
     {
@@ -82,9 +82,9 @@ class Template
         // 継承しないとブロック機能を使えない…ようにしようとしたけど止めた。継承を使わなくてもブロックに名前をつける意義はある
         // assert($this->parent !== null, "this template is not extended.");
         assert(!array_key_exists($name, $this->blocks), "block '$name' is already defined.");
-        assert($this->currentBlock !== $name, "block '$name' is nested.");
+        assert(!in_array($name, $this->currentBlocks, true), "block '$name' is nested.");
 
-        $this->currentBlock = $name;
+        $this->currentBlocks[] = $name;
         ob_start();
     }
 
@@ -93,10 +93,9 @@ class Template
      */
     public function end()
     {
-        assert($this->currentBlock !== null, "block is not begun.");
+        assert(!empty($this->currentBlocks), "block is not begun.");
 
-        $name = $this->currentBlock;
-        $this->currentBlock = null;
+        $name = array_pop($this->currentBlocks);
         $this->blocks[$name][] = ob_get_clean();
 
         if ($this->original) {
@@ -140,11 +139,11 @@ class Template
     public function parent()
     {
         assert($this->parent !== null, "this template is not extended.");
-        assert($this->currentBlock !== null, "block is not begun.");
+        assert(!empty($this->currentBlocks), "block is not begun.");
 
-        $name = $this->currentBlock;
-        $this->blocks[$this->currentBlock][] = ob_get_clean();
-        $this->blocks[$this->currentBlock][] = function () use ($name) { return $this->parent->closestBlock($name); };
+        $name = $this->currentBlocks[count($this->currentBlocks) - 1];
+        $this->blocks[$name][] = ob_get_clean();
+        $this->blocks[$name][] = function () use ($name) { return $this->parent->closestBlock($name); };
         ob_start();
     }
 

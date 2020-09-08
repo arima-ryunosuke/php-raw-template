@@ -124,6 +124,42 @@ extend1/extend3
 ', $contents);
     }
 
+    function test_nest()
+    {
+        $renderer = new Renderer([
+            'debug'      => true,
+            'compileDir' => self::COMPILE_DIR,
+        ]);
+        $template = new Template($renderer, self::TEMPLATE_DIR . '/nest1.phtml');
+        $contents = $template->render();
+        $this->assertEquals('This is parent begin
+This is parent main
+This is parent sub1
+This is parent sub2
+This is parent end
+', $contents);
+
+        $template = new Template($renderer, self::TEMPLATE_DIR . '/nest2.phtml');
+        $contents = $template->render();
+        $this->assertEquals('This is parent begin
+This is parent main
+This is parent sub1/This is child sub1
+This is parent sub2/This is child sub2
+This is child main
+
+This is parent end
+', $contents);
+
+        $template = new Template($renderer, self::TEMPLATE_DIR . '/nest3.phtml');
+        $contents = $template->render();
+        $this->assertEquals('This is parent begin
+This is parent main
+This is child sub1
+
+This is parent end
+', $contents);
+    }
+
     function test_import()
     {
         $actual = <<<CONTENT
