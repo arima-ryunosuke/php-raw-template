@@ -148,6 +148,7 @@ class Renderer
             'gatherModifier'     => $debug,
             'gatherAccessor'     => $debug,
             'constFilename'      => null,
+            'typeMapping'        => [],
             // インジェクション系
             'wrapperProtocol'    => Renderer::DEFAULT_PROTOCOL,
             'templateClass'      => '\\' . Template::class,
@@ -179,6 +180,7 @@ class Renderer
             'gatherModifier' => (bool) $options['gatherModifier'],
             'gatherAccessor' => (bool) $options['gatherAccessor'],
             'constFilename'  => (string) $options['constFilename'],
+            'typeMapping'    => (array) $options['typeMapping'],
         ];
         $this->renderOptions = [
             'customTagHandler'   => (array) $options['customTagHandler'],
@@ -303,6 +305,17 @@ class Renderer
 
     private function detectType($var): string
     {
+        $map = function ($type) use (&$map) {
+            if (is_array($type)) {
+                return array_map($map, $type);
+            }
+            $result = $this->gatherOptions['typeMapping'][$type] ?? $type;
+            if (is_array($result)) {
+                return implode('|', $result);
+            }
+            return $result;
+        };
+
         // 配列は array じゃなくて Type[] にできる可能性がある
         if (is_array($var) && count($var) > 0) {
             $type = $this->detectType(array_shift($var));
@@ -322,7 +335,9 @@ class Renderer
                 }
             }
             if ($type) {
-                return $type . '[]';
+                return array_sprintf(explode('|', $type), function ($v) use ($map) {
+                    return $map($v) . '[]';
+                }, '|');
             }
         }
 
@@ -332,18 +347,18 @@ class Renderer
             if ($ref->isAnonymous()) {
                 if ($pc = $ref->getParentClass()) {
                     $is = array_diff($ref->getInterfaceNames(), $pc->getInterfaceNames());
-                    return array_sprintf(array_merge([$pc->name], $is), '\\%s', '|');
+                    return array_sprintf(array_merge([$pc->name], $map($is)), '\\%s', '|');
                 }
                 if ($is = $ref->getInterfaceNames()) {
-                    return array_sprintf($is, '\\%s', '|');
+                    return array_sprintf($map($is), '\\%s', '|');
                 }
                 // 本当に匿名ならどうしようもないので object
-                return 'object';
+                return $map('object');
             }
-            return '\\' . get_class($var);
+            return $map('\\' . get_class($var));
         }
 
-        return gettype($var);
+        return $map(gettype($var));
     }
 
     private function gatherVariable(Source $source, string $receiver, array $vars): array

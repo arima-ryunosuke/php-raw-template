@@ -3,6 +3,7 @@
 namespace ryunosuke\Test\NightDragon;
 
 use ryunosuke\NightDragon\Renderer;
+use stdClass;
 
 class RendererTest extends \ryunosuke\Test\AbstractTestCase
 {
@@ -203,10 +204,13 @@ line3
     function test_gatherVariable()
     {
         $renderer = new Renderer([
-            'debug' => true,
+            'debug'       => true,
+            'typeMapping' => [
+                '\\DateTime' => [\DateTime::class, \DateTimeImmutable::class],
+            ],
         ]);
 
-        /** @see Renderer::gatherVariable() */
+        /** @see Renderer::detectType() */
         $detectType = $this->publishMethod($renderer, 'detectType');
 
         // シンプルな奴ら
@@ -217,6 +221,7 @@ line3
         $this->assertEquals('resource', $detectType(STDOUT));
         $this->assertEquals('array', $detectType([]));
         $this->assertEquals('\\Exception', $detectType(new \Exception()));
+        $this->assertEquals('DateTime|DateTimeImmutable', $detectType(new \DateTime()));
 
         // 素の匿名クラスは object
         $this->assertEquals('object', $detectType(new class {
@@ -239,6 +244,8 @@ line3
 
         // 配列系のシンプルな奴ら
         $this->assertEquals('array', $detectType([1, 'a', null]));
+        $this->assertEquals('DateTime[]|DateTimeImmutable[]', $detectType([new \DateTime(), new \DateTime()]));
+        $this->assertEquals('DateTime[][]|DateTimeImmutable[][]', $detectType([[new \DateTime()], [new \DateTime()]]));
         // 配列の配列系
         $this->assertEquals('string[]', $detectType(["a", "b", "c"]));
         $this->assertEquals('string[][]', $detectType([["a"], ["b"], ["c"]]));
