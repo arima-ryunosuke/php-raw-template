@@ -21,6 +21,11 @@
 - nikic/php-parser に移行したいけど AST でショートタグが正規化されてしまう？
 - パス周りがメチャクチャなので正規化して realpath したい
 
+## 1.1.7
+
+- [refactor][Renderer] 互換性破壊を revert
+- [fixbug][Renderer] typeMapping でオリジナルの型が出力されてしまう不具合を修正
+
 ## 1.1.6
 
 - [feature][Template] ブロックのネストに対応
