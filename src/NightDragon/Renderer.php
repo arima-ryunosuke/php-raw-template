@@ -256,15 +256,23 @@ class Renderer
             }
             if ($this->gatherOptions['gatherModifier']) {
                 $modifiers = $this->gatherModifier($source, $ropt['varModifier'], $ropt['defaultNamespace'], $ropt['defaultClass']);
-                $meta[] = self::MODIFIER_FUNCTION_COMMENT;
-                $meta[] = array_sprintf($modifiers, 'true or define(%1$s, %2$s(...[]));', "\n");
-                $this->consts['modifier'] += $modifiers;
+                if ($this->gatherOptions['constFilename']) {
+                    $this->consts['modifier'] += $modifiers;
+                }
+                else {
+                    $meta[] = self::MODIFIER_FUNCTION_COMMENT;
+                    $meta[] = array_sprintf($modifiers, 'true or define(%1$s, %2$s(...[]));', "\n");
+                }
             }
             if ($this->gatherOptions['gatherAccessor']) {
                 $accessors = $this->gatherAccessor($source, $ropt['varAccessor']);
-                $meta[] = self::ACCESS_KEY_COMMENT;
-                $meta[] = array_sprintf($accessors, 'true or define(%1$s, %1$s);', "\n");
-                $this->consts['accessor'] += $accessors;
+                if ($this->gatherOptions['constFilename']) {
+                    $this->consts['accessor'] += $accessors;
+                }
+                else {
+                    $meta[] = self::ACCESS_KEY_COMMENT;
+                    $meta[] = array_sprintf($accessors, 'true or define(%1$s, %1$s);', "\n");
+                }
             }
 
             if ($meta) {
