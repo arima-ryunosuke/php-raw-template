@@ -21,6 +21,13 @@
 - nikic/php-parser に移行したいけど AST でショートタグが正規化されてしまう？
 - パス周りがメチャクチャなので正規化して realpath したい
 
+## 1.2.0
+
+- [feature][RewriteWrapper] "{$value.key}" の埋め込み構文に対応
+- [fixbug][RewriteWrapper] custom タグで属性に php タグがあると誤作動する不具合を修正
+- [*change][RewriteWrapper] access key の多段呼び出しが長すぎるので可変引数で対応
+  - defaultGetter を指定している場合は修正が必要
+
 ## 1.1.7
 
 - [refactor][Renderer] 互換性破壊を revert

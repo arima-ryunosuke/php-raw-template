@@ -84,6 +84,7 @@ parent メソッドを使用して親コンテンツを表示します。
 配列アクセスはネストできます：<?= $array . fuga . 0 ?>
 オブジェクトもアクセスできます：<?= $object . hoge ?>
 配列とオブジェクトは混在して OK です：<?= $object . fuga . 0 ?>
+埋め込み構文も使えます：<?= "prefix-{$object . fuga . 0}-suffix" ?>
 このように ?? 演算子とも併用できます：<?= $array . undefined ?? 'default' ?>
 オブジェクトも可能できます。共にネストも出来ます：<?= $object . undefined1 . undefined2 ?? 'default' | strtoupper ?>
 
@@ -156,11 +157,12 @@ parent メソッドを使用して親コンテンツを表示します。
 登録しておけば静的メソッドも呼べます：<?=\ryunosuke\NightDragon\Renderer::html(\Modifier::upper($string)),"\n"?>
 
 これは配列のアクセスです（"." で配列アクセスできます）：<?=\ryunosuke\NightDragon\Renderer::html(\ryunosuke\NightDragon\Renderer::access($array,'hoge')),"\n"?>
-配列アクセスはネストできます：<?=\ryunosuke\NightDragon\Renderer::html(\ryunosuke\NightDragon\Renderer::access(\ryunosuke\NightDragon\Renderer::access($array,'fuga'),'0')),"\n"?>
+配列アクセスはネストできます：<?=\ryunosuke\NightDragon\Renderer::html(\ryunosuke\NightDragon\Renderer::access($array,'fuga','0')),"\n"?>
 オブジェクトもアクセスできます：<?=\ryunosuke\NightDragon\Renderer::html(\ryunosuke\NightDragon\Renderer::access($object,'hoge')),"\n"?>
-配列とオブジェクトは混在して OK です：<?=\ryunosuke\NightDragon\Renderer::html(\ryunosuke\NightDragon\Renderer::access(\ryunosuke\NightDragon\Renderer::access($object,'fuga'),'0')),"\n"?>
-このように ?? 演算子とも併用できます：<?=\ryunosuke\NightDragon\Renderer::html(@\ryunosuke\NightDragon\Renderer::access($array,'undefined')??'default'),"\n"?>
-オブジェクトも可能できます。共にネストも出来ます：<?=\ryunosuke\NightDragon\Renderer::html(strtoupper(@\ryunosuke\NightDragon\Renderer::access(\ryunosuke\NightDragon\Renderer::access($object,'undefined1'),'undefined2')??'default')),"\n"?>
+配列とオブジェクトは混在して OK です：<?=\ryunosuke\NightDragon\Renderer::html(\ryunosuke\NightDragon\Renderer::access($object,'fuga','0')),"\n"?>
+埋め込み構文も使えます：<?=\ryunosuke\NightDragon\Renderer::html("prefix-".\ryunosuke\NightDragon\Renderer::access($object,'fuga','0')."-suffix"),"\n"?>
+このように ?? 演算子とも併用できます：<?=\ryunosuke\NightDragon\Renderer::html(@\ryunosuke\NightDragon\Renderer::access($array,'undefined') ?? 'default'),"\n"?>
+オブジェクトも可能できます。共にネストも出来ます：<?=\ryunosuke\NightDragon\Renderer::html(strtoupper(@\ryunosuke\NightDragon\Renderer::access($object,'undefined1','undefined2') ?? 'default')),"\n"?>
 
 上記2つの機能は「配列アクセス -> 修飾子」のときのみ組み合わせ可能です：<?=\ryunosuke\NightDragon\Renderer::html(implode(',',\ryunosuke\NightDragon\Renderer::access($array,'fuga'))),"\n"?>
 右記のような順番の組み合わせはできません：< ?= $string | str_split . 3 ? >
@@ -210,6 +212,7 @@ parent メソッドを使用して親コンテンツを表示します。
 配列アクセスはネストできます：X
 オブジェクトもアクセスできます：HOGE
 配列とオブジェクトは混在して OK です：X
+埋め込み構文も使えます：prefix-X-suffix
 このように ?? 演算子とも併用できます：default
 オブジェクトも可能できます。共にネストも出来ます：DEFAULT
 
@@ -264,6 +267,7 @@ line3</div>
     - `<?= $array.key1.key2 ?>` (単純なネスト)
     - `<?= $array.3 ?>` (リテラル数値)
     - `<?= $array.$key ?>` (単一変数)
+    - `<?= "prefix-{$array.key1.key2}-suffix" ?>` (埋め込み構文)
     - `<?= $array.undefined ?? 'default' ?>` (`??` 演算子との併用)
 - NG
     - `<?= $array.PATHINFO_EXTENSION ?>` (定数)
@@ -501,7 +505,7 @@ defaultFilter は `<?= $string ?>` で変換されるデフォルトフィルタ
 可変引数を取る callable でかつ文字列である必要があります（クロージャは不可）。
 
 defaultGetter は `<?= $array.key ?>` されたときにキーを引く変換関数名を指定します。
-第1引数に array or object, 第2引数にキー文字列を受け取る文字列 callable である必要があります。
+第1引数に array or object, 第2引数以降にキー文字列を受け取る文字列 callable である必要があります。
 
 defaultCloser は `<?= $string ?>` 時に挿入される改行文字を指定します。
 あまり指定することはないでしょうが、改行差し込みを無効にしたい場合は空文字を指定するといいでしょう。
