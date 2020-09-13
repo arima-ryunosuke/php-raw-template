@@ -2,6 +2,7 @@
 
 namespace ryunosuke\Test\NightDragon;
 
+use ryunosuke\NightDragon\Renderer;
 use ryunosuke\NightDragon\RewriteWrapper;
 use ryunosuke\NightDragon\Source;
 use function ryunosuke\NightDragon\is_arrayable;
@@ -120,11 +121,11 @@ dummy
         $rewrite = $this->publishMethod(new RewriteWrapper(), 'rewrite');
 
         $actual = "<?= ARRAYS.key1.key2 | f1 | f2 ?>\n";
-        $expected = "<?=html(f2(f1(access(access(ARRAYS,'key1'),'key2')))),\"\\n\"?>\n";
+        $expected = "<?=html(f2(f1(access(ARRAYS,'key1','key2')))),\"\\n\"?>\n";
         $this->assertEquals($expected, $rewrite($actual, self::defaultOption));
 
         $actual = "<?= @ARRAYS.key1.key2 | f1 | f2 ?>\n";
-        $expected = "<?=f2(f1(access(access(ARRAYS,'key1'),'key2'))),\"\\n\"?>\n";
+        $expected = "<?=f2(f1(access(ARRAYS,'key1','key2'))),\"\\n\"?>\n";
         $this->assertEquals($expected, $rewrite($actual, ['nofilter' => '@'] + self::defaultOption));
     }
 
@@ -146,7 +147,12 @@ dummy
                 ],
             ];
             $filter = function ($v) { return str_replace(' ', '(space)', $v); };
-            $getter = function ($p, $k) { return is_arrayable($p) ? $p[$k] : $p->$k; };
+            $getter = function ($p, ...$k) {
+                foreach ($k as $key) {
+                    $p = is_arrayable($p) ? $p[$key] : $p->$key;
+                }
+                return $p;
+            };
         }
 
         $source = '';
@@ -200,7 +206,7 @@ dummy
 <? foreach($array.key1.key2 as $k => $v): ?>
 <? endforeach ?>';
         $expected = "
-<?php foreach(access(access(\$array,'key1'),'key2') as \$k => \$v): ?>
+<?php foreach(access(\$array,'key1','key2') as \$k => \$v): ?>
 <?php endforeach ?>";
         $this->assertEquals($expected, $rewrite($actual, ['compatibleShortTag' => true] + self::defaultOption));
 
@@ -238,7 +244,7 @@ dummy
 <? foreach($array.key1.key2 as $k => $v): ?>
 <? endforeach ?>';
         $expected = "
-<?php foreach(access(access(\$array,'key1'),'key2') as \$k => \$v): ?>
+<?php foreach(access(\$array,'key1','key2') as \$k => \$v): ?>
 <?php endforeach ?>";
         $this->assertEquals($expected, $rewrite($actual, self::defaultOption));
 
@@ -273,7 +279,7 @@ dummy
 
         $source = new Source('<?= $array.key1.key2.3.key + 3.14 ?>');
         $rewrite($source, '.', 'access');
-        $this->assertEquals("<?= access(access(access(access(\$array,'key1'),'key2'),'3'),'key') + 3.14 ?>", (string) $source);
+        $this->assertEquals("<?= access(\$array,'key1','key2','3','key') + 3.14 ?>", (string) $source);
 
         $source = new Source('<?= $object->field ?><?= $object->method() ?><?= $object->method($object->field) ?>');
         $rewrite($source, '->', 'access');
@@ -295,7 +301,7 @@ dummy
 
         $source = new Source('<?= $array.key1.key2.3.key ?? "default" ?>');
         $rewrite($source, '.', 'access');
-        $this->assertEquals("<?= @access(access(access(access(\$array,'key1'),'key2'),'3'),'key') ?? \"default\" ?>", (string) $source);
+        $this->assertEquals("<?= @access(\$array,'key1','key2','3','key') ?? \"default\" ?>", (string) $source);
     }
 
     function test_rewriteModifier()

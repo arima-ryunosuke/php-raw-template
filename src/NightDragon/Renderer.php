@@ -67,12 +67,15 @@ class Renderer
      * ArrayAccess なオブジェクトは [$key] を優先する。
      *
      * @param array|object $value キーアクセス可能ななにか
-     * @param string $key キー
+     * @param string ...$keys キー
      * @return mixed キーの値
      */
-    public static function access($value, string $key)
+    public static function access($value, string ...$keys)
     {
-        return is_arrayable($value) ? $value[$key] : $value->$key;
+        foreach ($keys as $key) {
+            $value = is_arrayable($value) ? $value[$key] : $value->$key;
+        }
+        return $value;
     }
 
     /**

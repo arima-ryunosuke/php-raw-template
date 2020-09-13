@@ -18,6 +18,10 @@ class RendererTest extends \ryunosuke\Test\AbstractTestCase
         $this->assertEquals('X', Renderer::access(['x' => 'X'], 'x'));
         $this->assertEquals('X', Renderer::access((object) ['x' => 'X'], 'x'));
         $this->assertEquals('X', Renderer::access(new \ArrayObject(['x' => 'X']), 'x'));
+
+        $this->assertEquals(['y' => ['z' => 999]], Renderer::access(['x' => ['y' => ['z' => 999]]], 'x'));
+        $this->assertEquals(['z' => 999], Renderer::access(['x' => ['y' => ['z' => 999]]], 'x', 'y'));
+        $this->assertEquals('999', Renderer::access(['x' => ['y' => ['z' => 999]]], 'x', 'y', 'z'));
     }
 
     function test_strip()
