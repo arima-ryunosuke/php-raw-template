@@ -5,6 +5,7 @@ namespace ryunosuke\Test\NightDragon;
 use ryunosuke\NightDragon\Renderer;
 use ryunosuke\NightDragon\RewriteWrapper;
 use ryunosuke\NightDragon\Source;
+use function ryunosuke\NightDragon\array_sprintf;
 use function ryunosuke\NightDragon\is_arrayable;
 
 class RewriteWrapperTest extends \ryunosuke\Test\AbstractTestCase
@@ -76,7 +77,7 @@ dummy
 ';
         $this->assertEquals($expected, $rewrite($actual, [
                 'customTagHandler' => [
-                    'delete' => function ($contents, $attrs) { },
+                    'delete' => function ($contents, $attrs) { return ''; },
                 ]
             ] + self::defaultOption));
         $this->assertEquals(1, RewriteWrapper::getLineMapping("undefined", 1));
@@ -178,15 +179,43 @@ dummy
         $actual = '
 <hoge>simple tag</hoge>
 <hoge attr1="hoge" attr2=\'あああ\'	attr3="hoge">attr tag1</hoge>
-<hoge attr1 = "" attr2 = "a b c" data-attr3="hoge">space attr tag2</hoge>';
+<hoge attr1 = "" attr2 = "a b c" data-attr3="hoge">space attr tag2</hoge>
+<hoge attr1="A<?= "$inquote" ?>Z">attr tag1</hoge>';
         $expected = '
 []simple tag
 {"attr1":"hoge","attr2":"あああ","attr3":"hoge"}attr tag1
-{"attr1":"","attr2":"a b c","data-attr3":"hoge"}space attr tag2';
+{"attr1":"","attr2":"a b c","data-attr3":"hoge"}space attr tag2
+{"attr1":"A<?= \"$inquote\" ?>Z"}attr tag1';
         $this->assertEquals($expected, $rewrite($actual, [
                 'customTagHandler' => [
                     'hoge' => function ($contents, $attrs) {
                         return json_encode($attrs, JSON_UNESCAPED_UNICODE) . $contents;
+                    },
+                ]
+            ] + self::defaultOption));
+    }
+
+    function test_rewrite_customTag_script()
+    {
+        /** @see RewriteWrapper::rewrite() */
+        $rewrite = $this->publishMethod(new RewriteWrapper(), 'rewrite');
+
+        $actual = '
+<script type="text/javascript" src="<?= $path ?>">alert(1);</script>
+<script type="text/ecmascript" src="<?= $path ?>">alert(2);</script>
+';
+        $expected = '
+<script type="text/javascript" src="<?=html($path)?>">alert(1);</script>
+<script type="text/javascript" src="<?=html($path)?>">alert(2); convertedES</script>
+';
+        $this->assertEquals($expected, $rewrite($actual, [
+                'customTagHandler' => [
+                    'script' => function ($contents, $attrs) {
+                        if ($attrs['type'] === 'text/ecmascript') {
+                            $attrs['type'] = 'text/javascript';
+                            $attrs = array_sprintf($attrs, function ($v, $k) { return "$k=\"$v\""; }, ' ');
+                            return "<script $attrs>$contents convertedES</script>";
+                        }
                     },
                 ]
             ] + self::defaultOption));

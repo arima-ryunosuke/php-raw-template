@@ -90,14 +90,19 @@ class RewriteWrapper
         }
 
         $tags = implode('|', array_keys($options['customTagHandler'] ?? []));
-        $source = preg_replace_callback("#<($tags)(.*?)>(.*?)</\\1>#su", function ($m) use ($options) {
-            $sxe = simplexml_load_string('<attrnode ' . $m[2] . '></attrnode>');
+        $source = preg_replace_callback("#<($tags)(.*?)</\\1>#su", function ($m) use ($options) {
+            $p = strpos_quoted($m[2], '>');
+            $attrstr = substr($m[2], 0, $p);
+            $content = substr($m[2], $p + 1);
+            $sxe = simplexml_load_string('<attrnode ' . preg_replace_callback('#<\?.*\?>#us', function ($m) {
+                    return htmlspecialchars($m[0]);
+                }, $attrstr) . '></attrnode>');
             $attrs = [];
             foreach ($sxe->attributes() as $a => $b) {
                 $attrs[$a] = (string) $b;
             }
-            $result = $options['customTagHandler'][$m[1]]($m[3], $attrs);
-            return $result;
+            $result = $options['customTagHandler'][$m[1]]($content, $attrs);
+            return $result ?? $m[0];
         }, $source);
 
         $source = new Source($source, $options['compatibleShortTag'] ? Source::SHORT_TAG_REWRITE : Source::SHORT_TAG_NOTHING);
