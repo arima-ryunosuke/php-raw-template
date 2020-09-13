@@ -285,6 +285,14 @@ dummy
         $rewrite($source, '->', 'access');
         $this->assertEquals("<?= access(\$object,'field') ?><?= \$object->method() ?><?= \$object->method(access(\$object,'field')) ?>", (string) $source);
 
+        $source = new Source('<?= "A-{$array.key1.key2.3.key}-Z" ?>');
+        $rewrite($source, '.', 'access');
+        $this->assertEquals("<?= \"A-\".access(\$array,'key1','key2','3','key').\"-Z\" ?>", (string) $source);
+
+        $source = new Source('<?= "A-{$array->key1->key2->3->key}-Z" ?>');
+        $rewrite($source, '->', 'access');
+        $this->assertEquals("<?= \"A-\".access(\$array,'key1','key2','3','key').\"-Z\" ?>", (string) $source);
+
         $source = new Source('<?= $array.key1.key2.3 + 3.14 ?>');
         $rewrite($source, '.', '');
         $this->assertEquals("<?= \$array['key1']['key2']['3'] + 3.14 ?>", (string) $source);

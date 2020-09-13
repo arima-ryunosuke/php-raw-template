@@ -158,7 +158,28 @@ class RewriteWrapper
         }
 
         $tokens->replace([
-            Source::MATCH_ANY,
+            T_CURLY_OPEN,
+            T_VARIABLE,
+            $accessor,
+            Source::MATCH_MANY,
+            '}',
+        ], function (Source $tokens) {
+            $tokens->shrink();
+            return array_merge(
+                [
+                    [Token::UNKNOWN_ID, '"'],
+                    [Token::UNKNOWN_ID, '.'],
+                ],
+                iterator_to_array($tokens),
+                [
+                    [Token::UNKNOWN_ID, '.'],
+                    [Token::UNKNOWN_ID, '"'],
+                ]
+            );
+        });
+
+        $tokens->replace([
+            [Source::MATCH_NOT => true, '"'],
             $accessor,
             [T_STRING, T_LNUMBER, T_VARIABLE],
             [Source::MATCH_NOCAPTURE => true, Source::MATCH_NOT => true, '('],
