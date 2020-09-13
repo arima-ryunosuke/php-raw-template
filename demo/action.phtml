@@ -7,15 +7,6 @@
 /** @var array $array */
 /** @var \stdClass $object */
 /** @var string $multiline */
-// using modifier functions:
-true or define('strtoupper', \strtoupper(...[]));
-true or define('upper', \Modifier::upper(...[]));
-// using array keys:
-true or define('hoge', 'hoge');
-true or define('fuga', 'fuga');
-true or define('undefined', 'undefined');
-true or define('undefined1', 'undefined1');
-true or define('undefined2', 'undefined2');
 ?>
 <?php $this->extend('layout.phtml') ?>
 
@@ -41,6 +32,7 @@ parent メソッドを使用して親コンテンツを表示します。
 配列アクセスはネストできます：<?= $array . fuga . 0 ?>
 オブジェクトもアクセスできます：<?= $object . hoge ?>
 配列とオブジェクトは混在して OK です：<?= $object . fuga . 0 ?>
+埋め込み構文も使えます：<?= "prefix-{$object . fuga . 0}-suffix" ?>
 このように ?? 演算子とも併用できます：<?= $array . undefined ?? 'default' ?>
 オブジェクトも可能できます。共にネストも出来ます：<?= $object . undefined1 . undefined2 ?? 'default' | strtoupper ?>
 
