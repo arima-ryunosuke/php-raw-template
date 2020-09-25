@@ -146,6 +146,8 @@ This is parent main
 This is parent sub1/This is child sub1
 This is parent sub2/This is child sub2
 This is child main
+This is child main/inner1
+This is child main/inner1/inner2
 
 This is parent end
 ', $contents);
@@ -155,6 +157,36 @@ This is parent end
         $this->assertEquals('This is parent begin
 This is parent main
 This is child sub1
+
+This is parent end
+', $contents);
+
+        $template = new Template($renderer, self::TEMPLATE_DIR . '/nest121.phtml');
+        $contents = $template->render();
+        $this->assertEquals('This is parent begin
+This is parent main
+This is parent sub1/This is child sub1
+This is parent sub2/This is child sub2
+This is child main
+This is child main/inner1
+This is child main/inner1/inner2
+
+This is child main/innerX
+
+This is parent end
+', $contents);
+
+        $template = new Template($renderer, self::TEMPLATE_DIR . '/nest122.phtml');
+        $contents = $template->render();
+        $this->assertEquals('This is parent begin
+This is parent main
+This is parent sub1/This is child sub1
+This is parent sub2/This is child sub2
+This is child main
+This is child main/inner1
+This is child main/inner1/inner2
+
+This is child main/inner1/innerX
 
 This is parent end
 ', $contents);

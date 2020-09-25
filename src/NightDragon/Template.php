@@ -50,6 +50,7 @@ class Template
         $contents = $this->fetch($this->renderer->compile($this->filename, $vars), $vars);
 
         if ($this->parent) {
+            assert(strlen(trim($contents)) === 0, "child template can't have content outside blocks [$contents]");
             return $this->parent->render($vars);
         }
 
@@ -84,6 +85,11 @@ class Template
         assert(!array_key_exists($name, $this->blocks), "block '$name' is already defined.");
         assert(!in_array($name, $this->currentBlocks, true), "block '$name' is nested.");
 
+        if ($this->currentBlocks) {
+            $this->blocks[end($this->currentBlocks)][] = ob_get_clean();
+            ob_start();
+        }
+
         $this->currentBlocks[] = $name;
         ob_start();
     }
@@ -98,10 +104,17 @@ class Template
         $name = array_pop($this->currentBlocks);
         $this->blocks[$name][] = ob_get_clean();
 
+        if (!$this->original && $this->currentBlocks) {
+            $this->blocks[end($this->currentBlocks)][$name] = null;
+        }
+
         if ($this->original) {
             $recho = function ($iterator) use (&$recho) {
-                foreach ($iterator as $block) {
-                    if ($block instanceof \Closure) {
+                foreach ($iterator as $key => $block) {
+                    if ($block === null) {
+                        $recho($this->original->closestBlock($key));
+                    }
+                    elseif ($block instanceof \Closure) {
                         $recho($block());
                     }
                     else {
@@ -141,7 +154,7 @@ class Template
         assert($this->parent !== null, "this template is not extended.");
         assert(!empty($this->currentBlocks), "block is not begun.");
 
-        $name = $this->currentBlocks[count($this->currentBlocks) - 1];
+        $name = end($this->currentBlocks);
         $this->blocks[$name][] = ob_get_clean();
         $this->blocks[$name][] = function () use ($name) { return $this->parent->closestBlock($name); };
         ob_start();
