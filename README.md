@@ -65,43 +65,80 @@ action.phtml:
 <?php $this->begin('title') ?>title<?php $this->end() ?>
 
 <?php $this->begin('main') ?>
-parent メソッドを使用して親コンテンツを表示します。
-<?php $this->parent() ?>
+<section>
+    <h2>親・子コンテンツの関係</h2>
+    parent メソッドを使用して親コンテンツを表示します。
+    <?php $this->parent() ?>
 
-これは子供コンテンツです。
-色々変数を表示しています。
+    これは子供コンテンツです。
+    色々変数を表示しています。
+</section>
 
-これはただの文字列表示です（デフォルトで html エスケープされます）：<?= "this is $string" ?>
-ショート echo タグではなく、php タグはエスケープされません：<?php echo "this is $string" ?>
-ただの php タグは改行もされません（php のデフォルトです。ショート echo タグを使うとその挙動を抑制できます）。
-これは自動エスケープの無効化です（@をつけると生出力になります）：<?= @"this is $string" ?>
+<section>
+    <h2>オートエスケープ</h2>
+    これはただの文字列表示です（デフォルトで html エスケープされます）：<?= "this is $string" ?>
+    ショート echo タグではなく、php タグはエスケープされません：<?php echo "this is $string" ?>
+    ただの php タグは改行もされません（php のデフォルトです。ショート echo タグを使うとその挙動を抑制できます）。
+    これは自動エスケープの無効化です（@をつけると生出力になります）：<?= @"this is $string" ?>
+</section>
 
-これは修飾子機能です（"|" でパイプ演算子のような挙動になります）：<?= $string | strtoupper ?>
-修飾子は繋げられるし、 $_ という特殊変数を使うと任意引数位置に適用できます：<?= $string | strtoupper | str_replace('TITLE', 'subject', $_) ?>
-登録しておけば静的メソッドも呼べます：<?= $string | upper ?>
+<section>
+    <h2>修飾子機能</h2>
+    これは修飾子機能です（"|" でパイプ演算子のような挙動になります）：<?= $string | strtoupper ?>
+    修飾子は繋げられるし、 $_ という特殊変数を使うと任意引数位置に適用できます：<?= $string | strtoupper | str_replace('TITLE', 'subject', $_) ?>
+    登録しておけば静的メソッドも呼べます：<?= $string | upper ?>
+</section>
 
-これは配列のアクセスです（"." で配列アクセスできます）：<?= $array . hoge ?>
-配列アクセスはネストできます：<?= $array . fuga . 0 ?>
-オブジェクトもアクセスできます：<?= $object . hoge ?>
-配列とオブジェクトは混在して OK です：<?= $object . fuga . 0 ?>
-埋め込み構文も使えます：<?= "prefix-{$object . fuga . 0}-suffix" ?>
-このように ?? 演算子とも併用できます：<?= $array . undefined ?? 'default' ?>
-オブジェクトも可能できます。共にネストも出来ます：<?= $object . undefined1 . undefined2 ?? 'default' | strtoupper ?>
+<section>
+    <h2>配列・オブジェクトアクセス</h2>
+    これは配列のアクセスです（"." で配列アクセスできます）：<?= $array . hoge ?>
+    配列アクセスはネストできます：<?= $array . fuga . 0 ?>
+    オブジェクトもアクセスできます：<?= $object . hoge ?>
+    配列とオブジェクトは混在して OK です：<?= $object . fuga . 0 ?>
+    埋め込み構文も使えます1：<?= "prefix-{$object . fuga . 0}-suffix" ?>
+    埋め込み構文も使えます2：<?= "prefix-{$closure(strtolower($object . fuga . 0))}-suffix" ?>
+    このように ?? 演算子とも併用できます：<?= $array . undefined ?? 'default' ?>
+    オブジェクトも可能できます。共にネストも出来ます：<?= $object . undefined1 . undefined2 ?? 'default' | strtoupper ?>
 
-上記2つの機能は「配列アクセス -> 修飾子」のときのみ組み合わせ可能です：<?= $array . fuga | implode(',', $_) ?>
-右記のような順番の組み合わせはできません：< ?= $string | str_split . 3 ? >
+    上記2つの機能は「配列アクセス -> 修飾子」のときのみ組み合わせ可能です：<?= $array . fuga | implode(',', $_) ?>
+    右記のような順番の組み合わせはできません：<?= @"<?=" ?> $string | str_split . 3 <?= @"?>" ?>
+</section>
 
-タグのコールバックを登録すると特定タグに対してコールバックが実行されます。
-例えばデフォルトでは strip タグが登録されていて、空白を除去できます（Smarty の {strip} に相当） 。
-<strip>
-    このタグ内の空白はすべて除去されます。ただし、変数の中身には関与しません。
-    <div
-        id="stripping"
-        class="hoge fuga piyo"
-    >
-        <?= $multiline ?>
-    </div>
-</strip>
+<section>
+    <h2>キャプチャ・サブテンプレート</h2>
+    Smarty でいう capture のような機能はありませんが、所詮素の php なので ob_ 系を使用することで簡単に模倣できます。
+    <?php ob_start() ?>
+    <blockquote>
+        これはキャプチャー中の変数表示です：<?= $string | strtoupper ?>
+    </blockquote>
+    <?php $buffer = ob_get_clean() ?>
+    キャプチャ結果を呼び出します。<?= @$buffer ?>
+
+    Smarty でいう function のような機能はありませんが、所詮素の php なのでクロージャを使用することで簡単に模倣できます。
+    <?php $template = function ($arg1, $arg2) { ?>
+        <blockquote>
+            arg1+arg2: <?= $arg1 | strtoupper ?> <?= $arg2 | strtolower ?>
+        </blockquote>
+    <?php } ?>
+    テンプレートを引数付きで呼び出します。<?= @$template("Hello's", 'World') ?>
+
+    上記2つの機能は利便性が高く、使用頻度もそれなりのため、 組み込みの機能として実装する予定はあります。
+</section>
+
+<section>
+    <h2>カスタムタグ</h2>
+    タグのコールバックを登録すると特定タグに対してコールバックが実行されます。
+    例えばデフォルトでは strip タグが登録されていて、空白を除去できます（Smarty の {strip} に相当） 。
+    <strip>
+        このタグ内の空白はすべて除去されます。ただし、変数の中身には関与しません。
+        <div
+            id="stripping"
+            class="hoge fuga piyo"
+        >
+            <?= $multiline ?>
+        </div>
+    </strip>
+</section>
 
 おまけ：所詮素の php なのであらゆる表現が可能です。
 <?php foreach ($array as $key => $value): ?>
@@ -141,35 +178,72 @@ action.phtml:
 <?php $this->begin('title') ?>title<?php $this->end() ?>
 
 <?php $this->begin('main') ?>
-parent メソッドを使用して親コンテンツを表示します。
-<?php $this->parent() ?>
+<section>
+    <h2>親・子コンテンツの関係</h2>
+    parent メソッドを使用して親コンテンツを表示します。
+    <?php $this->parent() ?>
 
-これは子供コンテンツです。
-色々変数を表示しています。
+    これは子供コンテンツです。
+    色々変数を表示しています。
+</section>
 
-これはただの文字列表示です（デフォルトで html エスケープされます）：<?=\ryunosuke\NightDragon\Renderer::html("this is $string"),"\n"?>
-ショート echo タグではなく、php タグはエスケープされません：<?php echo "this is $string" ?>
-ただの php タグは改行もされません（php のデフォルトです。ショート echo タグを使うとその挙動を抑制できます）。
-これは自動エスケープの無効化です（@をつけると生出力になります）：<?="this is $string","\n"?>
+<section>
+    <h2>オートエスケープ</h2>
+    これはただの文字列表示です（デフォルトで html エスケープされます）：<?=\ryunosuke\NightDragon\Renderer::html("this is $string"),"\n"?>
+    ショート echo タグではなく、php タグはエスケープされません：<?php echo "this is $string" ?>
+    ただの php タグは改行もされません（php のデフォルトです。ショート echo タグを使うとその挙動を抑制できます）。
+    これは自動エスケープの無効化です（@をつけると生出力になります）：<?="this is $string","\n"?>
+</section>
 
-これは修飾子機能です（"|" でパイプ演算子のような挙動になります）：<?=\ryunosuke\NightDragon\Renderer::html(strtoupper($string)),"\n"?>
-修飾子は繋げられるし、 $_ という特殊変数を使うと任意引数位置に適用できます：<?=\ryunosuke\NightDragon\Renderer::html(str_replace('TITLE','subject',strtoupper($string))),"\n"?>
-登録しておけば静的メソッドも呼べます：<?=\ryunosuke\NightDragon\Renderer::html(\Modifier::upper($string)),"\n"?>
+<section>
+    <h2>修飾子機能</h2>
+    これは修飾子機能です（"|" でパイプ演算子のような挙動になります）：<?=\ryunosuke\NightDragon\Renderer::html(strtoupper($string)),"\n"?>
+    修飾子は繋げられるし、 $_ という特殊変数を使うと任意引数位置に適用できます：<?=\ryunosuke\NightDragon\Renderer::html(str_replace('TITLE','subject',strtoupper($string))),"\n"?>
+    登録しておけば静的メソッドも呼べます：<?=\ryunosuke\NightDragon\Renderer::html(\Modifier::upper($string)),"\n"?>
+</section>
 
-これは配列のアクセスです（"." で配列アクセスできます）：<?=\ryunosuke\NightDragon\Renderer::html(\ryunosuke\NightDragon\Renderer::access($array,'hoge')),"\n"?>
-配列アクセスはネストできます：<?=\ryunosuke\NightDragon\Renderer::html(\ryunosuke\NightDragon\Renderer::access($array,'fuga','0')),"\n"?>
-オブジェクトもアクセスできます：<?=\ryunosuke\NightDragon\Renderer::html(\ryunosuke\NightDragon\Renderer::access($object,'hoge')),"\n"?>
-配列とオブジェクトは混在して OK です：<?=\ryunosuke\NightDragon\Renderer::html(\ryunosuke\NightDragon\Renderer::access($object,'fuga','0')),"\n"?>
-埋め込み構文も使えます：<?=\ryunosuke\NightDragon\Renderer::html("prefix-".\ryunosuke\NightDragon\Renderer::access($object,'fuga','0')."-suffix"),"\n"?>
-このように ?? 演算子とも併用できます：<?=\ryunosuke\NightDragon\Renderer::html(@\ryunosuke\NightDragon\Renderer::access($array,'undefined') ?? 'default'),"\n"?>
-オブジェクトも可能できます。共にネストも出来ます：<?=\ryunosuke\NightDragon\Renderer::html(strtoupper(@\ryunosuke\NightDragon\Renderer::access($object,'undefined1','undefined2') ?? 'default')),"\n"?>
+<section>
+    <h2>配列・オブジェクトアクセス</h2>
+    これは配列のアクセスです（"." で配列アクセスできます）：<?=\ryunosuke\NightDragon\Renderer::html(\ryunosuke\NightDragon\Renderer::access($array,'hoge')),"\n"?>
+    配列アクセスはネストできます：<?=\ryunosuke\NightDragon\Renderer::html(\ryunosuke\NightDragon\Renderer::access($array,'fuga','0')),"\n"?>
+    オブジェクトもアクセスできます：<?=\ryunosuke\NightDragon\Renderer::html(\ryunosuke\NightDragon\Renderer::access($object,'hoge')),"\n"?>
+    配列とオブジェクトは混在して OK です：<?=\ryunosuke\NightDragon\Renderer::html(\ryunosuke\NightDragon\Renderer::access($object,'fuga','0')),"\n"?>
+    埋め込み構文も使えます1：<?=\ryunosuke\NightDragon\Renderer::html("prefix-".\ryunosuke\NightDragon\Renderer::access($object,'fuga','0')."-suffix"),"\n"?>
+    埋め込み構文も使えます2：<?=\ryunosuke\NightDragon\Renderer::html("prefix-{$closure(strtolower(\ryunosuke\NightDragon\Renderer::access($object,'fuga','0')))}-suffix"),"\n"?>
+    このように ?? 演算子とも併用できます：<?=\ryunosuke\NightDragon\Renderer::html(@\ryunosuke\NightDragon\Renderer::access($array,'undefined') ?? 'default'),"\n"?>
+    オブジェクトも可能できます。共にネストも出来ます：<?=\ryunosuke\NightDragon\Renderer::html(strtoupper(@\ryunosuke\NightDragon\Renderer::access($object,'undefined1','undefined2') ?? 'default')),"\n"?>
 
-上記2つの機能は「配列アクセス -> 修飾子」のときのみ組み合わせ可能です：<?=\ryunosuke\NightDragon\Renderer::html(implode(',',\ryunosuke\NightDragon\Renderer::access($array,'fuga'))),"\n"?>
-右記のような順番の組み合わせはできません：< ?= $string | str_split . 3 ? >
+    上記2つの機能は「配列アクセス -> 修飾子」のときのみ組み合わせ可能です：<?=\ryunosuke\NightDragon\Renderer::html(implode(',',\ryunosuke\NightDragon\Renderer::access($array,'fuga'))),"\n"?>
+    右記のような順番の組み合わせはできません：<?="<?="?> $string | str_split . 3 <?="?>","\n"?>
+</section>
 
-タグのコールバックを登録すると特定タグに対してコールバックが実行されます。
-例えばデフォルトでは strip タグが登録されていて、空白を除去できます（Smarty の {strip} に相当） 。
-このタグ内の空白はすべて除去されます。ただし、変数の中身には関与しません。<div id="stripping" class="hoge fuga piyo"><?=\ryunosuke\NightDragon\Renderer::html($multiline)?></div>
+<section>
+    <h2>キャプチャ・サブテンプレート</h2>
+    Smarty でいう capture のような機能はありませんが、所詮素の php なので ob_ 系を使用することで簡単に模倣できます。
+    <?php ob_start() ?>
+    <blockquote>
+        これはキャプチャー中の変数表示です：<?=\ryunosuke\NightDragon\Renderer::html(strtoupper($string)),"\n"?>
+    </blockquote>
+    <?php $buffer = ob_get_clean() ?>
+    キャプチャ結果を呼び出します。<?=$buffer,"\n"?>
+
+    Smarty でいう function のような機能はありませんが、所詮素の php なのでクロージャを使用することで簡単に模倣できます。
+    <?php $template = function ($arg1, $arg2) { ?>
+        <blockquote>
+            arg1+arg2: <?=\ryunosuke\NightDragon\Renderer::html(strtoupper($arg1))?> <?=\ryunosuke\NightDragon\Renderer::html(strtolower($arg2)),"\n"?>
+        </blockquote>
+    <?php } ?>
+    テンプレートを引数付きで呼び出します。<?=$template("Hello's", 'World'),"\n"?>
+
+    上記2つの機能は利便性が高く、使用頻度もそれなりのため、 組み込みの機能として実装する予定はあります。
+</section>
+
+<section>
+    <h2>カスタムタグ</h2>
+    タグのコールバックを登録すると特定タグに対してコールバックが実行されます。
+    例えばデフォルトでは strip タグが登録されていて、空白を除去できます（Smarty の {strip} に相当） 。
+    このタグ内の空白はすべて除去されます。ただし、変数の中身には関与しません。<div id="stripping" class="hoge fuga piyo"><?=\ryunosuke\NightDragon\Renderer::html($multiline)?></div>
+</section>
 
 おまけ：所詮素の php なのであらゆる表現が可能です。
 <?php foreach ($array as $key => $value): ?>
@@ -194,36 +268,69 @@ parent メソッドを使用して親コンテンツを表示します。
     <title>title - サイト名</title>
 </head>
 <body>
-parent メソッドを使用して親コンテンツを表示します。
-これは親コンテンツです。
+<section>
+    <h2>親・子コンテンツの関係</h2>
+    parent メソッドを使用して親コンテンツを表示します。
+    これは親コンテンツです。
 
-これは子供コンテンツです。
-色々変数を表示しています。
+    これは子供コンテンツです。
+    色々変数を表示しています。
+</section>
 
-これはただの文字列表示です（デフォルトで html エスケープされます）：this is this&#039;s title
-ショート echo タグではなく、php タグはエスケープされません：this is this's titleただの php タグは改行もされません（php のデフォルトです。ショート echo タグを使うとその挙動を抑制できます）。
-これは自動エスケープの無効化です（@をつけると生出力になります）：this is this's title
+<section>
+    <h2>オートエスケープ</h2>
+    これはただの文字列表示です（デフォルトで html エスケープされます）：this is This&#039;s Title
+    ショート echo タグではなく、php タグはエスケープされません：this is This's Title    ただの php タグは改行もされません（php のデフォルトです。ショート echo タグを使うとその挙動を抑制できます）。
+    これは自動エスケープの無効化です（@をつけると生出力になります）：this is This's Title
+</section>
 
-これは修飾子機能です（"|" でパイプ演算子のような挙動になります）：THIS&#039;S TITLE
-修飾子は繋げられるし、 $_ という特殊変数を使うと任意引数位置に適用できます：THIS&#039;S subject
-登録しておけば静的メソッドも呼べます：THIS&#039;S TITLE
+<section>
+    <h2>修飾子機能</h2>
+    これは修飾子機能です（"|" でパイプ演算子のような挙動になります）：THIS&#039;S TITLE
+    修飾子は繋げられるし、 $_ という特殊変数を使うと任意引数位置に適用できます：THIS&#039;S subject
+    登録しておけば静的メソッドも呼べます：THIS&#039;S TITLE
+</section>
 
-これは配列のアクセスです（"." で配列アクセスできます）：HOGE
-配列アクセスはネストできます：X
-オブジェクトもアクセスできます：HOGE
-配列とオブジェクトは混在して OK です：X
-埋め込み構文も使えます：prefix-X-suffix
-このように ?? 演算子とも併用できます：default
-オブジェクトも可能できます。共にネストも出来ます：DEFAULT
+<section>
+    <h2>配列・オブジェクトアクセス</h2>
+    これは配列のアクセスです（"." で配列アクセスできます）：HOGE
+    配列アクセスはネストできます：X
+    オブジェクトもアクセスできます：HOGE
+    配列とオブジェクトは混在して OK です：X
+    埋め込み構文も使えます1：prefix-X-suffix
+    埋め込み構文も使えます2：prefix-closurex-suffix
+    このように ?? 演算子とも併用できます：default
+    オブジェクトも可能できます。共にネストも出来ます：DEFAULT
 
-上記2つの機能は「配列アクセス -> 修飾子」のときのみ組み合わせ可能です：X,Y,Z
-右記のような順番の組み合わせはできません：< ?= $string | str_split . 3 ? >
+    上記2つの機能は「配列アクセス -> 修飾子」のときのみ組み合わせ可能です：X,Y,Z
+    右記のような順番の組み合わせはできません：<?= $string | str_split . 3 ?>
+</section>
 
-タグのコールバックを登録すると特定タグに対してコールバックが実行されます。
-例えばデフォルトでは strip タグが登録されていて、空白を除去できます（Smarty の {strip} に相当） 。
-このタグ内の空白はすべて除去されます。ただし、変数の中身には関与しません。<div id="stripping" class="hoge fuga piyo">line1
+<section>
+    <h2>キャプチャ・サブテンプレート</h2>
+    Smarty でいう capture のような機能はありませんが、所詮素の php なので ob_ 系を使用することで簡単に模倣できます。
+        キャプチャ結果を呼び出します。    <blockquote>
+        これはキャプチャー中の変数表示です：THIS&#039;S TITLE
+    </blockquote>
+    
+
+    Smarty でいう function のような機能はありませんが、所詮素の php なのでクロージャを使用することで簡単に模倣できます。
+        テンプレートを引数付きで呼び出します。        <blockquote>
+            arg1+arg2: HELLO&#039;S world
+        </blockquote>
+    
+
+    上記2つの機能は利便性が高く、使用頻度もそれなりのため、 組み込みの機能として実装する予定はあります。
+</section>
+
+<section>
+    <h2>カスタムタグ</h2>
+    タグのコールバックを登録すると特定タグに対してコールバックが実行されます。
+    例えばデフォルトでは strip タグが登録されていて、空白を除去できます（Smarty の {strip} に相当） 。
+    このタグ内の空白はすべて除去されます。ただし、変数の中身には関与しません。<div id="stripping" class="hoge fuga piyo">line1
 line2
 line3</div>
+</section>
 
 おまけ：所詮素の php なのであらゆる表現が可能です。
             HOGE です        ショートタグが使いたいなぁ        

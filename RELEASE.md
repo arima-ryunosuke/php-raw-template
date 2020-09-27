@@ -21,6 +21,10 @@
 - nikic/php-parser に移行したいけど AST でショートタグが正規化されてしまう？
 - パス周りがメチャクチャなので正規化して realpath したい
 
+## 1.2.1
+
+- [fixbug][Template] ブロックをネストしたとき親で使われていないと内容が消えてしまう不具合を修正
+
 ## 1.2.0
 
 - [feature][RewriteWrapper] "{$value.key}" の埋め込み構文に対応
