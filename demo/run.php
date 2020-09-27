@@ -30,8 +30,9 @@ $renderer->assign([
 
 echo $renderer->render(__DIR__ . '/action.phtml', [
     // テンプレートにアサインする変数
-    'string'    => "this's title",
+    'string'    => "This's Title",
     'multiline' => "line1\nline2\nline3",
     'array'     => ['hoge' => 'HOGE', 'fuga' => ['X', 'Y', 'Z']],
     'object'    => (object) ['hoge' => 'HOGE', 'fuga' => ['X', 'Y', 'Z']],
+    'closure'   => function ($arg) { return 'closure' . $arg; }
 ]);
