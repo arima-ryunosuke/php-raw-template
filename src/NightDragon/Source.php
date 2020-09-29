@@ -129,6 +129,23 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
         }
     }
 
+    /**
+     * 指定 type の Generator を返す
+     *
+     * @param mixed $type 抽出トークン
+     * @return Token[] $type に一致したトークン配列
+     */
+    public function filter($type)
+    {
+        $result = [];
+        foreach ($this->tokens as $token) {
+            if ($token->equals($type)) {
+                $result[] = $token;
+            }
+        }
+        return $result;
+    }
+
     public function count()
     {
         $count = 0;
@@ -243,7 +260,7 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
 
         $result = [];
         foreach ($parts as $part) {
-            $result[] = new self($part);
+            $result[] = new self($part, $this->compatibleShortTagMode);
         }
         return $result;
     }
@@ -294,7 +311,7 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
     {
         $result = [];
         $this->scan($matchers, function ($matched) use (&$result) {
-            $result[] = new self($matched);
+            $result[] = new self($matched, $this->compatibleShortTagMode);
         });
         return $result;
     }
@@ -324,7 +341,7 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
     {
         return $this->scan($matchers, function ($matched) use ($replace, $skip) {
             if ($replace instanceof \Closure) {
-                $replace = $replace(new self($matched), $skip);
+                $replace = $replace(new self($matched, $this->compatibleShortTagMode), $skip);
             }
 
             if ($replace === false) {
@@ -349,7 +366,9 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
             }
 
             // Token インスタンスの配列に正規化
-            $replace = array_map([Token::class, 'instance'], $replace);
+            $replace = array_each($replace, function (&$carry, $item) {
+                $carry = array_merge($carry, $item instanceof Source ? $item->tokens : [Token::instance($item)]);
+            }, []);
 
             $keys = array_keys($matched);
             $min = min($keys);

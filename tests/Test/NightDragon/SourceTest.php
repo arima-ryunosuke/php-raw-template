@@ -57,6 +57,16 @@ class SourceTest extends \ryunosuke\Test\AbstractTestCase
         $this->assertEquals('<?pHP  $var = "prefix-" . "-middle-" . __FUNCTION__ . "-suffix";', (string) $source);
     }
 
+    function test_filter()
+    {
+        $source = new Source('<?php A + B - C');
+
+        $this->assertEquals([
+            Token::instance(-1, '+', 1),
+            Token::instance(-1, '-', 1),
+        ], $source->filter(['+', '-']));
+    }
+
     function test_shift_pop_shrink()
     {
         $source = new Source('<?php $var = "prefix-" . "-middle-" . __FUNCTION__ . "-suffix";');
@@ -286,6 +296,15 @@ class SourceTest extends \ryunosuke\Test\AbstractTestCase
             return $tokens;
         });
         $this->assertEquals('<?php $var = "prefix-" . __FUNCTION__ . "-suffix";', (string) $source);
+    }
+
+    function test_replace_sourcearray()
+    {
+        $source = new Source('<?php $var = "prefix-" . __FUNCTION__ . "-suffix";');
+        $source->replace([T_CONSTANT_ENCAPSED_STRING], function ($tokens) {
+            return ['S', '/*', $tokens, '*/'];
+        });
+        $this->assertEquals('<?php $var = S/*"prefix-"*/ . __FUNCTION__ . S/*"-suffix"*/;', (string) $source);
     }
 
     function test_replace_overlap()
