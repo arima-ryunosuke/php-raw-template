@@ -168,7 +168,7 @@ line3
         $this->assertContains("define('spaced', \\template\\spaced(...[]))", $template);
         $this->assertContains("define('fully\\\\qualified', \\fully\\qualified(...[]))", $template);
         $this->assertContains("define('method', \\template\\T::method(...[]))", $template);
-        $this->assertNotContains("define('ucwords", $template); // 引数付きは埋め込まれない
+        $this->assertContains("define('ucwords", $template);
 
         $renderer = new Renderer([
             'debug'          => true,
@@ -278,38 +278,98 @@ line3
 
         $outputConstFile($FILENAME, [
             'accessor' => [
-                'hoge1' => '"hoge1"'
+                'hoge1' => 'hoge1'
             ],
             'modifier' => [
-                'fuga1' => '"fuga1"'
+                'fuga1' => 'fuga1'
             ],
         ]);
-        $this->assertStringEqualsFile($FILENAME, '<?php
-// using modifier functions:
-define("fuga1", fuga1(...[]));
-// using array keys:
-define("hoge1", "hoge1");
-');
+        $this->assertStringEqualsFile($FILENAME, <<<'EXPECTED'
+<?php
+if (null) {
+    // using modifier functions:
+    function fuga1(...$args){define('fuga1', fuga1(...[]));return fuga1(...$args);}
+    // using array keys:
+    define('hoge1', 'hoge1');
+}
+return [
+    "accessor" => [
+        "hoge1" => "hoge1",
+    ],
+    "modifier" => [
+        "fuga1" => "fuga1",
+    ],
+];
+
+EXPECTED
+        );
 
         $outputConstFile($FILENAME, [
             'accessor' => [
-                'ns\\hoge2' => '"ns\\\\hoge2"',
-                'over'      => '"over"',
+                'ns\\hoge2' => 'ns\\hoge2',
+                'over'      => 'over',
             ],
             'modifier' => [
-                '\\ns\\fuga2' => '"ns\\\\fuga2"',
-                'over'        => '"over"',
+                '\\ns\\fuga2' => 'ns\\fuga2',
+                'over'        => 'over',
             ],
         ]);
-        $this->assertStringEqualsFile($FILENAME, '<?php
-// using modifier functions:
-define("ns\\\\fuga2", \\ns\\fuga2(...[]));
-define("fuga1", fuga1(...[]));
-define("over", over(...[]));
-// using array keys:
-define("hoge1", "hoge1");
-define("ns\\\\hoge2", "ns\\\\hoge2");
-');
+        $this->assertStringEqualsFile($FILENAME, <<<'EXPECTED'
+<?php
+if (null) {
+    // using modifier functions:
+    function \ns\fuga2(...$args){define('\\ns\\fuga2', ns\fuga2(...[]));return ns\fuga2(...$args);}
+    function fuga1(...$args){define('fuga1', fuga1(...[]));return fuga1(...$args);}
+    function over(...$args){define('over', over(...[]));return over(...$args);}
+    // using array keys:
+    define('hoge1', 'hoge1');
+    define('ns\\hoge2', 'ns\\hoge2');
+    define('over', 'over');
+}
+return [
+    "accessor" => [
+        "hoge1"     => "hoge1",
+        "ns\\hoge2" => "ns\\hoge2",
+        "over"      => "over",
+    ],
+    "modifier" => [
+        "\\ns\\fuga2" => "ns\\fuga2",
+        "fuga1"       => "fuga1",
+        "over"        => "over",
+    ],
+];
+
+EXPECTED
+        );
+
+        file_put_contents($FILENAME, '<?php syntax error.');
+        $outputConstFile($FILENAME, [
+            'accessor' => [
+                'hoge1' => 'hoge1'
+            ],
+            'modifier' => [
+                'fuga1' => 'fuga1'
+            ],
+        ]);
+        $this->assertStringEqualsFile($FILENAME, <<<'EXPECTED'
+<?php
+if (null) {
+    // using modifier functions:
+    function fuga1(...$args){define('fuga1', fuga1(...[]));return fuga1(...$args);}
+    // using array keys:
+    define('hoge1', 'hoge1');
+}
+return [
+    "accessor" => [
+        "hoge1" => "hoge1",
+    ],
+    "modifier" => [
+        "fuga1" => "fuga1",
+    ],
+];
+
+EXPECTED
+        );
     }
 
     function test_assign()

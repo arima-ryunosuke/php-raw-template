@@ -3,17 +3,20 @@ namespace template;
 ?>
 <?php
 # meta template data
+// @formatter:off
 // using variables:
 /** @var \ryunosuke\NightDragon\Template $this */
 /** @var mixed $_ */
 // using modifier functions:
-true or define('globaled', \globaled(...[]));
-true or define('spaced', \template\spaced(...[]));
-true or define('fully\\qualified', \fully\qualified(...[]));
-true or define('method', \template\T::method(...[]));
+if (false) {function globaled(...$args){define('globaled', \globaled(...[]));return \globaled(...$args);}}
+if (false) {function spaced(...$args){define('spaced', \template\spaced(...[]));return \template\spaced(...$args);}}
+if (false) {function fully\qualified(...$args){define('fully\\qualified', \fully\qualified(...[]));return \fully\qualified(...$args);}}
+if (false) {function method(...$args){define('method', \template\T::method(...[]));return \template\T::method(...$args);}}
+if (false) {function ucwords(...$args){define('ucwords', \ucwords(...[]));return \ucwords(...$args);}}
 // using array keys:
 true or define('key1', 'key1');
 true or define('key2', 'key2');
+// @formatter:on
 ?>
 
 ?>

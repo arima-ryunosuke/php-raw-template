@@ -251,6 +251,7 @@ class Renderer
             $content = file_get_contents($filename);
             $source = new Source($content, $ropt['compatibleShortTag'] ? Source::SHORT_TAG_REPLACE : Source::SHORT_TAG_NOTHING);
 
+            $E = function ($v) { return var_export($v, true); };
             $meta = [];
             if ($this->gatherOptions['gatherVariable']) {
                 $variables = $this->gatherVariable($source, $ropt['varReceiver'], $vars);
@@ -264,7 +265,9 @@ class Renderer
                 }
                 else {
                     $meta[] = self::MODIFIER_FUNCTION_COMMENT;
-                    $meta[] = array_sprintf($modifiers, 'true or define(%1$s, %2$s(...[]));', "\n");
+                    $meta[] = array_sprintf($modifiers, function ($v, $k) use ($E) {
+                        return "if (false) {function $k(...\$args){define({$E($k)}, $v(...[]));return $v(...\$args);}}";
+                    }, "\n");
                 }
             }
             if ($this->gatherOptions['gatherAccessor']) {
@@ -274,17 +277,20 @@ class Renderer
                 }
                 else {
                     $meta[] = self::ACCESS_KEY_COMMENT;
-                    $meta[] = array_sprintf($accessors, 'true or define(%1$s, %1$s);', "\n");
+                    $meta[] = array_sprintf($accessors, function ($v, $k) use ($E) {
+                        return "true or define({$E($v)}, {$E($v)});";
+                    }, "\n");
                 }
             }
 
             if ($meta) {
+                $formatter = "@formatter";
                 $newcontent = (string) $source->replace([
                     T_OPEN_TAG,
                     function (Token $token) { return $token->id === T_COMMENT && trim($token->token) === self::META_COMMENT; },
                     Source::MATCH_MANY,
                     T_CLOSE_TAG,
-                ], "<?php\n" . self::META_COMMENT . "\n" . implode("\n", $meta) . "\n?>\n");
+                ], "<?php\n" . self::META_COMMENT . "\n// $formatter:off\n" . implode("\n", $meta) . "\n// $formatter:on\n?>\n");
 
                 // phpstorm が「変更された」と感知して ctrl+z が効かなくなるので書き換えられた場合のみ保存する
                 if ($content !== $newcontent) {
@@ -386,22 +392,22 @@ class Renderer
             $modifier,
             Source::MATCH_ANY,
             Source::MATCH_MANY,
-            [T_CLOSE_TAG, $modifier],
+            [T_CLOSE_TAG, $modifier, '('],
         ]) as $tokens) {
             $tokens->shrink();
             $tokens->strip();
             $stmt = (string) $tokens;
             foreach ($classes as $class) {
                 if (method_exists($class, $stmt)) {
-                    $funcname = ltrim("$class::$stmt", '\\');
-                    $result["\\$funcname"] = var_export(ltrim($stmt, '\\'), true);
+                    $funcname = trim("$class::$stmt", '\\');
+                    $result[trim($stmt, '\\')] = "\\$funcname";
                     continue 2;
                 }
             }
             foreach ($namespaces as $namespace) {
-                $funcname = ltrim("$namespace\\$stmt", '\\');
+                $funcname = trim("$namespace\\$stmt", '\\');
                 if (function_exists($funcname)) {
-                    $result["\\$funcname"] = var_export(ltrim($stmt, '\\'), true);
+                    $result[trim($stmt, '\\')] = "\\$funcname";
                     continue 2;
                 }
             }
@@ -414,7 +420,7 @@ class Renderer
         $result = [];
         foreach ($source->match([$accessor, T_STRING]) as $tokens) {
             $code = (string) $tokens->pop();
-            $result[$code] = var_export($code, true);
+            $result[$code] = $code;
         }
         return $result;
     }
@@ -427,35 +433,36 @@ class Renderer
 
         // 既に保存されているならマージする
         if (file_exists($filename)) {
-            $current = [];
-            $source = new Source(file_get_contents($filename));
-            foreach ($source->match(['define', '(', T_CONSTANT_ENCAPSED_STRING, ',', Source::MATCH_ANY, Source::MATCH_MANY, ';']) as $tokens) {
-                $tokens->strip();
-                $code = $tokens[2]->token;
-                if ($tokens[4]->equals(T_CONSTANT_ENCAPSED_STRING)) {
-                    $name = eval($eval = "return $code;");
-                    $current['accessor'][$name] = $code;
-                }
-                else {
-                    $token = $tokens->match([',', Source::MATCH_ANY, Source::MATCH_MANY, '('])[0];
-                    $token->shrink();
-                    $current['modifier']["$token"] = $code;
-                }
+            try {
+                $current = include($filename);
             }
-
+            catch (\Throwable $t) {
+                $current = [];
+            }
             $consts['modifier'] += $current['modifier'] ?? [];
             $consts['accessor'] += $current['accessor'] ?? [];
         }
 
-        // 競合したら modifier の方を優先する（callable な分 accessor より情報量が多い）
-        $consts['accessor'] = array_diff_key($consts['accessor'], $consts['modifier']);
-
         ksort($consts['modifier']);
         ksort($consts['accessor']);
 
-        $ms = self::MODIFIER_FUNCTION_COMMENT . "\n" . array_sprintf($consts['modifier'], 'define(%1$s, %2$s(...[]));', "\n");
-        $as = self::ACCESS_KEY_COMMENT . "\n" . array_sprintf($consts['accessor'], 'define(%1$s, %1$s);', "\n");
-        file_put_contents($filename, "<?php\n$ms\n$as\n");
+        $E = function ($v) { return var_export($v, true); };
+        $V = function ($v) { return $v; };
+        $ms = array_sprintf($consts['modifier'], function ($v, $k) use ($E) {
+            return "function $k(...\$args){define({$E($k)}, $v(...[]));return $v(...\$args);}";
+        }, "\n");
+        $as = array_sprintf($consts['accessor'], function ($v, $k) use ($E) {
+            return "define({$E($v)}, {$E($v)});";
+        }, "\n");
+        file_put_contents($filename, "<?php
+if (null) {
+    {$V(self::MODIFIER_FUNCTION_COMMENT)}
+    {$V(indent_php($ms, 4))}
+    {$V(self::ACCESS_KEY_COMMENT)}
+    {$V(indent_php($as, 4))}
+}
+return {$V(var_export2($consts, 1))};
+");
     }
 
     /**
