@@ -83,10 +83,8 @@ class RewriteWrapper
     {
         $froms = [];
         $source = new Source($source, $options['compatibleShortTag'] ? Source::SHORT_TAG_REWRITE : Source::SHORT_TAG_NOTHING);
-        foreach ($source as $i => $token) {
-            if ($token->equals([T_OPEN_TAG_WITH_ECHO, T_OPEN_TAG])) {
-                $froms[$i] = $token->line;
-            }
+        foreach ($source->filter([T_OPEN_TAG_WITH_ECHO, T_OPEN_TAG]) as $i => $token) {
+            $froms[$i] = $token->line;
         }
 
         $tags = implode('|', array_keys($options['customTagHandler'] ?? []));
@@ -107,10 +105,8 @@ class RewriteWrapper
 
         $source = new Source($source, $options['compatibleShortTag'] ? Source::SHORT_TAG_REWRITE : Source::SHORT_TAG_NOTHING);
 
-        foreach ($source as $i => $token) {
-            if ($token->equals([T_OPEN_TAG_WITH_ECHO, T_OPEN_TAG])) {
-                self::$lineMapping[$this->path][$token->line] = $froms[$i];
-            }
+        foreach ($source->filter([T_OPEN_TAG_WITH_ECHO, T_OPEN_TAG]) as $i => $token) {
+            self::$lineMapping[$this->path][$token->line] = $froms[$i];
         }
 
         $options['defaultNamespace'][] = $source->namespace();
