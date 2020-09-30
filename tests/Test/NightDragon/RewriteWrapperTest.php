@@ -407,6 +407,10 @@ dummy
         $source = new Source('<?= $value | funcA($_, 1) ?>');
         $rewrite($source, '$_', '|', [], []);
         $this->assertEquals('<?=funcA($value,1)?>', (string) $source);
+
+        $source = new Source('<?= $value | funcA($_, 1) ?? "default1" | funcB ?? "default2" ?>');
+        $rewrite($source, '$_', '|', [], []);
+        $this->assertEquals('<?=funcB(funcA($value,1) ?? "default1") ?? "default2"?>', (string) $source);
     }
 
     function test_rewriteFilter()

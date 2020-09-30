@@ -223,6 +223,12 @@ class RewriteWrapper
             $stmt = trim((string) array_shift($sources));
             foreach ($sources as $parts) {
                 $parts->strip();
+
+                $default = null;
+                if ($parts->match([T_COALESCE])) {
+                    [$parts, $default] = $parts->split(T_COALESCE);
+                }
+
                 // () がないなら単純呼び出し
                 if (!$parts->match(['('])) {
                     $stmt = $parts . "($stmt)";
@@ -255,6 +261,8 @@ class RewriteWrapper
                     }
                     $stmt = (string) $parts;
                 }
+
+                $stmt .= $default === null ? '' : " ?? $default";
 
                 if ($stmt[0] !== '\\') {
                     $stmtstr = strstr($stmt, '(', true);
