@@ -22,6 +22,7 @@ class RewriteWrapperTest extends \ryunosuke\Test\AbstractTestCase
         'varReceiver'        => '$_',
         'varModifier'        => ['|', '&'],
         'varAccessor'        => '.',
+        'varExpander'        => '`',
     ];
 
     function test_getLineMapping()
@@ -299,6 +300,32 @@ dummy
                 'varModifier'   => [],
                 'varAccessor'   => '',
             ] + self::defaultOption));
+    }
+
+    function test_rewriteExpand()
+    {
+        /** @see RewriteWrapper::rewriteExpand() */
+        $rewrite = $this->publishMethod(new RewriteWrapper(self::defaultOption), 'rewriteExpand');
+
+        $source = new Source('<?= `a-${$n + 1}{$x}-z` ?>');
+        $rewrite($source, '`');
+        $this->assertEquals('<?= "a-".($n + 1)."{$x}-z" ?>', (string) $source);
+
+        $source = new Source('<?= `a-${implode(",", $arr)}{$x}-z` ?>');
+        $rewrite($source, '`');
+        $this->assertEquals('<?= "a-".(implode(",", $arr))."{$x}-z" ?>', (string) $source);
+
+        $source = new Source('<?= `a-${$arr | implode(",", $_)}{$x}-z` ?>');
+        $rewrite($source, '`');
+        $this->assertEquals('<?= "a-".(implode(",",$arr))."{$x}-z" ?>', (string) $source);
+
+        $source = new Source('<?= `a-${[1,2,3] | json_encode}{$x}-z` ?>');
+        $rewrite($source, '`');
+        $this->assertEquals('<?= "a-".(json_encode([1,2,3]))."{$x}-z" ?>', (string) $source);
+
+        $source = new Source('<?= "a-${$n + 1}-z" ?>');
+        $rewrite($source, '"');
+        $this->assertEquals('<?= "a-".($n + 1)."-z" ?>', (string) $source);
     }
 
     function test_rewriteAccessKey()

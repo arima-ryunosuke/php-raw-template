@@ -172,6 +172,7 @@ class Renderer
             'varModifier'        => '|', // for compatible. In the future the default will be ['|', '&']
             'varReceiver'        => '$_',
             'varAccessor'        => '.',
+            'varExpander'        => '', // for compatible. In the future the default will be "`"
         ];
 
         $this->debug = (bool) $options['debug'];
@@ -198,6 +199,7 @@ class Renderer
             'varModifier'        => ((array) $options['varModifier']) + [1 => ''],
             'varReceiver'        => (string) $options['varReceiver'],
             'varAccessor'        => (string) $options['varAccessor'],
+            'varExpander'        => (string) $options['varExpander'],
             'nofilter'           => (string) $options['nofilter'],
         ];
 
@@ -399,7 +401,7 @@ class Renderer
             $modifiers,
             Source::MATCH_ANY,
             Source::MATCH_MANY,
-            [T_CLOSE_TAG, $modifiers[0], $modifiers[1], '('],
+            [T_CLOSE_TAG, $modifiers[0], $modifiers[1], '(', '}'],
         ]) as $tokens) {
             $tokens->shrink();
             $tokens->strip();

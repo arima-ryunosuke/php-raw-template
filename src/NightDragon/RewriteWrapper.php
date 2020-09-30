@@ -10,6 +10,7 @@ class RewriteWrapper
     private $pos;
     private $stat;
     private $data;
+    private $options;
 
     public static function getLineMapping(string $file, int $line)
     {
@@ -39,11 +40,16 @@ class RewriteWrapper
         }
     }
 
+    public function __construct($options = [])
+    {
+        $this->options = $options;
+    }
+
     public function stream_open($path)
     {
         // include/require でも使用したいので $context が渡せない。のでクエリパラメータでオプションを受け取る
         $parts = parse_url($path);
-        parse_str($parts['query'] ?? '', $option);
+        parse_str($parts['query'] ?? '', $this->options);
 
         $this->path = realpath(substr($parts['path'], 1));
         $data = file_get_contents($this->path);
@@ -53,7 +59,7 @@ class RewriteWrapper
 
         $this->pos = 0;
         $this->stat = stat($this->path);
-        $this->data = $this->rewrite($data, $option);
+        $this->data = (string) $this->rewrite($data, $this->options);
         return true;
     }
 
@@ -79,7 +85,7 @@ class RewriteWrapper
         return $this->pos >= strlen($this->data);
     }
 
-    private function rewrite(string $source, array $options): string
+    private function rewrite(string $source, array $options): Source
     {
         $froms = [];
         $source = new Source($source, $options['compatibleShortTag'] ? Source::SHORT_TAG_REWRITE : Source::SHORT_TAG_NOTHING);
@@ -129,6 +135,7 @@ class RewriteWrapper
                 unset($tokens[1]);
             }
 
+            $this->rewriteExpand($tokens, $options['varExpander']);
             $this->rewriteAccessKey($tokens, $options['varAccessor'], $options['defaultGetter']);
             $this->rewriteModifier($tokens, $options['varReceiver'], $options['varModifier'], $options['defaultNamespace'], $options['defaultClass']);
             $this->rewriteFilter($tokens, $filter, $options['defaultCloser']);
@@ -141,7 +148,32 @@ class RewriteWrapper
             return $tokens;
         });
 
-        return (string) $source;
+        return $source;
+    }
+
+    private function rewriteExpand(Source $tokens, string $expander)
+    {
+        $tokens->replace([
+            $expander,
+            Source::MATCH_MANY,
+            $expander,
+        ], function (Source $tokens) {
+            $tokens->shrink();
+            $tokens->replace([
+                T_DOLLAR_OPEN_CURLY_BRACES,
+                Source::MATCH_MANY,
+                '}',
+            ], function ($curlys) {
+                $curlys->shrink();
+                $inner = $this->rewrite("<?=$curlys?>", array_replace($this->options, [
+                    'defaultFilter' => '',
+                    'defaultCloser' => '',
+                ]));
+                $inner->shrink();
+                return ['".(', $inner, ')."'];
+            });
+            return ['"', $tokens, '"'];
+        });
     }
 
     private function rewriteAccessKey(Source $tokens, string $accessor, string $getter)
