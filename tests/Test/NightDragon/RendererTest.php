@@ -139,15 +139,21 @@ line3
         $VARS = [
             'int'    => 123,
             'bool'   => true,
+            'both'   => 3.14,
             'string' => 'hoge',
             'array'  => ['x' => 'X', 'y' => 'Y', 'z' => 'Z'],
             'object' => new \Exception('exception', 123),
         ];
 
         $renderer = new Renderer([
-            'debug'        => true,
-            'compileDir'   => self::COMPILE_DIR,
-            'defaultClass' => \template\T::class
+            'debug'           => true,
+            'compileDir'      => self::COMPILE_DIR,
+            'defaultClass'    => \template\T::class,
+            'specialVariable' => [
+                '$both' => ['integer', 'float'],
+                '$null' => '',
+                '$hoge' => 'integer',
+            ],
         ]);
 
         // 全メタ情報が埋め込まれる
@@ -157,9 +163,12 @@ line3
         $this->assertContains("define('strtoupper', \\strtoupper(...[]))", $template);
         $this->assertContains('@var integer $int', $template);
         $this->assertContains('@var boolean $bool', $template);
+        $this->assertContains('@var integer|float $both', $template);
         $this->assertContains('@var string $string', $template);
         $this->assertContains('@var string[] $array', $template);
         $this->assertContains('@var \Exception $object', $template);
+        $this->assertNotContains('$null */', $template); // 空文字指定は含まれない
+        $this->assertNotContains('$hoge', $template); // そもそも存在しないものを追加したりはしない
 
         // 名前空間も問題ない
         $renderer->compile(self::TEMPLATE_DIR . '/namespace.phtml', []);

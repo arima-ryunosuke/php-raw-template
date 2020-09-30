@@ -152,6 +152,7 @@ class Renderer
             'gatherAccessor'     => $debug,
             'constFilename'      => null,
             'typeMapping'        => [],
+            'specialVariable'    => [],
             // インジェクション系
             'wrapperProtocol'    => Renderer::DEFAULT_PROTOCOL,
             'templateClass'      => '\\' . Template::class,
@@ -179,11 +180,12 @@ class Renderer
         $this->templateClass = '\\' . ltrim($options['templateClass'], '\\');
         $this->compileDir = (string) $options['compileDir'];
         $this->gatherOptions = [
-            'gatherVariable' => (bool) $options['gatherVariable'],
-            'gatherModifier' => (bool) $options['gatherModifier'],
-            'gatherAccessor' => (bool) $options['gatherAccessor'],
-            'constFilename'  => (string) $options['constFilename'],
-            'typeMapping'    => (array) $options['typeMapping'],
+            'gatherVariable'  => (bool) $options['gatherVariable'],
+            'gatherModifier'  => (bool) $options['gatherModifier'],
+            'gatherAccessor'  => (bool) $options['gatherAccessor'],
+            'constFilename'   => (string) $options['constFilename'],
+            'typeMapping'     => (array) $options['typeMapping'],
+            'specialVariable' => (array) $options['specialVariable'],
         ];
         $this->renderOptions = [
             'customTagHandler'   => (array) $options['customTagHandler'],
@@ -380,7 +382,12 @@ class Renderer
                 $result[$code] = $this->detectType($vars[$vname]);
             }
         }
-        return $result;
+        foreach ($this->gatherOptions['specialVariable'] as $name => $type) {
+            if (array_key_exists($name, $result)) {
+                $result[$name] = is_array($type) ? implode('|', $type) : $type;
+            }
+        }
+        return array_filter($result, 'strlen');
     }
 
     private function gatherModifier(Source $source, string $modifier, array $namespaces, array $classes): array
