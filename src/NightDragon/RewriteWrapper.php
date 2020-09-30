@@ -202,23 +202,54 @@ class RewriteWrapper
         });
     }
 
-    private function rewriteModifier(Source $tokens, string $receiver, string $modifier, array $namespaces, array $classes)
+    private function rewriteModifier(Source $tokens, string $receiver, array $modifiers, array $namespaces, array $classes)
     {
         // @todo <?= ～ > でざっくりやってるのでもっと局所的に当てていくほうが良い
+        // @todo というか普通に汚すぎるのでリファクタ対象（1.2.2 で何してるか分からなかった）
+
+        $resolve = function (string $stmt) use ($namespaces, $classes) {
+            if ($stmt[0] !== '\\') {
+                $stmtstr = strstr($stmt, '(', true) ?: $stmt;
+                foreach ($classes as $class) {
+                    if (method_exists($class, $stmtstr)) {
+                        return '\\' . ltrim($class, '\\') . '::' . $stmt;
+                    }
+                }
+                foreach ($namespaces as $namespace) {
+                    if (function_exists("$namespace\\$stmtstr")) {
+                        return concat($namespace, '\\') . $stmt;
+                    }
+                }
+            }
+            return $stmt;
+        };
 
         $tokens->replace([
             T_OPEN_TAG_WITH_ECHO,
             Source::MATCH_ANY,
             Source::MATCH_MANY,
             T_CLOSE_TAG,
-        ], function (Source $tokens) use ($receiver, $modifier, $namespaces, $classes) {
+        ], function (Source $tokens) use ($receiver, $modifiers, $resolve) {
             [$open, $close] = $tokens->shrink();
             $tokens->trim();
 
-            $sources = $tokens->split($modifier);
+            $scope = '${"\\0"}';
+            $positions = $tokens->filter($modifiers);
+            $sources = $tokens->split($modifiers);
             $stmt = trim((string) array_shift($sources));
-            foreach ($sources as $parts) {
+            foreach ($sources as $n => $parts) {
                 $parts->strip();
+                $modifiermap = [
+                    $modifiers[0] => [
+                        'proxyvar' => $stmt,
+                        'template' => '%3$s',
+                    ],
+                    $modifiers[1] => [
+                        'proxyvar' => $scope,
+                        'template' => '((%1$s=%2$s) === null ? %1$s : %3$s)',
+                    ],
+                ];
+                $modifier = $modifiermap[(string) $positions[$n]];
 
                 $default = null;
                 if ($parts->match([T_COALESCE])) {
@@ -227,11 +258,11 @@ class RewriteWrapper
 
                 // () がないなら単純呼び出し
                 if (!$parts->match(['('])) {
-                    $stmt = $parts . "($stmt)";
+                    $stmt = sprintf($modifier['template'], $scope, $stmt, $resolve("$parts") . "({$modifier['proxyvar']})");
                 }
                 // () があるがレシーバ変数がないなら第1引数に適用
                 elseif (!$parts->match([$receiver])) {
-                    $stmt = (string) $parts->replace(['('], "($stmt,");
+                    $stmt = sprintf($modifier['template'], $scope, $stmt, $resolve($parts->replace(['('], "({$modifier['proxyvar']},")));
                 }
                 // () があるしレシーバ変数もあるならその箇所に適用
                 else {
@@ -252,29 +283,13 @@ class RewriteWrapper
                             $enclosing = !$enclosing;
                         }
                         if ($token->equals([T_VARIABLE => $receiver])) {
-                            $token->token = $enclosing ? ('".' . $stmt . '."') : $stmt;
+                            $token->token = $enclosing ? ('".' . $modifier['proxyvar'] . '."') : $modifier['proxyvar'];
                         }
                     }
-                    $stmt = (string) $parts;
+                    $stmt = sprintf($modifier['template'], $scope, $stmt, $resolve($parts));
                 }
 
                 $stmt .= $default === null ? '' : " ?? $default";
-
-                if ($stmt[0] !== '\\') {
-                    $stmtstr = strstr($stmt, '(', true);
-                    foreach ($classes as $class) {
-                        if (method_exists($class, $stmtstr)) {
-                            $stmt = '\\' . ltrim($class, '\\') . '::' . $stmt;
-                            continue 2;
-                        }
-                    }
-                    foreach ($namespaces as $namespace) {
-                        if (function_exists("$namespace\\$stmtstr")) {
-                            $stmt = concat($namespace, '\\') . $stmt;
-                            continue 2;
-                        }
-                    }
-                }
             }
 
             return [$open, $stmt, $close];

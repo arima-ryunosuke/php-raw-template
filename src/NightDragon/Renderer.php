@@ -169,7 +169,7 @@ class Renderer
             'defaultGetter'      => '\\' . Renderer::class . '::access',
             'defaultCloser'      => "\n",
             'nofilter'           => '', // for compatible. In the future the default will be "@"
-            'varModifier'        => '|',
+            'varModifier'        => '|', // for compatible. In the future the default will be ['|', '&']
             'varReceiver'        => '$_',
             'varAccessor'        => '.',
         ];
@@ -195,7 +195,7 @@ class Renderer
             'defaultFilter'      => (string) $options['defaultFilter'],
             'defaultGetter'      => (string) $options['defaultGetter'],
             'defaultCloser'      => (string) $options['defaultCloser'],
-            'varModifier'        => (string) $options['varModifier'],
+            'varModifier'        => ((array) $options['varModifier']) + [1 => ''],
             'varReceiver'        => (string) $options['varReceiver'],
             'varAccessor'        => (string) $options['varAccessor'],
             'nofilter'           => (string) $options['nofilter'],
@@ -390,16 +390,16 @@ class Renderer
         return array_filter($result, 'strlen');
     }
 
-    private function gatherModifier(Source $source, string $modifier, array $namespaces, array $classes): array
+    private function gatherModifier(Source $source, array $modifiers, array $namespaces, array $classes): array
     {
         $namespaces[] = $source->namespace();
 
         $result = [];
         foreach ($source->match([
-            $modifier,
+            $modifiers,
             Source::MATCH_ANY,
             Source::MATCH_MANY,
-            [T_CLOSE_TAG, $modifier, '('],
+            [T_CLOSE_TAG, $modifiers[0], $modifiers[1], '('],
         ]) as $tokens) {
             $tokens->shrink();
             $tokens->strip();

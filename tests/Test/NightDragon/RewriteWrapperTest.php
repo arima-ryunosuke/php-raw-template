@@ -20,7 +20,7 @@ class RewriteWrapperTest extends \ryunosuke\Test\AbstractTestCase
         'defaultCloser'      => "\n",
         'nofilter'           => '',
         'varReceiver'        => '$_',
-        'varModifier'        => '|',
+        'varModifier'        => ['|', '&'],
         'varAccessor'        => '.',
     ];
 
@@ -296,7 +296,7 @@ dummy
         $this->assertEquals($expected, $rewrite($actual, [
                 'defaultFilter' => '',
                 'defaultCloser' => '',
-                'varModifier'   => '',
+                'varModifier'   => [],
                 'varAccessor'   => '',
             ] + self::defaultOption));
     }
@@ -346,12 +346,34 @@ dummy
         /** @see RewriteWrapper::rewriteModifier() */
         $rewrite = $this->publishMethod(new RewriteWrapper(), 'rewriteModifier');
 
-        $source = new Source('<?= $a | trim | trim($_, "X") | sprintf("z%sz", "$_") | sprintf("Z{$_}Z", "$_") ?>');
-        $rewrite($source, '$_', '|', [], []);
+        $source = new Source('<?= $a | trim | trim("X") | sprintf("z%sz", "$_") | sprintf("Z{$_}Z", "$_") ?>');
+        $rewrite($source, '$_', ['|', '&'], [], []);
         $this->assertEquals('<?=sprintf("Z".sprintf("z%sz","".trim(trim($a),"X")."")."Z","".sprintf("z%sz","".trim(trim($a),"X")."")."")?>', (string) $source);
+        $this->assertEquals('ZzYZzZ', eval("\$a=' XYZ ';ob_start();?>$source<?php return ob_get_clean() ?>"));
+
+        $source = new Source('<?= $a & trim & trim("X") & sprintf("z%sz", "$_") & sprintf("Z{$_}Z", "$_") ?>');
+        $rewrite($source, '$_', ['|', '&'], [], []);
+        $this->assertEquals('<?=((${"\0"}=((${"\0"}=((${"\0"}=((${"\0"}=$a) === null ? ${"\0"} : trim(${"\0"}))) === null ? ${"\0"} : trim(${"\0"},"X"))) === null ? ${"\0"} : sprintf("z%sz","".${"\0"}.""))) === null ? ${"\0"} : sprintf("Z".${"\0"}."Z","".${"\0"}.""))?>', (string) $source);
+        $this->assertEquals('ZzYZzZ', eval("\$a=' XYZ ';ob_start();?>$source<?php return ob_get_clean() ?>"));
+
+        $source = new Source('<?= $a | trim & trim("X") & sprintf("z%sz", "$_") | sprintf("Z{$_}Z", "$_") ?>');
+        $rewrite($source, '$_', ['|', '&'], [], []);
+        $this->assertEquals('<?=sprintf("Z".((${"\0"}=((${"\0"}=trim($a)) === null ? ${"\0"} : trim(${"\0"},"X"))) === null ? ${"\0"} : sprintf("z%sz","".${"\0"}.""))."Z","".((${"\0"}=((${"\0"}=trim($a)) === null ? ${"\0"} : trim(${"\0"},"X"))) === null ? ${"\0"} : sprintf("z%sz","".${"\0"}.""))."")?>', (string) $source);
+        $this->assertEquals('ZzYZzZ', eval("\$a=' XYZ ';ob_start();?>$source<?php return ob_get_clean() ?>"));
+
+        $fname = '\\' . __NAMESPACE__ . '\\increment';
+        function increment($v)
+        {
+            $v++;
+            return $v;
+        }
+
+        $source = new Source('<?= $a & ' . $fname . ' & ' . $fname . ' & ' . $fname . ' | ' . $fname . ' ?>');
+        $rewrite($source, '$_', ['|', '&'], [], []);
+        $this->assertEquals('1', eval("\$a=null;ob_start();?>$source<?php return ob_get_clean() ?>"));
 
         $source = new Source('<?= $a >> trim >> trim($rrr, "X") >> sprintf("z%sz", "$rrr") >> sprintf("Z{$rrr}Z", "$rrr") ?>');
-        $rewrite($source, '$rrr', '>>', [], []);
+        $rewrite($source, '$rrr', ['>>', null], [], []);
         $this->assertEquals('<?=sprintf("Z".sprintf("z%sz","".trim(trim($a),"X")."")."Z","".sprintf("z%sz","".trim(trim($a),"X")."")."")?>', (string) $source);
     }
 
@@ -361,19 +383,19 @@ dummy
         $rewrite = $this->publishMethod(new RewriteWrapper(), 'rewriteModifier');
 
         $source = new Source('<?= $value | \\globaled | spaced | \\fully\\qualified ?>');
-        $rewrite($source, '$_', '|', [], []);
+        $rewrite($source, '$_', ['|', null], [], []);
         $this->assertEquals('<?=\\fully\\qualified(spaced(\\globaled($value)))?>', (string) $source);
 
         $source = new Source('<?= $value | \\globaled | spaced | \\fully\\qualified ?>');
-        $rewrite($source, '$_', '|', ['\\template'], []);
+        $rewrite($source, '$_', ['|', null], ['\\template'], []);
         $this->assertEquals('<?=\\fully\\qualified(\\template\\spaced(\\globaled($value)))?>', (string) $source);
 
         $source = new Source('<?= $value | f ?>');
-        $rewrite($source, '$_', '|', ['\\hoge', '\\fuga'], []);
+        $rewrite($source, '$_', ['|', null], ['\\hoge', '\\fuga'], []);
         $this->assertEquals('<?=\hoge\f($value)?>', (string) $source);
 
         $source = new Source('<?= $value | f ?>');
-        $rewrite($source, '$_', '|', ['\\fuga', '\\hoge'], []);
+        $rewrite($source, '$_', ['|', null], ['\\fuga', '\\hoge'], []);
         $this->assertEquals('<?=\fuga\f($value)?>', (string) $source);
     }
 
@@ -383,15 +405,15 @@ dummy
         $rewrite = $this->publishMethod(new RewriteWrapper(), 'rewriteModifier');
 
         $source = new Source('<?= $value | method ?>');
-        $rewrite($source, '$_', '|', [], []);
+        $rewrite($source, '$_', ['|', null], [], []);
         $this->assertEquals('<?=method($value)?>', (string) $source);
 
         $source = new Source('<?= $value | method ?>');
-        $rewrite($source, '$_', '|', [], ['hoge\\T', 'fuga\\T']);
+        $rewrite($source, '$_', ['|', null], [], ['hoge\\T', 'fuga\\T']);
         $this->assertEquals('<?=\\hoge\\T::method($value)?>', (string) $source);
 
         $source = new Source('<?= $value | method ?>');
-        $rewrite($source, '$_', '|', [], ['fuga\\T', 'hoge\\T']);
+        $rewrite($source, '$_', ['|', null], [], ['fuga\\T', 'hoge\\T']);
         $this->assertEquals('<?=\\fuga\\T::method($value)?>', (string) $source);
     }
 
@@ -401,15 +423,15 @@ dummy
         $rewrite = $this->publishMethod(new RewriteWrapper(), 'rewriteModifier');
 
         $source = new Source('<?= $value | funcA(1) ?>');
-        $rewrite($source, '$_', '|', [], []);
+        $rewrite($source, '$_', ['|', null], [], []);
         $this->assertEquals('<?=funcA($value,1)?>', (string) $source);
 
         $source = new Source('<?= $value | funcA($_, 1) ?>');
-        $rewrite($source, '$_', '|', [], []);
+        $rewrite($source, '$_', ['|', null], [], []);
         $this->assertEquals('<?=funcA($value,1)?>', (string) $source);
 
         $source = new Source('<?= $value | funcA($_, 1) ?? "default1" | funcB ?? "default2" ?>');
-        $rewrite($source, '$_', '|', [], []);
+        $rewrite($source, '$_', ['|', null], [], []);
         $this->assertEquals('<?=funcB(funcA($value,1) ?? "default1") ?? "default2"?>', (string) $source);
     }
 
