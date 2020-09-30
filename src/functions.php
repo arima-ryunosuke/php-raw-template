@@ -178,6 +178,236 @@ if (function_exists("ryunosuke\\NightDragon\\array_sprintf") && !defined("ryunos
     define("ryunosuke\\NightDragon\\array_sprintf", "ryunosuke\\NightDragon\\array_sprintf");
 }
 
+if (!isset($excluded_functions["array_map_method"]) && (!function_exists("ryunosuke\\NightDragon\\array_map_method") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\array_map_method"))->isInternal()))) {
+    /**
+     * メソッドを指定できるようにした array_map
+     *
+     * 配列内の要素は全て同一（少なくともシグネチャが同じ $method が存在する）オブジェクトでなければならない。
+     * スルーする場合は $ignore=true とする。スルーした場合 map ではなく filter される（結果配列に含まれない）。
+     * $ignore=null とすると 何もせずそのまま要素を返す。
+     *
+     * Example:
+     * ```php
+     * $exa = new \Exception('a');
+     * $exb = new \Exception('b');
+     * $std = new \stdClass();
+     * // getMessage で map される
+     * that(array_map_method([$exa, $exb], 'getMessage'))->isSame(['a', 'b']);
+     * // getMessage で map されるが、メソッドが存在しない場合は取り除かれる
+     * that(array_map_method([$exa, $exb, $std, null], 'getMessage', [], true))->isSame(['a', 'b']);
+     * // getMessage で map されるが、メソッドが存在しない場合はそのまま返す
+     * that(array_map_method([$exa, $exb, $std, null], 'getMessage', [], null))->isSame(['a', 'b', $std, null]);
+     * ```
+     *
+     * @param iterable $array 対象配列
+     * @param string $method メソッド
+     * @param array $args メソッドに渡る引数
+     * @param bool|null $ignore メソッドが存在しない場合にスルーするか。null を渡すと要素そのものを返す
+     * @return array $method が true を返した新しい配列
+     */
+    function array_map_method($array, $method, $args = [], $ignore = false)
+    {
+        if ($ignore === true) {
+            $array = array_filter(arrayval($array, false), function ($object) use ($method) {
+                return is_callable([$object, $method]);
+            });
+        }
+        return array_map(function ($object) use ($method, $args, $ignore) {
+            if ($ignore === null && !is_callable([$object, $method])) {
+                return $object;
+            }
+            return ([$object, $method])(...$args);
+        }, arrayval($array, false));
+    }
+}
+if (function_exists("ryunosuke\\NightDragon\\array_map_method") && !defined("ryunosuke\\NightDragon\\array_map_method")) {
+    define("ryunosuke\\NightDragon\\array_map_method", "ryunosuke\\NightDragon\\array_map_method");
+}
+
+if (!isset($excluded_functions["array_each"]) && (!function_exists("ryunosuke\\NightDragon\\array_each") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\array_each"))->isInternal()))) {
+    /**
+     * array_reduce の参照版（のようなもの）
+     *
+     * 配列をループで回し、その途中経過、値、キー、連番をコールバック引数で渡して最終的な結果を返り値として返す。
+     * array_reduce と少し似てるが、下記の点が異なる。
+     *
+     * - いわゆる $carry は返り値で表すのではなく、参照引数で表す
+     * - 値だけでなくキー、連番も渡ってくる
+     * - 巨大配列の場合でも速度劣化が少ない（array_reduce に巨大配列を渡すと実用にならないレベルで遅くなる）
+     *
+     * $callback の引数は `($value, $key, $n)` （$n はキーとは関係がない 0 ～ 要素数-1 の通し連番）。
+     *
+     * 返り値ではなく参照引数なので return する必要はない（ワンライナーが書きやすくなる）。
+     * 返り値が空くのでループ制御に用いる。
+     * 今のところ $callback が false を返すとそこで break するのみ。
+     *
+     * 第3引数を省略した場合、**クロージャの第1引数のデフォルト値が使われる**。
+     * これは特筆すべき動作で、不格好な第3引数を完全に省略することができる（サンプルコードを参照）。
+     * ただし「php の文法違反（今のところエラーにはならないし、全てにデフォルト値をつければ一応回避可能）」「リフレクションを使う（ほんの少し遅くなる）」などの弊害が有るので推奨はしない。
+     * （ただ、「意図していることをコードで表す」といった観点ではこの記法の方が正しいとも思う）。
+     *
+     * Example:
+     * ```php
+     * // 全要素を文字列的に足し合わせる
+     * that(array_each([1, 2, 3, 4, 5], function(&$carry, $v){$carry .= $v;}, ''))->isSame('12345');
+     * // 値をキーにして要素を2乗値にする
+     * that(array_each([1, 2, 3, 4, 5], function(&$carry, $v){$carry[$v] = $v * $v;}, []))->isSame([
+     *     1 => 1,
+     *     2 => 4,
+     *     3 => 9,
+     *     4 => 16,
+     *     5 => 25,
+     * ]);
+     * // 上記と同じ。ただし、3 で break する
+     * that(array_each([1, 2, 3, 4, 5], function(&$carry, $v, $k){
+     *     if ($k === 3) return false;
+     *     $carry[$v] = $v * $v;
+     * }, []))->isSame([
+     *     1 => 1,
+     *     2 => 4,
+     *     3 => 9,
+     * ]);
+     *
+     * // 下記は完全に同じ（第3引数の代わりにデフォルト引数を使っている）
+     * that(array_each([1, 2, 3], function(&$carry = [], $v) {
+     *         $carry[$v] = $v * $v;
+     *     }))->isSame(array_each([1, 2, 3], function(&$carry, $v) {
+     *         $carry[$v] = $v * $v;
+     *     }, [])
+     *     // 個人的に↑のようなぶら下がり引数があまり好きではない（クロージャを最後の引数にしたい）
+     * );
+     * ```
+     *
+     * @param iterable $array 対象配列
+     * @param callable $callback 評価クロージャ。(&$carry, $key, $value) を受ける
+     * @param mixed $default ループの最初や空の場合に適用される値
+     * @return mixed each した結果
+     */
+    function array_each($array, $callback, $default = null)
+    {
+        if (func_num_args() === 2) {
+            /** @var \ReflectionFunction $ref */
+            $ref = reflect_callable($callback);
+            $params = $ref->getParameters();
+            if ($params[0]->isDefaultValueAvailable()) {
+                $default = $params[0]->getDefaultValue();
+            }
+        }
+
+        $n = 0;
+        foreach ($array as $k => $v) {
+            $return = $callback($default, $v, $k, $n++);
+            if ($return === false) {
+                break;
+            }
+        }
+        return $default;
+    }
+}
+if (function_exists("ryunosuke\\NightDragon\\array_each") && !defined("ryunosuke\\NightDragon\\array_each")) {
+    define("ryunosuke\\NightDragon\\array_each", "ryunosuke\\NightDragon\\array_each");
+}
+
+if (!isset($excluded_functions["array_all"]) && (!function_exists("ryunosuke\\NightDragon\\array_all") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\array_all"))->isInternal()))) {
+    /**
+     * 全要素が true になるなら true を返す（1つでも false なら false を返す）
+     *
+     * $callback が要求するならキーも渡ってくる。
+     *
+     * Example:
+     * ```php
+     * that(array_all([true, true]))->isTrue();
+     * that(array_all([true, false]))->isFalse();
+     * that(array_all([false, false]))->isFalse();
+     * ```
+     *
+     * @param iterable $array 対象配列
+     * @param callable $callback 評価クロージャ。 null なら値そのもので評価
+     * @param bool|mixed $default 空配列の場合のデフォルト値
+     * @return bool 全要素が true なら true
+     */
+    function array_all($array, $callback = null, $default = true)
+    {
+        if (is_empty($array)) {
+            return $default;
+        }
+
+        $callback = func_user_func_array($callback);
+
+        foreach ($array as $k => $v) {
+            if (!$callback($v, $k)) {
+                return false;
+            }
+        }
+        return true;
+    }
+}
+if (function_exists("ryunosuke\\NightDragon\\array_all") && !defined("ryunosuke\\NightDragon\\array_all")) {
+    define("ryunosuke\\NightDragon\\array_all", "ryunosuke\\NightDragon\\array_all");
+}
+
+if (!isset($excluded_functions["get_object_properties"]) && (!function_exists("ryunosuke\\NightDragon\\get_object_properties") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\get_object_properties"))->isInternal()))) {
+    /**
+     * オブジェクトのプロパティを可視・不可視を問わず取得する
+     *
+     * get_object_vars + no public プロパティを返すイメージ。
+     *
+     * Example:
+     * ```php
+     * $object = new \Exception('something', 42);
+     * $object->oreore = 'oreore';
+     *
+     * // get_object_vars はそのスコープから見えないプロパティを取得できない
+     * // var_dump(get_object_vars($object));
+     *
+     * // array キャストは全て得られるが null 文字を含むので扱いにくい
+     * // var_dump((array) $object);
+     *
+     * // この関数を使えば不可視プロパティも取得できる
+     * that(get_object_properties($object))->arraySubset([
+     *     'message' => 'something',
+     *     'code'    => 42,
+     *     'oreore'  => 'oreore',
+     * ]);
+     * ```
+     *
+     * @param object $object オブジェクト
+     * @return array 全プロパティの配列
+     */
+    function get_object_properties($object)
+    {
+        if (function_exists('get_mangled_object_vars')) {
+            get_mangled_object_vars($object); // @codeCoverageIgnore
+        }
+
+        static $refs = [];
+        $class = get_class($object);
+        if (!isset($refs[$class])) {
+            // var_export や var_dump で得られるものは「親が優先」となっているが、不具合的動作だと思うので「子を優先」とする
+            $refs[$class] = [];
+            $ref = new \ReflectionClass($class);
+            do {
+                $refs[$ref->name] = array_each($ref->getProperties(), function (&$carry, \ReflectionProperty $rp) {
+                    if (!$rp->isStatic()) {
+                        $rp->setAccessible(true);
+                        $carry[$rp->getName()] = $rp;
+                    }
+                }, []);
+                $refs[$class] += $refs[$ref->name];
+            } while ($ref = $ref->getParentClass());
+        }
+
+        // 配列キャストだと private で ヌル文字が出たり static が含まれたりするのでリフレクションで取得して勝手プロパティで埋める
+        $vars = array_map_method($refs[$class], 'getValue', [$object]);
+        $vars += get_object_vars($object);
+
+        return $vars;
+    }
+}
+if (function_exists("ryunosuke\\NightDragon\\get_object_properties") && !defined("ryunosuke\\NightDragon\\get_object_properties")) {
+    define("ryunosuke\\NightDragon\\get_object_properties", "ryunosuke\\NightDragon\\get_object_properties");
+}
+
 if (!isset($excluded_functions["file_set_contents"]) && (!function_exists("ryunosuke\\NightDragon\\file_set_contents") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\file_set_contents"))->isInternal()))) {
     /**
      * ディレクトリも掘る file_put_contents
@@ -795,6 +1025,157 @@ if (function_exists("ryunosuke\\NightDragon\\evaluate") && !defined("ryunosuke\\
     define("ryunosuke\\NightDragon\\evaluate", "ryunosuke\\NightDragon\\evaluate");
 }
 
+if (!isset($excluded_functions["indent_php"]) && (!function_exists("ryunosuke\\NightDragon\\indent_php") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\indent_php"))->isInternal()))) {
+    /**
+     * php のコードのインデントを調整する
+     *
+     * インデントの基準はコードの最初の行になる。
+     * その基準インデントを削除した後、指定したインデントレベルでインデントするようなイメージ。
+     *
+     * Example:
+     * ```php
+     * $phpcode = '
+     *     echo 123;
+     *
+     *     if (true) {
+     *         echo 456;
+     *     }
+     * ';
+     * // 数値指定は空白換算
+     * that(indent_php($phpcode, 8))->isSame('
+     *         echo 123;
+     *
+     *         if (true) {
+     *             echo 456;
+     *         }
+     * ');
+     * // 文字列を指定すればそれが使用される
+     * that(indent_php($phpcode, "  "))->isSame('
+     *   echo 123;
+     *
+     *   if (true) {
+     *       echo 456;
+     *   }
+     * ');
+     * // オプション指定
+     * that(indent_php($phpcode, [
+     *     'indent'    => 4,    // インデント指定（上記の数値・文字列指定はこれの糖衣構文）
+     *     'trimempty' => true, // 空行を trim するか
+     *     'heredoc'   => true, // php7.3 の Flexible Heredoc もインデントするか
+     * ]))->isSame('
+     *     echo 123;
+     *
+     *     if (true) {
+     *         echo 456;
+     *     }
+     * ');
+     * ```
+     *
+     * @param string $phpcode インデントする php コード
+     * @param array|int|string $options オプション
+     * @return string インデントされた php コード
+     */
+    function indent_php($phpcode, $options = [])
+    {
+        if (!is_array($options)) {
+            $options = ['indent' => $options];
+        }
+        $options += [
+            'indent'    => 0,
+            'trimempty' => true,
+            'heredoc'   => version_compare(PHP_VERSION, '7.3.0') < 0,
+        ];
+        if (is_int($options['indent'])) {
+            $options['indent'] = str_repeat(' ', $options['indent']);
+        }
+
+        $tmp = token_get_all("<?php $phpcode");
+        array_shift($tmp);
+
+        // トークンの正規化
+        $tokens = [];
+        for ($i = 0; $i < count($tmp); $i++) {
+            if (is_string($tmp[$i])) {
+                $tmp[$i] = [-1, $tmp[$i], null];
+            }
+
+            // 行コメントの分割（T_COMMENT には改行が含まれている）
+            if ($tmp[$i][0] === T_COMMENT && preg_match('@^(#|//).*?(\\R)@um', $tmp[$i][1], $matches)) {
+                $tmp[$i][1] = trim($tmp[$i][1]);
+                if (($tmp[$i + 1][0] ?? null) === T_WHITESPACE) {
+                    $tmp[$i + 1][1] = $matches[2] . $tmp[$i + 1][1];
+                }
+                else {
+                    array_splice($tmp, $i + 1, 0, [[T_WHITESPACE, $matches[2], null]]);
+                }
+            }
+
+            if ($options['heredoc']) {
+                // 行コメントと同じ（T_START_HEREDOC には改行が含まれている）
+                if ($tmp[$i][0] === T_START_HEREDOC && preg_match('@^(<<<).*?(\\R)@um', $tmp[$i][1], $matches)) {
+                    $tmp[$i][1] = trim($tmp[$i][1]);
+                    if (($tmp[$i + 1][0] ?? null) === T_ENCAPSED_AND_WHITESPACE) {
+                        $tmp[$i + 1][1] = $matches[2] . $tmp[$i + 1][1];
+                    }
+                    else {
+                        array_splice($tmp, $i + 1, 0, [[T_ENCAPSED_AND_WHITESPACE, $matches[2], null]]);
+                    }
+                }
+                // php 7.3 において T_END_HEREDOC は必ず単一行になる
+                if ($tmp[$i][0] === T_ENCAPSED_AND_WHITESPACE) {
+                    if (($tmp[$i + 1][0] ?? null) === T_END_HEREDOC && preg_match('@^(\\s+)(.*)@um', $tmp[$i + 1][1], $matches)) {
+                        $tmp[$i][1] = $tmp[$i][1] . $matches[1];
+                        $tmp[$i + 1][1] = $matches[2];
+                    }
+                }
+            }
+
+            $tokens[] = $tmp[$i] + [3 => token_name($tmp[$i][0])];
+        }
+
+        // 最初のトークンでインデントレベルを導出
+        $indent = '';
+        $first = $tokens[0];
+        if ($first[0] === T_WHITESPACE) {
+            preg_match_all('@^[ \t]*$@um', $first[1], $matches);
+            $max = '';
+            foreach ($matches[0] as $match) {
+                if ($max < strlen($match)) {
+                    $max = $match;
+                }
+            }
+            $indent = $max;
+        }
+
+        // 改行を置換してインデント
+        $hereing = false;
+        foreach ($tokens as $i => $token) {
+            if ($options['heredoc']) {
+                if ($token[0] === T_START_HEREDOC) {
+                    $hereing = true;
+                }
+                if ($token[0] === T_END_HEREDOC) {
+                    $hereing = false;
+                }
+            }
+            if (in_array($token[0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true) || ($hereing && $token[0] === T_ENCAPSED_AND_WHITESPACE)) {
+                $token[1] = preg_replace("@(\\R)$indent@um", '$1' . $options['indent'], $token[1]);
+            }
+            if ($options['trimempty']) {
+                if ($token[0] === T_WHITESPACE) {
+                    $token[1] = preg_replace("@(\\R)[ \\t]+(\\R)@um", '$1$2', $token[1]);
+                }
+            }
+
+            $tokens[$i] = $token;
+        }
+        return implode('', array_column($tokens, 1));
+    }
+}
+if (function_exists("ryunosuke\\NightDragon\\indent_php") && !defined("ryunosuke\\NightDragon\\indent_php")) {
+    define("ryunosuke\\NightDragon\\indent_php", "ryunosuke\\NightDragon\\indent_php");
+}
+
 if (!isset($excluded_functions["cachedir"]) && (!function_exists("ryunosuke\\NightDragon\\cachedir") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\cachedir"))->isInternal()))) {
     /**
      * 本ライブラリで使用するキャッシュディレクトリを設定する
@@ -1023,6 +1404,75 @@ if (function_exists("ryunosuke\\NightDragon\\arrayval") && !defined("ryunosuke\\
     define("ryunosuke\\NightDragon\\arrayval", "ryunosuke\\NightDragon\\arrayval");
 }
 
+if (!isset($excluded_functions["is_empty"]) && (!function_exists("ryunosuke\\NightDragon\\is_empty") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\is_empty"))->isInternal()))) {
+    /**
+     * 値が空か検査する
+     *
+     * `empty` とほぼ同じ。ただし
+     *
+     * - string: "0"
+     * - countable でない object
+     * - countable である object で count() > 0
+     *
+     * は false 判定する。
+     * ただし、 $empty_stcClass に true を指定すると「フィールドのない stdClass」も true を返すようになる。
+     * これは stdClass の立ち位置はかなり特殊で「フィールドアクセスできる組み込み配列」のような扱いをされることが多いため。
+     * （例えば `json_decode('{}')` は stdClass を返すが、このような状況は空判定したいことが多いだろう）。
+     *
+     * なお、関数の仕様上、未定義変数を true 判定することはできない。
+     * 未定義変数をチェックしたい状況は大抵の場合コードが悪いが `$array['key1']['key2']` を調べたいことはある。
+     * そういう時には使えない（?? する必要がある）。
+     *
+     * 「 `if ($var) {}` で十分なんだけど "0" が…」という状況はまれによくあるはず。
+     *
+     * Example:
+     * ```php
+     * // この辺は empty と全く同じ
+     * that(is_empty(null))->isTrue();
+     * that(is_empty(false))->isTrue();
+     * that(is_empty(0))->isTrue();
+     * that(is_empty(''))->isTrue();
+     * // この辺だけが異なる
+     * that(is_empty('0'))->isFalse();
+     * // 第2引数に true を渡すと空の stdClass も empty 判定される
+     * $stdclass = new \stdClass();
+     * that(is_empty($stdclass, true))->isTrue();
+     * // フィールドがあれば empty ではない
+     * $stdclass->hoge = 123;
+     * that(is_empty($stdclass, true))->isFalse();
+     * ```
+     *
+     * @param mixed $var 判定する値
+     * @param bool $empty_stdClass 空の stdClass を空とみなすか
+     * @return bool 空なら true
+     */
+    function is_empty($var, $empty_stdClass = false)
+    {
+        // object は is_countable 次第
+        if (is_object($var)) {
+            // が、 stdClass だけは特別扱い（stdClass は継承もできるので、クラス名で判定する（継承していたらそれはもう stdClass ではないと思う））
+            if ($empty_stdClass && get_class($var) === 'stdClass') {
+                return !(array) $var;
+            }
+            if (is_countable($var)) {
+                return !count($var);
+            }
+            return false;
+        }
+
+        // "0" は false
+        if ($var === '0') {
+            return false;
+        }
+
+        // 上記以外は empty に任せる
+        return empty($var);
+    }
+}
+if (function_exists("ryunosuke\\NightDragon\\is_empty") && !defined("ryunosuke\\NightDragon\\is_empty")) {
+    define("ryunosuke\\NightDragon\\is_empty", "ryunosuke\\NightDragon\\is_empty");
+}
+
 if (!isset($excluded_functions["is_primitive"]) && (!function_exists("ryunosuke\\NightDragon\\is_primitive") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\is_primitive"))->isInternal()))) {
     /**
      * 値が複合型でないか検査する
@@ -1077,4 +1527,157 @@ if (!isset($excluded_functions["is_arrayable"]) && (!function_exists("ryunosuke\
 }
 if (function_exists("ryunosuke\\NightDragon\\is_arrayable") && !defined("ryunosuke\\NightDragon\\is_arrayable")) {
     define("ryunosuke\\NightDragon\\is_arrayable", "ryunosuke\\NightDragon\\is_arrayable");
+}
+
+if (!isset($excluded_functions["is_countable"]) && (!function_exists("ryunosuke\\NightDragon\\is_countable") || (!true && (new \ReflectionFunction("ryunosuke\\NightDragon\\is_countable"))->isInternal()))) {
+    /**
+     * 変数が count でカウントできるか調べる
+     *
+     * 要するに {@link http://php.net/manual/function.is-countable.php is_countable} の polyfill。
+     *
+     * Example:
+     * ```php
+     * that(is_countable([1, 2, 3]))->isTrue();
+     * that(is_countable(new \ArrayObject()))->isTrue();
+     * that(is_countable((function () { yield 1; })()))->isFalse();
+     * that(is_countable(1))->isFalse();
+     * that(is_countable(new \stdClass()))->isFalse();
+     * ```
+     *
+     * @polyfill
+     *
+     * @param mixed $var 調べる値
+     * @return bool count でカウントできるなら true
+     */
+    function is_countable($var)
+    {
+        return is_array($var) || $var instanceof \Countable;
+    }
+}
+if (function_exists("ryunosuke\\NightDragon\\is_countable") && !defined("ryunosuke\\NightDragon\\is_countable")) {
+    define("ryunosuke\\NightDragon\\is_countable", "ryunosuke\\NightDragon\\is_countable");
+}
+
+if (!isset($excluded_functions["var_export2"]) && (!function_exists("ryunosuke\\NightDragon\\var_export2") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\var_export2"))->isInternal()))) {
+    /**
+     * 組み込みの var_export をいい感じにしたもの
+     *
+     * 下記の点が異なる。
+     *
+     * - 配列は 5.4 以降のショートシンタックス（[]）で出力
+     * - インデントは 4 固定
+     * - ただの配列は1行（[1, 2, 3]）でケツカンマなし、連想配列は桁合わせインデントでケツカンマあり
+     * - 文字列はダブルクオート
+     * - null は null（小文字）
+     * - 再帰構造を渡しても警告がでない（さらに NULL ではなく `'*RECURSION*'` という文字列になる）
+     * - 配列の再帰構造の出力が異なる（Example参照）
+     *
+     * Example:
+     * ```php
+     * // 単純なエクスポート
+     * that(var_export2(['array' => [1, 2, 3], 'hash' => ['a' => 'A', 'b' => 'B', 'c' => 'C']], true))->isSame('[
+     *     "array" => [1, 2, 3],
+     *     "hash"  => [
+     *         "a" => "A",
+     *         "b" => "B",
+     *         "c" => "C",
+     *     ],
+     * ]');
+     * // 再帰構造を含むエクスポート（標準の var_export は形式が異なる。 var_export すれば分かる）
+     * $rarray = [];
+     * $rarray['a']['b']['c'] = &$rarray;
+     * $robject = new \stdClass();
+     * $robject->a = new \stdClass();
+     * $robject->a->b = new \stdClass();
+     * $robject->a->b->c = $robject;
+     * that(var_export2(compact('rarray', 'robject'), true))->isSame('[
+     *     "rarray"  => [
+     *         "a" => [
+     *             "b" => [
+     *                 "c" => "*RECURSION*",
+     *             ],
+     *         ],
+     *     ],
+     *     "robject" => stdClass::__set_state([
+     *         "a" => stdClass::__set_state([
+     *             "b" => stdClass::__set_state([
+     *                 "c" => "*RECURSION*",
+     *             ]),
+     *         ]),
+     *     ]),
+     * ]');
+     * ```
+     *
+     * @param mixed $value 出力する値
+     * @param bool $return 返すなら true 出すなら false
+     * @return string|null $return=true の場合は出力せず結果を返す
+     */
+    function var_export2($value, $return = false)
+    {
+        // インデントの空白数
+        $INDENT = 4;
+
+        // 再帰用クロージャ
+        $export = function ($value, $nest = 0, $parents = []) use (&$export, $INDENT) {
+            // 再帰を検出したら *RECURSION* とする（処理に関しては is_recursive のコメント参照）
+            foreach ($parents as $parent) {
+                if ($parent === $value) {
+                    return $export('*RECURSION*');
+                }
+            }
+            // 配列は連想判定したり再帰したり色々
+            if (is_array($value)) {
+                $spacer1 = str_repeat(' ', ($nest + 1) * $INDENT);
+                $spacer2 = str_repeat(' ', $nest * $INDENT);
+
+                $hashed = is_hasharray($value);
+
+                // スカラー値のみで構成されているならシンプルな再帰
+                if (!$hashed && array_all($value, is_primitive)) {
+                    return '[' . implode(', ', array_map($export, $value)) . ']';
+                }
+
+                // 連想配列はキーを含めて桁あわせ
+                if ($hashed) {
+                    $keys = array_map($export, array_combine($keys = array_keys($value), $keys));
+                    $maxlen = max(array_map('strlen', $keys));
+                }
+                $kvl = '';
+                $parents[] = $value;
+                foreach ($value as $k => $v) {
+                    /** @noinspection PhpUndefinedVariableInspection */
+                    $keystr = $hashed ? $keys[$k] . str_repeat(' ', $maxlen - strlen($keys[$k])) . ' => ' : '';
+                    $kvl .= $spacer1 . $keystr . $export($v, $nest + 1, $parents) . ",\n";
+                }
+                return "[\n{$kvl}{$spacer2}]";
+            }
+            // オブジェクトは単にプロパティを __set_state する文字列を出力する
+            elseif (is_object($value)) {
+                $parents[] = $value;
+                return get_class($value) . '::__set_state(' . $export(get_object_properties($value), $nest, $parents) . ')';
+            }
+            // 文字列はダブルクオート
+            elseif (is_string($value)) {
+                return '"' . addcslashes($value, "\$\"\0\\") . '"';
+            }
+            // null は小文字で居て欲しい
+            elseif (is_null($value)) {
+                return 'null';
+            }
+            // それ以外は標準に従う
+            else {
+                return var_export($value, true);
+            }
+        };
+
+        // 結果を返したり出力したり
+        $result = $export($value);
+        if ($return) {
+            return $result;
+        }
+        echo $result, "\n";
+    }
+}
+if (function_exists("ryunosuke\\NightDragon\\var_export2") && !defined("ryunosuke\\NightDragon\\var_export2")) {
+    define("ryunosuke\\NightDragon\\var_export2", "ryunosuke\\NightDragon\\var_export2");
 }
