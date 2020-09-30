@@ -19,7 +19,17 @@
 ## x.y.z
 
 - nikic/php-parser に移行したいけど AST でショートタグが正規化されてしまう？
+  - microsoft/tolerant-php-parser を試す
 - パス周りがメチャクチャなので正規化して realpath したい
+
+## 1.2.2
+
+- [feature][RewriteWrapper] varExpander を実装
+- [feature][Renderer] specialVariable オプションを追加
+- [feature][RewriteWrapper] & 修飾子の実装
+- [fixbug][RewriteWrapper] カスタムタグでトークンが増減するとエラーになる不具合を修正
+- [fixbug][RewriteWrapper] 修飾子の後に ?? が来るとパースエラーになる不具合を修正
+- [change][Renderer] gather の仕方を変更
 
 ## 1.2.1
 

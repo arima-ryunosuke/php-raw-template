@@ -85,8 +85,14 @@ action.phtml:
 <section>
     <h2>修飾子機能</h2>
     これは修飾子機能です（"|" でパイプ演算子のような挙動になります）：<?= $string | strtoupper ?>
-    修飾子は繋げられるし、 $_ という特殊変数を使うと任意引数位置に適用できます：<?= $string | strtoupper | str_replace('TITLE', 'subject', $_) ?>
-    登録しておけば静的メソッドも呼べます：<?= $string | upper ?>
+    修飾子は繋げられるし、 $_ という特殊変数を使うと任意引数位置に適用できます：<?= $string | strtoupper ?? 'default' | str_replace('TITLE', 'subject', $_) ?>
+    登録しておけば静的メソッドも呼べます：<?= $float | number ?>
+    引数付きです：<?= $float | number(3) ?>
+
+    & は基本的に | と同じですが、値が null の場合にスルーされます（ぼっち演算子みたいなものです）：<?= $null & number ?? 'default' ?>
+    引数付きです：<?= $float & number(3) ?? 'default' ?>
+
+    | と & は混在可能です：<?= $null & number | is_null | var_export ?>
 </section>
 
 <section>
@@ -102,6 +108,13 @@ action.phtml:
 
     上記2つの機能は「配列アクセス -> 修飾子」のときのみ組み合わせ可能です：<?= $array . fuga | implode(',', $_) ?>
     右記のような順番の組み合わせはできません：<?= @"<?=" ?> $string | str_split . 3 <?= @"?>" ?>
+</section>
+
+<section>
+    <h2>埋め込み構文</h2>
+    `` の中で ${} を使用するとその中で式の展開や定数の埋め込みが可能になります。
+    式の展開：<?= `this is $float / 1000 + 5:${$float / 1000 + 5}` ?>
+    定数の埋め込み：<?= `ArrayObject::ARRAY_AS_PROPS:${\ArrayObject::ARRAY_AS_PROPS}` ?>
 </section>
 
 <section>
@@ -198,8 +211,14 @@ action.phtml:
 <section>
     <h2>修飾子機能</h2>
     これは修飾子機能です（"|" でパイプ演算子のような挙動になります）：<?=\ryunosuke\NightDragon\Renderer::html(strtoupper($string)),"\n"?>
-    修飾子は繋げられるし、 $_ という特殊変数を使うと任意引数位置に適用できます：<?=\ryunosuke\NightDragon\Renderer::html(str_replace('TITLE','subject',strtoupper($string))),"\n"?>
-    登録しておけば静的メソッドも呼べます：<?=\ryunosuke\NightDragon\Renderer::html(\Modifier::upper($string)),"\n"?>
+    修飾子は繋げられるし、 $_ という特殊変数を使うと任意引数位置に適用できます：<?=\ryunosuke\NightDragon\Renderer::html(str_replace('TITLE','subject',strtoupper($string) ?? 'default')),"\n"?>
+    登録しておけば静的メソッドも呼べます：<?=\ryunosuke\NightDragon\Renderer::html(\Modifier::number($float)),"\n"?>
+    引数付きです：<?=\ryunosuke\NightDragon\Renderer::html(\Modifier::number($float,3)),"\n"?>
+
+    & は基本的に | と同じですが、値が null の場合にスルーされます（ぼっち演算子みたいなものです）：<?=\ryunosuke\NightDragon\Renderer::html(((${"\0"}=$null) === null ? ${"\0"} : \Modifier::number(${"\0"})) ?? 'default'),"\n"?>
+    引数付きです：<?=\ryunosuke\NightDragon\Renderer::html(((${"\0"}=$float) === null ? ${"\0"} : \Modifier::number(${"\0"},3)) ?? 'default'),"\n"?>
+
+    | と & は混在可能です：<?=\ryunosuke\NightDragon\Renderer::html(var_export(is_null(((${"\0"}=$null) === null ? ${"\0"} : \Modifier::number(${"\0"}))))),"\n"?>
 </section>
 
 <section>
@@ -215,6 +234,13 @@ action.phtml:
 
     上記2つの機能は「配列アクセス -> 修飾子」のときのみ組み合わせ可能です：<?=\ryunosuke\NightDragon\Renderer::html(implode(',',\ryunosuke\NightDragon\Renderer::access($array,'fuga'))),"\n"?>
     右記のような順番の組み合わせはできません：<?="<?="?> $string | str_split . 3 <?="?>","\n"?>
+</section>
+
+<section>
+    <h2>埋め込み構文</h2>
+    `` の中で ${} を使用するとその中で式の展開や定数の埋め込みが可能になります。
+    式の展開：<?=\ryunosuke\NightDragon\Renderer::html("this is $float / 1000 + 5:".($float / 1000 + 5).""),"\n"?>
+    定数の埋め込み：<?=\ryunosuke\NightDragon\Renderer::html("ArrayObject::ARRAY_AS_PROPS:".(\ArrayObject::ARRAY_AS_PROPS).""),"\n"?>
 </section>
 
 <section>
@@ -288,7 +314,13 @@ action.phtml:
     <h2>修飾子機能</h2>
     これは修飾子機能です（"|" でパイプ演算子のような挙動になります）：THIS&#039;S TITLE
     修飾子は繋げられるし、 $_ という特殊変数を使うと任意引数位置に適用できます：THIS&#039;S subject
-    登録しておけば静的メソッドも呼べます：THIS&#039;S TITLE
+    登録しておけば静的メソッドも呼べます：12,346
+    引数付きです：12,345.679
+
+    & は基本的に | と同じですが、値が null の場合にスルーされます（ぼっち演算子みたいなものです）：default
+    引数付きです：12,345.679
+
+    | と & は混在可能です：true
 </section>
 
 <section>
@@ -304,6 +336,13 @@ action.phtml:
 
     上記2つの機能は「配列アクセス -> 修飾子」のときのみ組み合わせ可能です：X,Y,Z
     右記のような順番の組み合わせはできません：<?= $string | str_split . 3 ?>
+</section>
+
+<section>
+    <h2>埋め込み構文</h2>
+    `` の中で ${} を使用するとその中で式の展開や定数の埋め込みが可能になります。
+    式の展開：this is 12345.6789 / 1000 + 5:17.3456789
+    定数の埋め込み：ArrayObject::ARRAY_AS_PROPS:2
 </section>
 
 <section>
@@ -395,6 +434,11 @@ line3</div>
 原則として修飾子に使用できるのは単一の関数だけです。制限付きですが名前空間関数や静的メソッドも一応サポートしています。
 文字列以外の callable 形式は使用できません。
 
+`|` の代わりに `&` を使うこともできます。
+`&` を使うと値が null だった場合に適用されず、null のまま次のパイプラインへ進みます。
+例えば `<?= $null | number_format ?? "null です" ?>` すると出力は「0」となります。これは望まれない場合が多いでしょう。
+代わりに `<?= $null & number_format ?? "null です" ?>` とすると出力は「null です」となります。
+
 - OK
     - `<?= $value | funcname($_) ?>` (=`funcname($value)`: 単純な呼び出し)
     - `<?= $value | funcname ?>` (=`funcname($value)`: 第1引数なので `$_` は省略可能)
@@ -403,6 +447,7 @@ line3</div>
     - `<?= $value | funcname($_, $_) ?>` (=`funcname($value, $value)`: `$_` は何度でも使える)
     - `<?= $value | funcname(3, "pre-{$_}-fix") ?>` (=`funcname(3, "pre-{$value}-fix")`: `$_` は普通の変数のように使用できる)
     - `<?= $value | funcname1 | funcname2 | funcname3 ?>` (=`funcname3(funcname2(funcname1($value)))`: 修飾子はネスト可能で各段階では上記の記法すべてが使える)
+    - `<?= $value | funcname1 & funcname2 & funcname3 ?>` (=`funcname3nully(funcname2nully(funcname1($value)))`: `|` と `&` は混在できる)
     - `<?= $value | \namespace\func ?>` (=`\namespace\func($value)`: 絶対指定の名前空間関数呼び出し)
     - `<?= $value | subspace\func ?>` (=`\filespace\subspace\func($value)`: ファイルの名前空間での相対呼び出し)
     - `<?= $value | func ?>` (=`\defaultNamespace\func($value)`: defaultNamespace で事前登録した名前空間の関数呼び出し)
@@ -428,6 +473,30 @@ line3</div>
     - `<?php echo $string ?>` (`<?php` タグ)
     - `<?= @$string ?>` (`nofilter` による抑止)
 
+#### expand variable
+
+`` ` `` 内では `${}` で埋め込み構文が使えます。
+
+php の変数展開はかなりいろいろなことができるんですが、「式の結果を出力する」ではなく「式の結果の変数名の値を出力する」という謎仕様があります。
+多くの場合この仕様は邪魔（というか不便）でしかないためそれを抑制することができます。
+さらに `${}` の中は上記の修飾子や配列アクセス記法が全て使用できます。
+
+- 式の埋め込み
+    - ``<?= `this is n + 1: ${$n + 1}` ?>`` (計算式)
+    - ``<?= `this is class constant: ${Class::constant}` ?>`` (クラス定数)
+    - ``<?= `this is json value: ${json_encode([1,2,3])}` ?>`` (関数呼び出し)
+    - ``<?= `this is json value: ${[1,2,3] | json_encode}` ?>`` (修飾子)
+
+もっとも、このような表示するだけの用法なら単にリテラル部分を php タグの外に出すだけでもっと気軽に実現できます。
+進化を発揮するのは下記のような変数宣言や引数のときでしょう。
+
+- 変数代入や引数での使用
+    - ``<? $tmp = `this is n + 1: ${$n + 1}` ?>`` (変数代入)
+    - ``<?= ucfirst(`this is n + 1: ${$n + 1}`) ?>`` (関数の引数)
+    
+なお、この機能はショートエコータグだけではなく `<? ?>` も書き換え対象になります。
+テンプレートファイル内でバッククオート（シェル呼び出し）を使うような状況は限りなくゼロに近く、「バッククオートがあったら式展開構文」という前提がほぼ成り立つためです。
+
 ## Usage
 
 ### Options
@@ -442,6 +511,7 @@ $renderer = new \ryunosuke\NightDragon\Renderer([
     'gatherAccessor'     => $debug,
     'constFilename'      => null,
     'typeMapping'        => [],
+    'specialVariable'    => [],
     // インジェクション系
     'wrapperProtocol'    => Renderer::DEFAULT_PROTOCOL,
     'templateClass'      => Template::class,
@@ -461,6 +531,7 @@ $renderer = new \ryunosuke\NightDragon\Renderer([
     'varModifier'        => '|',
     'varReceiver'        => '$_',
     'varAccessor'        => '.',
+    'varExpander'        => '',
 ]);
 
 $renderer->assign([
@@ -496,25 +567,34 @@ echo $renderer->render(__DIR__ . '/action.phtml', [
 テンプレートファイルの書き換えオプションです。
 テンプレート内に `<?php # meta template data ?>` というコメントを入れるとその位置に下記のようなメタ情報が挿入されます。
 
-```php
-<?php
+```php<?php
 # meta template data
+// @formatter:off
 // using variables:
 /** @var \ryunosuke\NightDragon\Template $this */
 /** @var mixed $_ */
 /** @var string $string */
+/** @var double $float */
+/** @var NULL $null */
 /** @var array $array */
 /** @var \stdClass $object */
+/** @var \Closure $closure */
 /** @var string $multiline */
 // using modifier functions:
-true or define('strtoupper', \strtoupper(...[]));
-true or define('upper', \Modifier::upper(...[]));
+if (false) {function strtoupper(...$args){define('strtoupper', \strtoupper(...[]));return \strtoupper(...$args);}}
+if (false) {function str_replace(...$args){define('str_replace', \str_replace(...[]));return \str_replace(...$args);}}
+if (false) {function number(...$args){define('number', \Modifier::number(...[]));return \Modifier::number(...$args);}}
+if (false) {function is_null(...$args){define('is_null', \is_null(...[]));return \is_null(...$args);}}
+if (false) {function var_export(...$args){define('var_export', \var_export(...[]));return \var_export(...$args);}}
+if (false) {function implode(...$args){define('implode', \implode(...[]));return \implode(...$args);}}
+if (false) {function strtolower(...$args){define('strtolower', \strtolower(...[]));return \strtolower(...$args);}}
 // using array keys:
 true or define('hoge', 'hoge');
 true or define('fuga', 'fuga');
 true or define('undefined', 'undefined');
 true or define('undefined1', 'undefined1');
 true or define('undefined2', 'undefined2');
+// @formatter:on
 ?>
 ```
 
@@ -524,7 +604,7 @@ gatherVariable を true にすると、テンプレート内で使用してい�
 型が活きるので IDE の補完やジャンプを活用することができます。
 挿入されるのはアサインされていてかつ使用されている変数のみです（勝手に定義したものや、未使用変数は挿入されない）。
 
-gatherModifier を true にすると `<?= $string | strtoupper ?>` の `strtoupper` が定数宣言されます。
+gatherModifier を true にすると `<?= $string | strtoupper ?>` の `strtoupper` が定数・関数宣言されます。
 これは phpstorm の警告を抑止と定義ジャンプのためです（実際に呼び出しているシンタックスなのでジャンプできます）。
 定義すること自体に具体的な意味はありません。
 
@@ -549,6 +629,11 @@ gatherAccessor を true にすると `<?= $array.key ?>` の `key` が定数宣�
 
 ここで `[original => alias]` という配列を指定すると、 gatherVariable で挿入される型情報を上書きすることができます。
 「実際は array なんだけど、深遠な理由で ArrayObject として扱いたい」のようなかなり特殊な状況で使用します。
+
+#### specialVariable
+
+ここで `[$varname => typename]` という配列を指定すると、 テンプレートにアサインされた型に関わらず強制的にその変数名は指定した型として出力されます。
+共通的なテンプレートでアサインされる型が場合によって異なる、といった状況で型を固定することができます。
 
 #### wrapperProtocol
 
@@ -617,7 +702,7 @@ defaultGetter は `<?= $array.key ?>` されたときにキーを引く変換関
 defaultCloser は `<?= $string ?>` 時に挿入される改行文字を指定します。
 あまり指定することはないでしょうが、改行差し込みを無効にしたい場合は空文字を指定するといいでしょう。
 
-#### nofilter, varModifier, varReceiver, varAccessor
+#### nofilter, varModifier, varReceiver, varAccessor, varExpander
 
 同じくソース書き換えのオプションです。
 
@@ -627,6 +712,9 @@ nofilter は `<?= $string ?>` で変換されるデフォルトフィルタを�
 
 varModifier は `<?= $array | implode(',', $_) ?>` における `|` を指定します。
 例えば `>>` を指定するとこれを `<?= $array >> implode(',', $_) ?>` と記述できるようになります。
+互換性維持のため現在のデフォルトは `|` ですが、本来は配列を指定します。
+順番に「単純パイプ修飾子記号」「null ならパイプしない修飾子記号」です。
+将来のバージョンでは `['|', '&']` がデフォルトになります。
 空文字にすると修飾子機能が無効になり、変換自体が行われなくなります。
 
 varReceiver は `<?= $array | implode(',', $_) ?>` における `$_` を指定します。
@@ -635,6 +723,11 @@ varReceiver は `<?= $array | implode(',', $_) ?>` における `$_` を指定�
 
 varAccessor は `<?= $array.key ?>` における `.` を指定します。
 例えば `/` を指定するとこれを `<?= $array/key ?>` と記述できるようになります。
+空文字にするとキーアクセス機能が無効になり、変換自体が行われなくなります。
+
+varExpander は ``<?= `${expression}` ?>`` における `` ` `` を指定します。
+実装上の都合で指定できるのはバッククオートとダブルクオートのみです。
+例えば `"` を指定するとこれを `<?= "${expression}" ?>` と記述できるようになります。
 空文字にするとキーアクセス機能が無効になり、変換自体が行われなくなります。
 
 ### Methods
