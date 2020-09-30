@@ -13,6 +13,16 @@ class Modifier
     {
         return strtoupper($string);
     }
+
+    public static function number($value, $decimals = 0)
+    {
+        return number_format($value, $decimals);
+    }
+
+    public static function returns($value)
+    {
+        return $value;
+    }
 }
 
 $renderer = new \ryunosuke\NightDragon\Renderer([
@@ -21,6 +31,8 @@ $renderer = new \ryunosuke\NightDragon\Renderer([
     'compileDir'    => __DIR__ . '/compiles',
     'defaultClass'  => Modifier::class,
     'nofilter'      => '@',
+    'varModifier'   => ['|', '&'],
+    'varExpander'   => '`',
 ]);
 
 $renderer->assign([
@@ -30,6 +42,8 @@ $renderer->assign([
 
 echo $renderer->render(__DIR__ . '/action.phtml', [
     // テンプレートにアサインする変数
+    'null'      => null,
+    'float'     => 12345.6789,
     'string'    => "This's Title",
     'multiline' => "line1\nline2\nline3",
     'array'     => ['hoge' => 'HOGE', 'fuga' => ['X', 'Y', 'Z']],

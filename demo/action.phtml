@@ -1,13 +1,17 @@
 <?php
 # meta template data
+// @formatter:off
 // using variables:
 /** @var \ryunosuke\NightDragon\Template $this */
 /** @var mixed $_ */
 /** @var string $string */
+/** @var double $float */
+/** @var NULL $null */
 /** @var array $array */
 /** @var \stdClass $object */
 /** @var \Closure $closure */
 /** @var string $multiline */
+// @formatter:on
 ?>
 <?php $this->extend('layout.phtml') ?>
 
@@ -34,8 +38,14 @@
 <section>
     <h2>修飾子機能</h2>
     これは修飾子機能です（"|" でパイプ演算子のような挙動になります）：<?= $string | strtoupper ?>
-    修飾子は繋げられるし、 $_ という特殊変数を使うと任意引数位置に適用できます：<?= $string | strtoupper | str_replace('TITLE', 'subject', $_) ?>
-    登録しておけば静的メソッドも呼べます：<?= $string | upper ?>
+    修飾子は繋げられるし、 $_ という特殊変数を使うと任意引数位置に適用できます：<?= $string | strtoupper ?? 'default' | str_replace('TITLE', 'subject', $_) ?>
+    登録しておけば静的メソッドも呼べます：<?= $float | number ?>
+    引数付きです：<?= $float | number(3) ?>
+
+    & は基本的に | と同じですが、値が null の場合にスルーされます（ぼっち演算子みたいなものです）：<?= $null & number ?? 'default' ?>
+    引数付きです：<?= $float & number(3) ?? 'default' ?>
+
+    | と & は混在可能です：<?= $null & number | is_null | var_export ?>
 </section>
 
 <section>
@@ -51,6 +61,13 @@
 
     上記2つの機能は「配列アクセス -> 修飾子」のときのみ組み合わせ可能です：<?= $array . fuga | implode(',', $_) ?>
     右記のような順番の組み合わせはできません：<?= @"<?=" ?> $string | str_split . 3 <?= @"?>" ?>
+</section>
+
+<section>
+    <h2>埋め込み構文</h2>
+    `` の中で ${} を使用するとその中で式の展開や定数の埋め込みが可能になります。
+    式の展開：<?= `this is $float / 1000 + 5:${$float / 1000 + 5}` ?>
+    定数の埋め込み：<?= `ArrayObject::ARRAY_AS_PROPS:${\ArrayObject::ARRAY_AS_PROPS}` ?>
 </section>
 
 <section>
