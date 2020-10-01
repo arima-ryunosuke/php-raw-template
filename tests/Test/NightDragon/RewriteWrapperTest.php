@@ -131,6 +131,25 @@ dummy
         $this->assertEquals($expected, $rewrite($actual, ['nofilter' => '@'] + self::defaultOption));
     }
 
+    function test_rewrite_mix()
+    {
+        /** @see RewriteWrapper::rewrite() */
+        $rewrite = $this->publishMethod(new RewriteWrapper(), 'rewrite');
+
+        $this->assertEquals(
+            "<?=html(f2(f1(@access(\$array,'key1','key2','3','key') ?? 123)))?>",
+            (string) $rewrite('<?= $array.key1.key2.3.key ?? 123 | f1 | f2 ?>', self::defaultOption)
+        );
+        $this->assertEquals(
+            "<?=html(f2(f1(access(\$array,'key1','key2','3','key'))) ?? 456)?>",
+            (string) $rewrite('<?= $array.key1.key2.3.key | f1 | f2 ?? 456 ?>', self::defaultOption)
+        );
+        $this->assertEquals(
+            "<?=html(f2(f1(@access(\$array,'key1','key2','3','key') ?? 123)) ?? 456)?>",
+            (string) $rewrite('<?= $array.key1.key2.3.key ?? 123 | f1 | f2 ?? 456 ?>', self::defaultOption)
+        );
+    }
+
     function test_rewrite_eval()
     {
         /** @see RewriteWrapper::rewrite() */

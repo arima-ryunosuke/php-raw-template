@@ -223,15 +223,26 @@ class RewriteWrapper
                 $key = var_export("$key", true);
             }
             if (strlen($getter)) {
-                return [-100, "$var,$key"];
+                $id = $var->id === -101 ? -101 : -100;
+                return [[$id, $var], [-101, $key]];
             }
             return "{$var}[$key]";
         }, 0);
 
-        $nullsafe = !!$tokens->match([T_COALESCE]);
-        $tokens->replace([-100], function (Source $tokens) use ($getter, $nullsafe) {
-            return [-100, ($nullsafe ? '@' : '') . "$getter($tokens)"];
-        });
+        if (strlen($getter)) {
+            $nullsafe = !!$tokens->match([-101, T_COALESCE]);
+            $tokens->replace([
+                -100,
+                -101,
+                Source::MATCH_MANY,
+                [Source::MATCH_NOCAPTURE => true, Source::MATCH_NOT => true, -101],
+            ], function (Source $tokens) use ($getter, $nullsafe) {
+                $var = $tokens->shift();
+                $args = implode(',', iterator_to_array($tokens));
+                $atmark = $nullsafe ? '@' : '';
+                return [-100, "$atmark$getter($var,$args)"];
+            });
+        }
     }
 
     private function rewriteModifier(Source $tokens, string $receiver, array $modifiers, array $namespaces, array $classes)
