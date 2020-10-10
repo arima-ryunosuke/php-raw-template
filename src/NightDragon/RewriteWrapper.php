@@ -190,6 +190,22 @@ class RewriteWrapper
             });
         }
 
+        // isset/empry は言語構造であり、関数ベースで置換することはできない。しかしそれぞれ
+        // isset: エラーの出ない `!is_null`
+        // empty: エラーの出ない `!boolval`
+        // と読み替えることは可能
+        // （isset は複数値が指定できるがそれはどうしようもない。もっと言うと empty の boolval は不要だが明示的な意味で付与している）
+        $tokens->replace([
+            [T_ISSET, T_EMPTY],
+        ], function (Source $tokens) {
+            if ($tokens->match([T_ISSET])) {
+                return ['!@is_null'];
+            }
+            if ($tokens->match([T_EMPTY])) {
+                return ['!@boolval'];
+            }
+        });
+
         $tokens->replace([
             T_CURLY_OPEN,
             T_VARIABLE,

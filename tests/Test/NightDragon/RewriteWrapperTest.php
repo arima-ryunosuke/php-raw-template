@@ -377,6 +377,20 @@ dummy
         $this->assertEquals("<?= \$array['key']['3'] + .14 ?>", (string) $source);
     }
 
+    function test_rewriteAccessKey_isset()
+    {
+        /** @see RewriteWrapper::rewriteAccessKey() */
+        $rewrite = $this->publishMethod(new RewriteWrapper(), 'rewriteAccessKey');
+
+        $source = new Source('<?= isset($array.key1.key2.3.key + 3.14) ?>');
+        $rewrite($source, '.', 'access');
+        $this->assertEquals("<?= !@is_null(access(\$array,'key1','key2','3','key') + 3.14) ?>", (string) $source);
+
+        $source = new Source('<?= empty($array.key1.key2.3.key + 3.14) ?>');
+        $rewrite($source, '.', 'access');
+        $this->assertEquals("<?= !@boolval(access(\$array,'key1','key2','3','key') + 3.14) ?>", (string) $source);
+    }
+
     function test_rewriteAccessKey_default()
     {
         /** @see RewriteWrapper::rewriteAccessKey() */
