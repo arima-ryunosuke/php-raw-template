@@ -11,7 +11,7 @@ class Template
     private $filename;
 
     /** @var array アサインされた変数 */
-    private $vars = [];
+    private $vars = [], $parentVars = [];
 
     /** @var static 継承を経た場合の元テンプレートオブジェクト */
     private $original;
@@ -32,26 +32,59 @@ class Template
         $this->original = $this;
     }
 
+    public function __get($name)
+    {
+        return $this->vars[$name];
+    }
+
     public function getFilename(): string
     {
         return $this->renderer->resolvePath($this->filename);
     }
 
     /**
+     * テンプレートに変数をアサインする
+     *
+     * ここでアサインした変数は単純なローカル変数とは違い、エンジンが「アサインした」と認識する。
+     * そのため親テンプレート、 include/import などに渡ることになる。
+     *
+     * ただし注意点として、assign した変数はローカルコンテキストに生えない。
+     * アクセスには $this->>varname を使用する必要がある。
+     * （ローカルコンテキストに生えている varname は親や子から渡ってきた変数である）。
+     *
+     * @param string|array $name 変数名
+     * @param mixed $value 変数値
+     * @return array アサインした変数群
+     */
+    public function assign($name, $value = null)
+    {
+        if (!is_array($name)) {
+            $name = [$name => $value];
+        }
+        foreach ($name as $k => $v) {
+            $this->vars[$k] = $v;
+        }
+        $this->renderer->setAssignedVar($name);
+        return $name;
+    }
+
+    /**
      * 変数を指定してレンダリング
      *
      * @param array $vars 変数配列
+     * @param array $parentVars 親変数配列
      * @return string レンダリング結果
      */
-    public function render(array $vars = []): string
+    public function render(array $vars = [], array $parentVars = []): string
     {
         $this->vars = $vars;
+        $this->parentVars = $parentVars;
 
-        $contents = $this->fetch($this->renderer->compile($this->filename, $vars), $vars);
+        $contents = $this->fetch($this->renderer->compile($this->filename, $this->vars, $this->parentVars));
 
         if ($this->parent) {
             assert(strlen(trim($contents)) === 0, "child template can't have content outside blocks [$contents]");
-            return $this->parent->render($vars);
+            return $this->parent->render($this->vars, $this->parentVars);
         }
 
         return $contents;
@@ -173,7 +206,7 @@ class Template
     public function import(string $filename, array $vars = [])
     {
         $template = new static($this->renderer, $this->resolvePath($filename));
-        echo $template->render($vars + $this->vars);
+        echo $template->render($vars, $this->vars + $this->parentVars);
     }
 
     /**
@@ -188,8 +221,7 @@ class Template
      */
     public function include(string $filename, array $vars = [])
     {
-        $vars += $this->vars;
-        echo $this->fetch($this->renderer->compile($this->resolvePath($filename), $vars), $vars);
+        echo $this->fetch($this->renderer->compile($this->resolvePath($filename), $vars, $this->vars + $this->parentVars), $vars);
     }
 
     /**
@@ -255,7 +287,7 @@ class Template
             extract(func_get_arg(1));
             require func_get_arg(0);
             return ob_get_clean();
-        })($filename, $vars);
+        })($filename, $vars + $this->vars + $this->parentVars);
     }
 
     /**

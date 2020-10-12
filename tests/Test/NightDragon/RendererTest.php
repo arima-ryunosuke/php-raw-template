@@ -394,10 +394,16 @@ EXPECTED
         $renderer->assign([
             'appendix' => 'APPENDIX',
         ]);
-        $renderer->render(self::TEMPLATE_DIR . '/vars.phtml', [
+        $content = $renderer->render(self::TEMPLATE_DIR . '/vars.phtml', [
             'int'  => 123,
             'piyo' => 'PIYO',
         ]);
+        $this->assertEquals(trim('
+ex-var1
+ex-var2
+var1
+var2
+'), trim($content));
 
         // テンプレートのものがマージされているし、優先もされている
         $this->assertEquals([
@@ -406,6 +412,11 @@ EXPECTED
             'fuga'     => 'FUGA',
             'hoge'     => 'HOGE',
             'appendix' => 'APPENDIX',
+            'var1'     => 'ex-var1',
+            'var2'     => 'ex-var2',
+            'inner1'   => 'inner1',
+            'inner2'   => 'inner2',
+            'inner3'   => 'ex-inner3',
         ], $renderer->getAssignedVars());
     }
 

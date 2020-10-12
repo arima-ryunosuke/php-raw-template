@@ -236,10 +236,13 @@ class Renderer
      *
      * @param string $filename テンプレートファイル名
      * @param array $vars 変数配列
+     * @param array $parentVars 親変数配列
      * @return string 読み込むべきファイル名
      */
-    public function compile(string $filename, array $vars): string
+    public function compile(string $filename, array $vars, array $parentVars = []): string
     {
+        $this->setAssignedVar($vars);
+
         if (isset($this->stats[$filename])) {
             return $this->stats[$filename];
         }
@@ -258,7 +261,7 @@ class Renderer
             $E = function ($v) { return var_export($v, true); };
             $meta = [];
             if ($this->gatherOptions['gatherVariable']) {
-                $variables = $this->gatherVariable($source, $ropt['varReceiver'], $vars);
+                $variables = $this->gatherVariable($source, $ropt['varReceiver'], $vars + $parentVars);
                 $meta[] = self::VARIABLE_COMMENT;
                 $meta[] = array_sprintf($variables, '/** @var %s %s */', "\n");
             }
@@ -307,10 +310,6 @@ class Renderer
         if ($this->debug || !file_exists($fileid)) {
             $path = "$this->wrapperProtocol://dummy/$filename?" . http_build_query($this->renderOptions);
             file_set_contents($fileid, file_get_contents($path));
-        }
-
-        if ($this->debug) {
-            $this->assignedVars += $vars;
         }
 
         return $this->stats[$filename] = $fileid;
@@ -500,6 +499,20 @@ return {$V(var_export2($consts, 1))};
     }
 
     /**
+     * デバッグ用のアサイン変数を設定する
+     *
+     * @param array $vars 変数配列
+     */
+    public function setAssignedVar(array $vars)
+    {
+        if (!$this->debug) {
+            return;
+        }
+
+        $this->assignedVars += $vars;
+    }
+
+    /**
      * アサインされている変数を返す
      *
      * debug 時は一度でもレンダリングが走ったテンプレートの変数もまとめて返す。
@@ -509,7 +522,7 @@ return {$V(var_export2($consts, 1))};
      */
     public function getAssignedVars(): array
     {
-        return $this->assignedVars;
+        return $this->assignedVars + $this->globalVars;
     }
 
     /**
@@ -538,7 +551,7 @@ return {$V(var_export2($consts, 1))};
         $ob_level = ob_get_level();
 
         try {
-            return $template->render($vars + $this->globalVars);
+            return $template->render($vars, $this->globalVars);
         }
         catch (\Throwable $t) {
             if ($this->errorHandling) {
