@@ -241,7 +241,7 @@ class Renderer
      */
     public function compile(string $filename, array $vars, array $parentVars = []): string
     {
-        $this->setAssignedVar($vars);
+        $this->setAssignedVar($filename, $vars);
 
         if (isset($this->stats[$filename])) {
             return $this->stats[$filename];
@@ -501,15 +501,22 @@ return {$V(var_export2($consts, 1))};
     /**
      * デバッグ用のアサイン変数を設定する
      *
+     * @param string $filename テンプレートファイル名
      * @param array $vars 変数配列
      */
-    public function setAssignedVar(array $vars)
+    public function setAssignedVar($filename, array $vars)
     {
         if (!$this->debug) {
             return;
         }
 
-        $this->assignedVars += $vars;
+        $filename = realpath($this->resolvePath($filename));
+        if (!isset($this->assignedVars[$filename])){
+            $this->assignedVars[$filename] = [];
+        }
+        foreach ($vars as $k => $v) {
+            $this->assignedVars[$filename][$k] = $v;
+        }
     }
 
     /**
@@ -518,11 +525,20 @@ return {$V(var_export2($consts, 1))};
      * debug 時は一度でもレンダリングが走ったテンプレートの変数もまとめて返す。
      * 基本的に debug 時の使用を想定していて本運用環境での使用は推奨しない。
      *
+     * @param bool $perTemplate テンプレートごとに返すか
      * @return array アサインされた全変数
      */
-    public function getAssignedVars(): array
+    public function getAssignedVars($perTemplate = false): array
     {
-        return $this->assignedVars + $this->globalVars;
+        if (!$perTemplate) {
+            $result = [];
+            foreach ($this->assignedVars as $vars) {
+                $result += $vars;
+            }
+            return $result + $this->globalVars;
+        }
+
+        return ['(global)' => $this->globalVars] + $this->assignedVars;
     }
 
     /**

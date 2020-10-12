@@ -64,7 +64,7 @@ class Template
         foreach ($name as $k => $v) {
             $this->vars[$k] = $v;
         }
-        $this->renderer->setAssignedVar($name);
+        $this->renderer->setAssignedVar($this->filename, $name);
         return $name;
     }
 

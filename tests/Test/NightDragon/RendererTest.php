@@ -418,6 +418,36 @@ var2
             'inner2'   => 'inner2',
             'inner3'   => 'ex-inner3',
         ], $renderer->getAssignedVars());
+
+        // テンプレート毎に返す
+        $this->assertEquals([
+            '(global)'                                          => [
+                'int'      => 456,
+                'fuga'     => 'FUGA',
+                'hoge'     => 'HOGE',
+                'appendix' => 'APPENDIX',
+            ],
+            realpath(self::TEMPLATE_DIR . '/vars.phtml')        => [
+                'int'  => 123,
+                'piyo' => 'PIYO',
+                'var1' => 'ex-var1',
+                'var2' => 'ex-var2',
+            ],
+            realpath(self::TEMPLATE_DIR . '/vars-parent.phtml') => [
+                'int'    => 123,
+                'piyo'   => 'PIYO',
+                'var1'   => 'var1',
+                'var2'   => 'var2',
+                'inner1' => 'inner1',
+                'inner2' => 'inner2',
+                'inner3' => 'ex-inner3',
+            ],
+            realpath(self::TEMPLATE_DIR . '/vars-inner.phtml')   => [
+                'inner1' => 'ex-inner1',
+                'inner2' => 'ex-inner2',
+                'inner3' => 'ex-inner3',
+            ],
+        ], $renderer->getAssignedVars(true));
     }
 
     function test_errorHandling_no()
