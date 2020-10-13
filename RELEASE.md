@@ -22,6 +22,12 @@
   - microsoft/tolerant-php-parser を試す
 - パス周りがメチャクチャなので正規化して realpath したい
 
+## 1.2.3
+
+- [feature][Renderer] アサイン変数をテンプレートごとに返せるように拡張
+- [feature][Template] assign の実装
+- [fixbug][RewriteWrapper] isset/empty が誤作動する不具合を修正
+
 ## 1.2.2
 
 - [feature][RewriteWrapper] varExpander を実装

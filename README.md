@@ -11,6 +11,7 @@ php の素材の味を生かしたシンプルなテンプレートエンジン�
 - `<?= $string ?>` で自動 html エスケープされます
 - `<?= $string ?>` の最後の改行が除去されません
 - `<?= $string | strtoupper ?>` で `strtoupper($string)` に変換されます（ネスト可能）
+- `<?= $string & strtoupper ?>` で $string が非 null の場合に `strtoupper($string)` に変換されます（ネスト可能）
 - `<?= $array.key ?>` で `$array['key']` に変換されます（ネスト可能。オブジェクトの場合は `->`）
 - アサインされた変数の型情報に基づいて自動で `/** @var \Hoge $hoge */` を埋め込みます
 - テンプレート継承ができます
@@ -42,31 +43,38 @@ php の素材の味を生かしたシンプルなテンプレートエンジン�
 
 下記は全機能こみこみのテンプレートです。継承機能を使っています。
 
-layout.phtml:
+<details>
+<summary>layout.phtml</summary>
 
-```php
-<html lang="ja">
+```php<html lang="ja">
 <head>
-    <title><?php $this->block('title') ?> - <?= $SiteName ?></title>
+    <title><?= $title ?> - <?= $SiteName ?></title>
 </head>
 <body>
+<?php $this->assign('parentvar', 'ParentVar') ?>
 <?php $this->begin('main') ?>
 これは親コンテンツです。
+これは子テンプレートで宣言された変数です：<?= $childvar ?>
 <?php $this->end() ?>
 </body>
 </html>
 ```
 
-action.phtml:
+</details>
+
+<details>
+<summary>action.phtml</summary>
 
 ```php
-<?php $this->extend('layout.phtml') ?>
+<?php $this->extend(__DIR__ . '/layout.phtml') ?>
 
-<?php $this->begin('title') ?>title<?php $this->end() ?>
+<?php $this->assign('title', 'PageTitle') ?>
+<?php $this->assign('childvar', 'ChildVar') ?>
 
 <?php $this->begin('main') ?>
 <section>
     <h2>親・子コンテンツの関係</h2>
+    親テンプレートで宣言された変数は使えません：<?= $parentvar ?? 'not defined' ?>
     parent メソッドを使用して親コンテンツを表示します。
     <?php $this->parent() ?>
 
@@ -153,6 +161,22 @@ action.phtml:
     </strip>
 </section>
 
+<section>
+    <h2>ショートタグ</h2>
+    上記の構文の一部はショートオープンタグ内でも限定的に使えます。
+    これらの機能は compatibleShortTag を true にすると php 本体で short_open_tag が無効にされていても使用できます（詳細は README にて）。
+
+    foreach でアクセス子が使える
+    <? foreach ($array . fuga as $key => $value): ?>
+        <?= $value ?>
+    <? endforeach ?>
+
+    if で アクセス子が使える
+    <? if (empty($array . undefined)): ?>
+        $object.undefined is undefined
+    <? endif ?>
+</section>
+
 おまけ：所詮素の php なのであらゆる表現が可能です。
 <?php foreach ($array as $key => $value): ?>
     <?php if ($key === 'hoge'): ?>
@@ -164,35 +188,45 @@ action.phtml:
 <?php $this->end() ?>
 ```
 
+</details>
+
 一見すると意味不明なコードですが、これは完全に valid な php コードであり、IDE の支援をフルに受けることができます。
 
 これをレンダリングするとソースコードが内部的に下記のように書き換えられます。
 
-layout.phtml:
+<details>
+<summary>layout.phtml</summary>
 
 ```php
 <html lang="ja">
 <head>
-    <title><?php $this->block('title') ?> - <?=\ryunosuke\NightDragon\Renderer::html($SiteName)?></title>
+    <title><?=\ryunosuke\NightDragon\Renderer::html($title)?> - <?=\ryunosuke\NightDragon\Renderer::html($SiteName)?></title>
 </head>
 <body>
+<?php $this->assign('parentvar', 'ParentVar') ?>
 <?php $this->begin('main') ?>
 これは親コンテンツです。
+これは子テンプレートで宣言された変数です：<?=\ryunosuke\NightDragon\Renderer::html($childvar),"\n"?>
 <?php $this->end() ?>
 </body>
 </html>
 ```
 
-action.phtml:
+</details>
+
+<details>
+<summary>action.phtml</summary>
 
 ```php
-<?php $this->extend('layout.phtml') ?>
+<?php $this->extend(__DIR__ . '/layout.phtml') ?>
 
-<?php $this->begin('title') ?>title<?php $this->end() ?>
+<?php $this->assign('title', 'PageTitle') ?>
+<?php $this->assign('childvar', 'ChildVar') ?>
 
 <?php $this->begin('main') ?>
 <section>
     <h2>親・子コンテンツの関係</h2>
+    親テンプレートで宣言された変数は使えません：<?=\ryunosuke\NightDragon\Renderer::html($parentvar ?? 'not defined'),"\n"?>
     parent メソッドを使用して親コンテンツを表示します。
     <?php $this->parent() ?>
 
@@ -271,6 +305,22 @@ action.phtml:
     このタグ内の空白はすべて除去されます。ただし、変数の中身には関与しません。<div id="stripping" class="hoge fuga piyo"><?=\ryunosuke\NightDragon\Renderer::html($multiline)?></div>
 </section>
 
+<section>
+    <h2>ショートタグ</h2>
+    上記の構文の一部はショートオープンタグ内でも限定的に使えます。
+    これらの機能は compatibleShortTag を true にすると php 本体で short_open_tag が無効にされていても使用できます（詳細は README にて）。
+
+    foreach でアクセス子が使える
+    <?php foreach (\ryunosuke\NightDragon\Renderer::access($array,'fuga') as $key => $value): ?>
+        <?=\ryunosuke\NightDragon\Renderer::html($value),"\n"?>
+    <?php endforeach ?>
+
+    if で アクセス子が使える
+    <?php if (!@boolval(\ryunosuke\NightDragon\Renderer::access($array,'undefined'))): ?>
+        $object.undefined is undefined
+    <?php endif ?>
+</section>
+
 おまけ：所詮素の php なのであらゆる表現が可能です。
 <?php foreach ($array as $key => $value): ?>
     <?php if ($key === 'hoge'): ?>
@@ -282,22 +332,29 @@ action.phtml:
 <?php $this->end() ?>
 ```
 
+</details>
+
 なお、 `<?php # meta template data ?>` というコメントがあると、テンプレート自体にも手が加わります（後述）。
 具体的には「使用している変数情報」「定数情報」などがメタ情報として書き込まれます。
 これにより phpstorm のジャンプや補完を最大限に活かすことができます。
 
 さらに上記が include されて最終的に下記のようなレンダリング結果となります。
 
+<details>
+<summary>レンダリング結果</summary>
+
 ```html
 <html lang="ja">
 <head>
-    <title>title - サイト名</title>
+    <title>PageTitle - サイト名</title>
 </head>
 <body>
 <section>
     <h2>親・子コンテンツの関係</h2>
+    親テンプレートで宣言された変数は使えません：not defined
     parent メソッドを使用して親コンテンツを表示します。
     これは親コンテンツです。
+これは子テンプレートで宣言された変数です：ChildVar
 
     これは子供コンテンツです。
     色々変数を表示しています。
@@ -371,11 +428,27 @@ line2
 line3</div>
 </section>
 
+<section>
+    <h2>ショートタグ</h2>
+    上記の構文の一部はショートオープンタグ内でも限定的に使えます。
+    これらの機能は compatibleShortTag を true にすると php 本体で short_open_tag が無効にされていても使用できます（詳細は README にて）。
+
+    foreach でアクセス子が使える
+            X
+            Y
+            Z
+    
+    if で アクセス子が使える
+            $object.undefined is undefined
+    </section>
+
 おまけ：所詮素の php なのであらゆる表現が可能です。
             HOGE です        ショートタグが使いたいなぁ        
 </body>
 </html>
 ```
+
+</details>
 
 単純に言えば全貌は下記です。
 
@@ -488,7 +561,7 @@ php の変数展開はかなりいろいろなことができるんですが、�
     - ``<?= `this is json value: ${[1,2,3] | json_encode}` ?>`` (修飾子)
 
 もっとも、このような表示するだけの用法なら単にリテラル部分を php タグの外に出すだけでもっと気軽に実現できます。
-進化を発揮するのは下記のような変数宣言や引数のときでしょう。
+真価を発揮するのは下記のような変数宣言や引数のときでしょう。
 
 - 変数代入や引数での使用
     - ``<? $tmp = `this is n + 1: ${$n + 1}` ?>`` (変数代入)
@@ -728,7 +801,7 @@ varAccessor は `<?= $array.key ?>` における `.` を指定します。
 varExpander は ``<?= `${expression}` ?>`` における `` ` `` を指定します。
 実装上の都合で指定できるのはバッククオートとダブルクオートのみです。
 例えば `"` を指定するとこれを `<?= "${expression}" ?>` と記述できるようになります。
-空文字にするとキーアクセス機能が無効になり、変換自体が行われなくなります。
+空文字にすると埋め込み機能が無効になり、変換自体が行われなくなります。
 
 ### Methods
 
@@ -740,6 +813,14 @@ varExpander は ``<?= `${expression}` ?>`` における `` ` `` を指定しま�
 子テンプレートにおいてブロック以外のトップレベルの記述はすべて無視されます。
 
 下記の記述はかなり簡易なものであり、具体的には実際に見たほうが分かりやすいと思うので、冒頭の layout.phtml, action.phtml を参照してください。
+
+#### $this->assign(string|array $name, $value = null)
+
+変数をアサインします。
+ここでアサインした変数は extend, include, import などに渡ります。
+
+このメソッドを使うと「親テンプレートで子テンプレートの変数を使う」が可能になります。
+block 機能が仰々しい場合は変数の方が持ち回しがしやすく便利です。
 
 #### $this->extend(string $filename)
 
