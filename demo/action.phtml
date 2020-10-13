@@ -13,13 +13,15 @@
 /** @var string $multiline */
 // @formatter:on
 ?>
-<?php $this->extend('layout.phtml') ?>
+<?php $this->extend(__DIR__ . '/layout.phtml') ?>
 
-<?php $this->begin('title') ?>title<?php $this->end() ?>
+<?php $this->assign('title', 'PageTitle') ?>
+<?php $this->assign('childvar', 'ChildVar') ?>
 
 <?php $this->begin('main') ?>
 <section>
     <h2>親・子コンテンツの関係</h2>
+    親テンプレートで宣言された変数は使えません：<?= $parentvar ?? 'not defined' ?>
     parent メソッドを使用して親コンテンツを表示します。
     <?php $this->parent() ?>
 
@@ -104,6 +106,22 @@
             <?= $multiline ?>
         </div>
     </strip>
+</section>
+
+<section>
+    <h2>ショートタグ</h2>
+    上記の構文の一部はショートオープンタグ内でも限定的に使えます。
+    これらの機能は compatibleShortTag を true にすると php 本体で short_open_tag が無効にされていても使用できます（詳細は README にて）。
+
+    foreach でアクセス子が使える
+    <? foreach ($array . fuga as $key => $value): ?>
+        <?= $value ?>
+    <? endforeach ?>
+
+    if で アクセス子が使える
+    <? if (empty($array . undefined)): ?>
+        $object.undefined is undefined
+    <? endif ?>
 </section>
 
 おまけ：所詮素の php なのであらゆる表現が可能です。

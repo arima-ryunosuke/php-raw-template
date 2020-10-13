@@ -4,16 +4,20 @@
 // using variables:
 /** @var \ryunosuke\NightDragon\Template $this */
 /** @var mixed $_ */
+/** @var string $title */
 /** @var string $SiteName */
+/** @var string $childvar */
 // @formatter:on
 ?>
 <html lang="ja">
 <head>
-    <title><?php $this->block('title') ?> - <?= $SiteName ?></title>
+    <title><?= $title ?> - <?= $SiteName ?></title>
 </head>
 <body>
+<?php $this->assign('parentvar', 'ParentVar') ?>
 <?php $this->begin('main') ?>
 これは親コンテンツです。
+これは子テンプレートで宣言された変数です：<?= $childvar ?>
 <?php $this->end() ?>
 </body>
 </html>

@@ -26,13 +26,14 @@ class Modifier
 }
 
 $renderer = new \ryunosuke\NightDragon\Renderer([
-    'debug'         => defined('DEBUG') ? DEBUG : false,
-    'constFilename' => __DIR__ . '/compiles/constant.php',
-    'compileDir'    => __DIR__ . '/compiles',
-    'defaultClass'  => Modifier::class,
-    'nofilter'      => '@',
-    'varModifier'   => ['|', '&'],
-    'varExpander'   => '`',
+    'debug'              => defined('DEBUG') ? DEBUG : false,
+    'constFilename'      => __DIR__ . '/compiles/constant.php',
+    'compileDir'         => __DIR__ . '/compiles',
+    'defaultClass'       => Modifier::class,
+    'nofilter'           => '@',
+    'compatibleShortTag' => true,
+    'varModifier'        => ['|', '&'],
+    'varExpander'        => '`',
 ]);
 
 $renderer->assign([
