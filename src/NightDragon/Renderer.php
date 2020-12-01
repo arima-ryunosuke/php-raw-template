@@ -261,7 +261,7 @@ class Renderer
             $E = function ($v) { return var_export($v, true); };
             $meta = [];
             if ($this->gatherOptions['gatherVariable']) {
-                $variables = $this->gatherVariable($source, $ropt['varReceiver'], $vars + $parentVars);
+                $variables = $this->gatherVariable($source, $ropt['varReceiver'], $vars, $parentVars);
                 $meta[] = self::VARIABLE_COMMENT;
                 $meta[] = array_sprintf($variables, '/** @var %s %s */', "\n");
             }
@@ -371,23 +371,40 @@ class Renderer
         return $map(gettype($var));
     }
 
-    private function gatherVariable(Source $source, string $receiver, array $vars): array
+    private function gatherVariable(Source $source, string $receiver, array $vars, array $parentVars): array
     {
-        $result = [];
-        $result['$this'] = $this->templateClass;
-        $result[$receiver] = "mixed";
+        // 固定変数
+        $result = [
+            '$this'   => $this->templateClass,
+            $receiver => "mixed",
+        ];
+
+        // グローバル
+        foreach ($this->globalVars as $name => $var) {
+            $result['$' . $name] = $this->detectType($var);
+        }
+
+        // 親
         foreach ($source->match([T_VARIABLE]) as $tokens) {
             $code = (string) $tokens->shift();
             $vname = substr($code, 1);
-            if (array_key_exists($vname, $vars)) {
-                $result[$code] = $this->detectType($vars[$vname]);
+            if (array_key_exists($vname, $parentVars)) {
+                $result[$code] = $this->detectType($parentVars[$vname]);
             }
         }
+
+        // 自身
+        foreach ($vars as $name => $var) {
+            $result['$' . $name] = $this->detectType($var);
+        }
+
+        // 明示指定
         foreach ($this->gatherOptions['specialVariable'] as $name => $type) {
             if (array_key_exists($name, $result)) {
                 $result[$name] = is_array($type) ? implode('|', $type) : $type;
             }
         }
+
         return array_filter($result, 'strlen');
     }
 

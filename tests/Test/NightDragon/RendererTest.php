@@ -144,6 +144,10 @@ line3
             'array'  => ['x' => 'X', 'y' => 'Y', 'z' => 'Z'],
             'object' => new \Exception('exception', 123),
         ];
+        $PARENT = [
+            'parent1' => 123,
+            'parent2' => 456,
+        ];
 
         $renderer = new Renderer([
             'debug'           => true,
@@ -157,7 +161,7 @@ line3
         ]);
 
         // 全メタ情報が埋め込まれる
-        $renderer->compile(self::TEMPLATE_DIR . '/meta.phtml', $VARS);
+        $renderer->compile(self::TEMPLATE_DIR . '/meta.phtml', $VARS, $PARENT);
         $template = file_get_contents(self::TEMPLATE_DIR . '/meta.phtml');
         $this->assertContains("define('x', 'x')", $template);
         $this->assertContains("define('strtoupper', \\strtoupper(...[]))", $template);
@@ -169,6 +173,8 @@ line3
         $this->assertContains('@var \Exception $object', $template);
         $this->assertNotContains('$null */', $template); // 空文字指定は含まれない
         $this->assertNotContains('$hoge', $template); // そもそも存在しないものを追加したりはしない
+        $this->assertContains('$parent1 */', $template); // 使用している親変数は含まれる
+        $this->assertNotContains('$parent2', $template); // 使用していない親変数は含まれない
 
         // 名前空間も問題ない
         $renderer->compile(self::TEMPLATE_DIR . '/namespace.phtml', []);
