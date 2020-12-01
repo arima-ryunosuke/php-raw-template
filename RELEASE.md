@@ -22,6 +22,11 @@
   - microsoft/tolerant-php-parser を試す
 - パス周りがメチャクチャなので正規化して realpath したい
 
+## 1.2.4
+
+- [change][Renderer] gatherVariable の仕様変更
+- [fixbug][Renderer] constFilename の書き出しのアトミック化
+
 ## 1.2.3
 
 - [feature][Renderer] アサイン変数をテンプレートごとに返せるように拡張

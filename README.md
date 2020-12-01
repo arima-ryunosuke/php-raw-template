@@ -46,7 +46,8 @@ php の素材の味を生かしたシンプルなテンプレートエンジン�
 <details>
 <summary>layout.phtml</summary>
 
-```php<html lang="ja">
+```php
+<html lang="ja">
 <head>
     <title><?= $title ?> - <?= $SiteName ?></title>
 </head>
