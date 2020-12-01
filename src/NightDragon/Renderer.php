@@ -439,30 +439,30 @@ class Renderer
             return false;
         }
 
-        // 既に保存されているならマージする
-        if (file_exists($filename)) {
+        file_rewrite_contents($filename, function ($contents) use ($consts) {
             try {
-                $current = include($filename);
+                $current = eval('?>' . $contents);
             }
             catch (\Throwable $t) {
                 $current = [];
             }
+
             $consts['modifier'] += $current['modifier'] ?? [];
             $consts['accessor'] += $current['accessor'] ?? [];
-        }
 
-        ksort($consts['modifier']);
-        ksort($consts['accessor']);
+            ksort($consts['modifier']);
+            ksort($consts['accessor']);
 
-        $E = function ($v) { return var_export($v, true); };
-        $V = function ($v) { return $v; };
-        $ms = array_sprintf($consts['modifier'], function ($v, $k) use ($E) {
-            return "function $k(...\$args){define({$E($k)}, $v(...[]));return $v(...\$args);}";
-        }, "\n");
-        $as = array_sprintf($consts['accessor'], function ($v, $k) use ($E) {
-            return "define({$E($v)}, {$E($v)});";
-        }, "\n");
-        file_put_contents($filename, "<?php
+            $E = function ($v) { return var_export($v, true); };
+            $V = function ($v) { return $v; };
+            $ms = array_sprintf($consts['modifier'], function ($v, $k) use ($E) {
+                return "function $k(...\$args){define({$E($k)}, $v(...[]));return $v(...\$args);}";
+            }, "\n");
+            $as = array_sprintf($consts['accessor'], function ($v, $k) use ($E) {
+                return "define({$E($v)}, {$E($v)});";
+            }, "\n");
+
+            return "<?php
 if (null) {
     {$V(self::MODIFIER_FUNCTION_COMMENT)}
     {$V(indent_php($ms, 4))}
@@ -470,7 +470,8 @@ if (null) {
     {$V(indent_php($as, 4))}
 }
 return {$V(var_export2($consts, 1))};
-");
+";
+        }, LOCK_EX);
     }
 
     /**
