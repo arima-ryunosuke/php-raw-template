@@ -454,6 +454,72 @@ if (function_exists("ryunosuke\\NightDragon\\file_set_contents") && !defined("ry
     define("ryunosuke\\NightDragon\\file_set_contents", "ryunosuke\\NightDragon\\file_set_contents");
 }
 
+if (!isset($excluded_functions["file_rewrite_contents"]) && (!function_exists("ryunosuke\\NightDragon\\file_rewrite_contents") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\file_rewrite_contents"))->isInternal()))) {
+    /**
+     * ファイルを読み込んで内容をコールバックに渡して書き込む
+     *
+     * Example:
+     * ```php
+     * // 適当にファイルを用意
+     * $testpath = sys_get_temp_dir() . '/rewrite.txt';
+     * file_put_contents($testpath, 'hoge');
+     * // 前後に 'pre-', '-fix' を付与する
+     * file_rewrite_contents($testpath, function($contents, $fp){ return "pre-$contents-fix"; });
+     * that($testpath)->fileEquals('pre-hoge-fix');
+     * ```
+     *
+     * @param string $filename 読み書きするファイル名
+     * @param callable $callback 書き込む内容。引数で $contents, $fp が渡ってくる
+     * @param int $operation ロック定数（LOCL_SH, LOCK_EX, LOCK_NB）
+     * @return int 書き込まれたバイト数
+     */
+    function file_rewrite_contents($filename, $callback, $operation = 0)
+    {
+        /** @var resource $fp */
+        try {
+            // 開いて
+            $fp = fopen($filename, 'c+b') ?: throws(new \UnexpectedValueException('failed to fopen.'));
+            if ($operation) {
+                flock($fp, $operation) ?: throws(new \UnexpectedValueException('failed to flock.'));
+            }
+
+            // 読み込んで
+            rewind($fp) ?: throws(new \UnexpectedValueException('failed to rewind.'));
+            $contents = false !== ($t = stream_get_contents($fp)) ? $t : throws(new \UnexpectedValueException('failed to stream_get_contents.'));
+
+            // 変更して
+            rewind($fp) ?: throws(new \UnexpectedValueException('failed to rewind.'));
+            ftruncate($fp, 0) ?: throws(new \UnexpectedValueException('failed to ftruncate.'));
+            $contents = $callback($contents, $fp);
+
+            // 書き込んで
+            $return = ($r = fwrite($fp, $contents)) !== false ? $r : throws(new \UnexpectedValueException('failed to fwrite.'));
+            fflush($fp) ?: throws(new \UnexpectedValueException('failed to fflush.'));
+
+            // 閉じて
+            if ($operation) {
+                flock($fp, LOCK_UN) ?: throws(new \UnexpectedValueException('failed to flock.'));
+            }
+            fclose($fp) ?: throws(new \UnexpectedValueException('failed to fclose.'));
+
+            // 返す
+            return $return;
+        }
+        catch (\Exception $ex) {
+            if (isset($fp)) {
+                if ($operation) {
+                    flock($fp, LOCK_UN);
+                }
+                fclose($fp);
+            }
+            throw $ex;
+        }
+    }
+}
+if (function_exists("ryunosuke\\NightDragon\\file_rewrite_contents") && !defined("ryunosuke\\NightDragon\\file_rewrite_contents")) {
+    define("ryunosuke\\NightDragon\\file_rewrite_contents", "ryunosuke\\NightDragon\\file_rewrite_contents");
+}
+
 if (!isset($excluded_functions["mkdir_p"]) && (!function_exists("ryunosuke\\NightDragon\\mkdir_p") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\mkdir_p"))->isInternal()))) {
     /**
      * ディレクトリを再帰的に掘る
@@ -1174,6 +1240,34 @@ if (!isset($excluded_functions["indent_php"]) && (!function_exists("ryunosuke\\N
 }
 if (function_exists("ryunosuke\\NightDragon\\indent_php") && !defined("ryunosuke\\NightDragon\\indent_php")) {
     define("ryunosuke\\NightDragon\\indent_php", "ryunosuke\\NightDragon\\indent_php");
+}
+
+if (!isset($excluded_functions["throws"]) && (!function_exists("ryunosuke\\NightDragon\\throws") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\throws"))->isInternal()))) {
+    /**
+     * throw の関数版
+     *
+     * hoge() or throw などしたいことがまれによくあるはず。
+     *
+     * Example:
+     * ```php
+     * try {
+     *     throws(new \Exception('throws'));
+     * }
+     * catch (\Exception $ex) {
+     *     that($ex->getMessage())->isSame('throws');
+     * }
+     * ```
+     *
+     * @param \Exception $ex 投げる例外
+     * @return mixed （`return hoge or throws` のようなコードで警告が出るので抑止用）
+     */
+    function throws($ex)
+    {
+        throw $ex;
+    }
+}
+if (function_exists("ryunosuke\\NightDragon\\throws") && !defined("ryunosuke\\NightDragon\\throws")) {
+    define("ryunosuke\\NightDragon\\throws", "ryunosuke\\NightDragon\\throws");
 }
 
 if (!isset($excluded_functions["cachedir"]) && (!function_exists("ryunosuke\\NightDragon\\cachedir") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\cachedir"))->isInternal()))) {
