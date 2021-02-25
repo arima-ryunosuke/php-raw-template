@@ -1,7 +1,7 @@
 {
   "config": {
     "platform": {
-      "php": "7.2"
+      "php": "7.4"
     }
   },
   "name": "ryunosuke/night-dragon",
@@ -18,7 +18,7 @@
     "php": ">=7.2"
   },
   "require-dev": {
-    "ryunosuke/functions": "1.4.11",
+    "ryunosuke/functions": "1.4.15",
     "phpunit/phpunit": "7.*",
     "twig/twig": "2.*",
     "jenssegers/blade": "1.*",
@@ -30,7 +30,7 @@
       "ryunosuke\\NightDragon\\": "src/NightDragon"
     },
     "files": [
-      "src/functions.php"
+      "src/functions.stub"
     ]
   },
   "autoload-dev": {
