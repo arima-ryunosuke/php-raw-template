@@ -22,6 +22,10 @@
   - microsoft/tolerant-php-parser を試す
 - パス周りがメチャクチャなので正規化して realpath したい
 
+## 1.2.5
+
+- [feature] package update
+
 ## 1.2.4
 
 - [change][Renderer] gatherVariable の仕様変更
