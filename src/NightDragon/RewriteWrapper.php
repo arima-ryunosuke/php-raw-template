@@ -93,21 +93,7 @@ class RewriteWrapper
             $froms[$i] = $token->line;
         }
 
-        $tags = implode('|', array_keys($options['customTagHandler'] ?? []));
-        $source = preg_replace_callback("#<($tags)(.*?)</\\1>#su", function ($m) use ($options) {
-            $p = strpos_quoted($m[2], '>');
-            $attrstr = substr($m[2], 0, $p);
-            $content = substr($m[2], $p + 1);
-            $sxe = simplexml_load_string('<attrnode ' . preg_replace_callback('#<\?.*\?>#us', function ($m) {
-                    return htmlspecialchars($m[0]);
-                }, $attrstr) . '></attrnode>');
-            $attrs = [];
-            foreach ($sxe->attributes() as $a => $b) {
-                $attrs[$a] = (string) $b;
-            }
-            $result = $options['customTagHandler'][$m[1]]($content, $attrs);
-            return $result ?? $m[0];
-        }, $source);
+        $source = $this->rewriteCustomTag($source, $options['customTagHandler'] ?? []);
 
         $source = new Source($source, $options['compatibleShortTag'] ? Source::SHORT_TAG_REWRITE : Source::SHORT_TAG_NOTHING);
 
@@ -149,6 +135,23 @@ class RewriteWrapper
         });
 
         return $source;
+    }
+
+    private function rewriteCustomTag(string $tokens, array $handlers)
+    {
+        $tags = implode('|', array_keys($handlers ?? []));
+        return preg_replace_callback("#<($tags)(.*?)</\\1>#su", function ($m) use ($handlers) {
+            $html = new HtmlObject($m[0]);
+            $handler = $handlers[$html->tagname()];
+
+            /** @noinspection PhpPossiblePolymorphicInvocationInspection */
+            if (reflect_types(reflect_callable($handler)->getParameters()[0] ?? null)->allows($html)) {
+                return $handler($html) ?? $m[0];
+            }
+
+            // for compatible
+            return $handler($html->contents(), $html->attributes()) ?? $m[0];
+        }, $tokens);
     }
 
     private function rewriteExpand(Source $tokens, string $expander)

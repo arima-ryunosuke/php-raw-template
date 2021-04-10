@@ -2,7 +2,7 @@
 
 namespace ryunosuke\Test\NightDragon;
 
-use ryunosuke\NightDragon\Renderer;
+use ryunosuke\NightDragon\HtmlObject;
 use ryunosuke\NightDragon\RewriteWrapper;
 use ryunosuke\NightDragon\Source;
 use function ryunosuke\NightDragon\array_sprintf;
@@ -191,10 +191,10 @@ dummy
         $this->assertEquals('ZZHELLO(space)WORLDZZ', eval('ob_start(); ?>' . $code . '<?php return ob_get_clean();'), $code);
     }
 
-    function test_rewrite_customTag()
+    function test_rewriteCustomTag()
     {
-        /** @see RewriteWrapper::rewrite() */
-        $rewrite = $this->publishMethod(new RewriteWrapper(), 'rewrite');
+        /** @see RewriteWrapper::rewriteCustomTag() */
+        $rewriteCustomTag = $this->publishMethod(new RewriteWrapper(), 'rewriteCustomTag');
 
         $actual = '
 <hoge>simple tag</hoge>
@@ -206,39 +206,48 @@ dummy
 {"attr1":"hoge","attr2":"あああ","attr3":"hoge"}attr tag1
 {"attr1":"","attr2":"a b c","data-attr3":"hoge"}space attr tag2
 {"attr1":"A<?= \"$inquote\" ?>Z"}attr tag1';
-        $this->assertEquals($expected, $rewrite($actual, [
-                'customTagHandler' => [
-                    'hoge' => function ($contents, $attrs) {
-                        return json_encode($attrs, JSON_UNESCAPED_UNICODE) . $contents;
-                    },
-                ]
-            ] + self::defaultOption));
+        $this->assertEquals($expected, $rewriteCustomTag($actual, [
+            'hoge' => function ($contents, $attrs) {
+                return json_encode($attrs, JSON_UNESCAPED_UNICODE) . $contents;
+            },
+        ]));
+
+        $actual = '<hoge enable attr0="hoge" attr1="fuga" attr2=\'あああ\'	attr3="hoge" attr4="A<?= "$inquote" ?>Z">attr tag1</hoge>';
+        $expected = '<fuga enable attr1="FUGA" attr2="あああ" attr3="hoge" attr4="A<?= "$inquote" ?>Z">attr tag1</fuga>';
+        $this->assertEquals($expected, $rewriteCustomTag($actual, [
+            'hoge' => function (HtmlObject $html) {
+                $this->assertTrue(isset($html['attr1']));
+                $this->assertFalse(isset($html['attr9']));
+                unset($html['attr0']);
+                $html['attr1'] = 'FUGA';
+                $html->tagname('fuga');
+                return $html;
+            },
+        ]));
     }
 
-    function test_rewrite_customTag_script()
+    function test_rewriteCustomTag_script()
     {
-        /** @see RewriteWrapper::rewrite() */
-        $rewrite = $this->publishMethod(new RewriteWrapper(), 'rewrite');
+        /** @see RewriteWrapper::rewriteCustomTag() */
+        $rewriteCustomTag = $this->publishMethod(new RewriteWrapper(), 'rewriteCustomTag');
 
         $actual = '
 <script type="text/javascript" src="<?= $path ?>">alert(1);</script>
 <script type="text/ecmascript" src="<?= $path ?>">alert(2);</script>
 ';
         $expected = '
-<script type="text/javascript" src="<?=html($path)?>">alert(1);</script>
-<script type="text/javascript" src="<?=html($path)?>">alert(2); convertedES</script>
+<script type="text/javascript" src="<?= $path ?>">alert(1);</script>
+<script type="text/javascript" src="<?= $path ?>">alert(2); convertedES</script>
 ';
-        $this->assertEquals($expected, $rewrite($actual, [
-                'customTagHandler' => [
-                    'script' => function ($contents, $attrs) {
-                        if ($attrs['type'] === 'text/ecmascript') {
-                            $attrs['type'] = 'text/javascript';
-                            $attrs = array_sprintf($attrs, function ($v, $k) { return "$k=\"$v\""; }, ' ');
-                            return "<script $attrs>$contents convertedES</script>";
-                        }
-                    },
-                ]
-            ] + self::defaultOption));
+        $this->assertEquals($expected, $rewriteCustomTag($actual, [
+            'script' => function ($contents, $attrs) {
+                if ($attrs['type'] === 'text/ecmascript') {
+                    $attrs['type'] = 'text/javascript';
+                    $attrs = array_sprintf($attrs, function ($v, $k) { return "$k=\"$v\""; }, ' ');
+                    return "<script $attrs>$contents convertedES</script>";
+                }
+            },
+        ]));
     }
 
     function test_rewrite_compatible_shortTag()
