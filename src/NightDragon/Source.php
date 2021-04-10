@@ -29,6 +29,7 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
         $this->compatibleShortTagMode = ini_get('short_open_tag') ? self::SHORT_TAG_NOTHING : $compatibleShortTagMode;
 
         $tokens = is_string($eitherCodeOrTokens) ? token_get_all($eitherCodeOrTokens) : array_values($eitherCodeOrTokens);
+        $last = null;
         foreach ($tokens as $i => $token) {
             // ショートタグ互換ならそのインラインテキストを再パース
             if ($this->compatibleShortTagMode > 0 && is_array($token) && $token[0] === T_INLINE_HTML) {
@@ -39,21 +40,13 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
 
             // 配列だったり文字列トークンだったりで統一性がないので配列に正規化する
             if (is_string($token)) {
-                // 次のトークンが T_WHITESPACE だったら行番号も同じ確率が**高い**（確実ではないので参考程度に）
-                $line = null;
-                for ($j = $i + 1, $l = count($tokens); $j < $l; $j++) {
-                    if (($tokens[$j][0] ?? null) === T_WHITESPACE) {
-                        $line = $tokens[$j][2];
-                        break;
-                    }
-                }
-
+                $line = ($last->line ?? 1) + preg_match_all('/(?:\r\n|\r|\n)/', $last->token ?? '');
                 $token = Token::instance(TOKEN::UNKNOWN_ID, $token, $line);
             }
             else {
                 $token = Token::instance($token);
             }
-            $this->tokens[] = $token;
+            $this->tokens[] = $last = $token;
         }
     }
 

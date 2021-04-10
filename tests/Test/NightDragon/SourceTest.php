@@ -57,6 +57,36 @@ class SourceTest extends \ryunosuke\Test\AbstractTestCase
         $this->assertEquals('<?pHP  $var = "prefix-" . "-middle-" . __FUNCTION__ . "-suffix";', (string) $source);
     }
 
+    function test_line()
+    {
+        $source = new Source('<?php
+$var = "prefix-" . "-middle-" . __FUNCTION__ . "-suffix";
+$func = function () {
+    return [
+        "a" => "A",
+        // ws
+        3   => (1 + 2),
+    ];
+};
+');
+
+        $this->assertEquals(Token::instance(T_OPEN_TAG, "<?php\n", 1), $source[0]);
+        $this->assertEquals(Token::instance(T_VARIABLE, '$var', 2), $source[1]);
+        $this->assertEquals(Token::instance(T_CONSTANT_ENCAPSED_STRING, '"-suffix"', 2), $source[9]);
+        $this->assertEquals(Token::instance(T_VARIABLE, '$func', 3), $source[11]);
+        $this->assertEquals(Token::instance(-1, '{', 3), $source[16]);
+        $this->assertEquals(Token::instance(T_RETURN, 'return', 4), $source[17]);
+        $this->assertEquals(Token::instance(-1, '[', 4), $source[18]);
+        $this->assertEquals(Token::instance(T_CONSTANT_ENCAPSED_STRING, '"a"', 5), $source[19]);
+        $this->assertEquals(Token::instance(-1, ',', 5), $source[22]);
+        $this->assertEquals(Token::instance(T_LNUMBER, '3', 7), $source[24]);
+        $this->assertEquals(Token::instance(-1, ',', 7), $source[31]);
+        $this->assertEquals(Token::instance(-1, ']', 8), $source[32]);
+        $this->assertEquals(Token::instance(-1, ';', 8), $source[33]);
+        $this->assertEquals(Token::instance(-1, '}', 9), $source[34]);
+        $this->assertEquals(Token::instance(-1, ';', 9), $source[35]);
+    }
+
     function test_filter()
     {
         $source = new Source('<?php A + B - C');
@@ -74,7 +104,7 @@ class SourceTest extends \ryunosuke\Test\AbstractTestCase
         $this->assertEquals(Token::instance(T_OPEN_TAG, '<?php ', 1), $source->shift());
         $this->assertEquals(Token::instance(T_VARIABLE, '$var', 1), $source->shift());
 
-        $this->assertEquals(Token::instance(-1, ';', null), $source->pop());
+        $this->assertEquals(Token::instance(-1, ';', 1), $source->pop());
         $this->assertEquals(Token::instance(T_CONSTANT_ENCAPSED_STRING, '"-suffix"', 1), $source->pop());
 
         $this->assertEquals([
