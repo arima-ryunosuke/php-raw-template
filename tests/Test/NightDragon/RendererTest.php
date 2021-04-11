@@ -30,7 +30,7 @@ class RendererTest extends \ryunosuke\Test\AbstractTestCase
     {
         $this->assertEquals('hello world', Renderer::strip(' hello world '));
         $this->assertEquals('あいうえお', Renderer::strip(' あいうえお '));
-        $this->assertEquals('<div><span class="x y z">hello world</span></div>', Renderer::strip('
+        $this->assertEquals('<div><span class="x y z">hello world </span></div>', Renderer::strip('
 <div>
     <span
       class="x y z"
@@ -40,7 +40,8 @@ class RendererTest extends \ryunosuke\Test\AbstractTestCase
 </div>
 ', ['placeholder' => '']));
 
-        $this->assertEquals('test nightdragonboundary<div><strong id="strong1" class="hoge fuga piyo"><? $multiline ?><br><?php foreach($array as $k=>$v) {
+        $this->assertEquals('test nightdragonboundary <div><strong id="strong1" class="hoge fuga piyo"> <? $multiline ?>
+ <br><?php foreach($array as $k=>$v) {
             echo $k, $v;
         }
         ?></strong><pre>
@@ -55,7 +56,7 @@ class RendererTest extends \ryunosuke\Test\AbstractTestCase
       var a = 0;
       if (a >= 0)
         alert(a);
-    </script><strong id="strong2" class="hoge fuga piyo"><span>asd</span>line1 line2 line3</strong></div>', Renderer::strip('
+    </script><strong id="strong2" class="hoge fuga piyo"><span id="<? $id ?>"> asd </span>line1 line2 line3 </strong></div>', Renderer::strip('
 
 test
 nightdragonboundary
@@ -69,9 +70,7 @@ nightdragonboundary
         <?php foreach($array as $k=>$v) {
             echo $k, $v;
         }
-        ?>
-    </strong>
-    <pre>
+        ?></strong><pre>
       line1
         line2
           line3
@@ -91,7 +90,7 @@ nightdragonboundary
         class="hoge fuga piyo"
     >
     
-    <span>
+    <span id="<? $id ?>">
     asd
 </span>
         line1
@@ -104,7 +103,7 @@ line3
 ', ['placeholder' => '']));
 
         $this->assertEquals('<div><s>content</s></div>', @Renderer::strip('<div><s>content</div>', ['noerror' => false]));
-        $this->assertEquals("Opening and ending tag mismatch: div and s", trim(error_get_last()['message']));
+        $this->assertEquals("76: Opening and ending tag mismatch: div and s", trim(error_get_last()['message']));
     }
 
     function test___destruct()

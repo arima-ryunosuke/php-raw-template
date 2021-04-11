@@ -86,62 +86,15 @@ class Renderer
     /**
      * html 的文字列から空白をよしなに除去する
      *
-     * DomDocument を利用してるので、おかしな部分 html を食わせると意図しない結果になる可能性がある。
-     * （一応 notice が出るようにはしてある）。
-     *
      * @param string $html タグコンテンツ
      * @param array $attrs タグの属性配列
      * @return string 空白除去された文字列
      */
     public static function strip($html, $attrs = [])
     {
-        $IDENTIFIER = 'nightdragonboundary';
-        while (strpos($html, $IDENTIFIER) !== false) {
-            $IDENTIFIER .= rand(1000, 9999);
-        }
-
-        $wrapperTag = "{$IDENTIFIER}wrappertag";
-        $phpTag = "{$IDENTIFIER}phptag";
-
-        $mapper = [
-            "<$wrapperTag>"  => '',
-            "</$wrapperTag>" => '',
-        ];
-
-        // php タグは特殊すぎるので退避する（=> とか & とか <=> とか html との相性が悪すぎる）
-        $html = preg_replace_callback('#<\?.*?\?>#ums', function ($m) use (&$mapper, $phpTag) {
-            $tag = $phpTag . count($mapper);
-            $mapper["<$tag>"] = $m[0];
-            $mapper["</$tag>"] = '';
-            return "<$tag/>";
-        }, $html);
-        $html = "<$wrapperTag>$html</$wrapperTag>"; // documentElement がないと <p> が自動付与されてしまう
-        $html = '<?xml encoding="UTF-8">' . $html;  // xml 宣言がないとマルチバイト文字が html エンティティになってしまう
-
-        libxml_clear_errors();
-        $current = libxml_use_internal_errors(true);
-        $dom = new \DOMDocument();
-        $dom->loadHTML($html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD | LIBXML_NOXMLDECL);
-        if (!($attrs['noerror'] ?? false)) {
-            foreach (libxml_get_errors() as $error) {
-                if ($error->code !== 801) {
-                    trigger_error($error->message);
-                }
-            }
-        }
-        libxml_use_internal_errors($current);
-
-        $traverse = function (\DOMNode $node) use (&$traverse) {
-            foreach ($node->childNodes ?? [] as $child) {
-                $traverse($child);
-                if ($child instanceof \DOMText && !in_array($node->nodeName, ['pre', 'textarea', 'script'])) {
-                    $child->textContent = preg_replace('#\s+#u', ' ', trim($child->textContent));
-                }
-            }
-        };
-        $traverse($dom->documentElement);
-
-        return strtr($dom->saveHTML($dom->documentElement), $mapper);
+        return html_strip(trim($html, "\t\n\r "), [
+            'error-level' => ($attrs['noerror'] ?? false) ? null : E_USER_NOTICE,
+        ]);
     }
 
     public function __construct(array $options)
