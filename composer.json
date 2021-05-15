@@ -15,10 +15,10 @@
     }
   ],
   "require": {
-    "php": ">=7.2"
+      "php": "7.4"
   },
   "require-dev": {
-    "ryunosuke/functions": "1.4.15",
+    "ryunosuke/functions": "1.4.19",
     "phpunit/phpunit": "7.*",
     "twig/twig": "2.*",
     "jenssegers/blade": "1.*",
