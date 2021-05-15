@@ -2,6 +2,7 @@
 
 namespace ryunosuke\Test\NightDragon;
 
+use ryunosuke\NightDragon\HtmlString;
 use ryunosuke\NightDragon\Renderer;
 use stdClass;
 
@@ -11,6 +12,7 @@ class RendererTest extends \ryunosuke\Test\AbstractTestCase
     {
         $this->assertEquals('&lt;&#039;&gt;', Renderer::html("<'>"));
         $this->assertEquals('&lt;&#039;&gt;', Renderer::html("<", "'", ">"));
+        $this->assertEquals("<'>", Renderer::html(new HtmlString("<'>")));
     }
 
     function test_access()

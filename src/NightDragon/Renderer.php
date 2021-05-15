@@ -56,7 +56,12 @@ class Renderer
     {
         $result = '';
         foreach ($strings as $string) {
-            $result .= htmlspecialchars($string, ENT_QUOTES);
+            if ($string instanceof HtmlString) {
+                $result .= $string;
+            }
+            else {
+                $result .= htmlspecialchars($string, ENT_QUOTES);
+            }
         }
         return $result;
     }
