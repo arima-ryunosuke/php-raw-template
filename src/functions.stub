@@ -5,6 +5,10 @@
 namespace ryunosuke\NightDragon;
 
 # constants
+if (!defined("ryunosuke\\NightDragon\\TOKEN_NAME")) {
+    /** parse_php 関数でトークン名変換をするか */
+    define("ryunosuke\\NightDragon\\TOKEN_NAME", 2);
+}
 
 
 # functions
@@ -180,52 +184,6 @@ if (function_exists("ryunosuke\\NightDragon\\array_sprintf") && !defined("ryunos
     define("ryunosuke\\NightDragon\\array_sprintf", "ryunosuke\\NightDragon\\array_sprintf");
 }
 
-if (!isset($excluded_functions["array_map_method"]) && (!function_exists("ryunosuke\\NightDragon\\array_map_method") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\array_map_method"))->isInternal()))) {
-    /**
-     * メソッドを指定できるようにした array_map
-     *
-     * 配列内の要素は全て同一（少なくともシグネチャが同じ $method が存在する）オブジェクトでなければならない。
-     * スルーする場合は $ignore=true とする。スルーした場合 map ではなく filter される（結果配列に含まれない）。
-     * $ignore=null とすると 何もせずそのまま要素を返す。
-     *
-     * Example:
-     * ```php
-     * $exa = new \Exception('a');
-     * $exb = new \Exception('b');
-     * $std = new \stdClass();
-     * // getMessage で map される
-     * that(array_map_method([$exa, $exb], 'getMessage'))->isSame(['a', 'b']);
-     * // getMessage で map されるが、メソッドが存在しない場合は取り除かれる
-     * that(array_map_method([$exa, $exb, $std, null], 'getMessage', [], true))->isSame(['a', 'b']);
-     * // getMessage で map されるが、メソッドが存在しない場合はそのまま返す
-     * that(array_map_method([$exa, $exb, $std, null], 'getMessage', [], null))->isSame(['a', 'b', $std, null]);
-     * ```
-     *
-     * @param iterable $array 対象配列
-     * @param string $method メソッド
-     * @param array $args メソッドに渡る引数
-     * @param bool|null $ignore メソッドが存在しない場合にスルーするか。null を渡すと要素そのものを返す
-     * @return array $method が true を返した新しい配列
-     */
-    function array_map_method($array, $method, $args = [], $ignore = false)
-    {
-        if ($ignore === true) {
-            $array = array_filter(arrayval($array, false), function ($object) use ($method) {
-                return is_callable([$object, $method]);
-            });
-        }
-        return array_map(function ($object) use ($method, $args, $ignore) {
-            if ($ignore === null && !is_callable([$object, $method])) {
-                return $object;
-            }
-            return ([$object, $method])(...$args);
-        }, arrayval($array, false));
-    }
-}
-if (function_exists("ryunosuke\\NightDragon\\array_map_method") && !defined("ryunosuke\\NightDragon\\array_map_method")) {
-    define("ryunosuke\\NightDragon\\array_map_method", "ryunosuke\\NightDragon\\array_map_method");
-}
-
 if (!isset($excluded_functions["array_each"]) && (!function_exists("ryunosuke\\NightDragon\\array_each") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\array_each"))->isInternal()))) {
     /**
      * array_reduce の参照版（のようなもの）
@@ -271,7 +229,7 @@ if (!isset($excluded_functions["array_each"]) && (!function_exists("ryunosuke\\N
      * ]);
      *
      * // 下記は完全に同じ（第3引数の代わりにデフォルト引数を使っている）
-     * that(array_each([1, 2, 3], function(&$carry = [], $v) {
+     * that(array_each([1, 2, 3], function(&$carry = [], $v = null) {
      *         $carry[$v] = $v * $v;
      *     }))->isSame(array_each([1, 2, 3], function(&$carry, $v) {
      *         $carry[$v] = $v * $v;
@@ -347,6 +305,383 @@ if (!isset($excluded_functions["array_all"]) && (!function_exists("ryunosuke\\Ni
 }
 if (function_exists("ryunosuke\\NightDragon\\array_all") && !defined("ryunosuke\\NightDragon\\array_all")) {
     define("ryunosuke\\NightDragon\\array_all", "ryunosuke\\NightDragon\\array_all");
+}
+
+if (!isset($excluded_functions["array_flatten"]) && (!function_exists("ryunosuke\\NightDragon\\array_flatten") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\array_flatten"))->isInternal()))) {
+    /**
+     * 多階層配列をフラットに展開する
+     *
+     * 巷にあふれている実装と違って、 ["$pkey.$ckey" => $value] 形式の配列でも返せる。
+     * $delimiter で区切り文字を指定した場合にそのようになる。
+     * $delimiter = null の場合に本当の配列で返す（巷の実装と同じ）。
+     *
+     * Example:
+     * ```php
+     * $array = [
+     *    'k1' => 'v1',
+     *    'k2' => [
+     *        'k21' => 'v21',
+     *        'k22' => [
+     *            'k221' => 'v221',
+     *            'k222' => 'v222',
+     *            'k223' => [1, 2, 3],
+     *        ],
+     *    ],
+     * ];
+     * // 区切り文字指定なし
+     * that(array_flatten($array))->isSame([
+     *    0 => 'v1',
+     *    1 => 'v21',
+     *    2 => 'v221',
+     *    3 => 'v222',
+     *    4 => 1,
+     *    5 => 2,
+     *    6 => 3,
+     * ]);
+     * // 区切り文字指定
+     * that(array_flatten($array, '.'))->isSame([
+     *    'k1'            => 'v1',
+     *    'k2.k21'        => 'v21',
+     *    'k2.k22.k221'   => 'v221',
+     *    'k2.k22.k222'   => 'v222',
+     *    'k2.k22.k223.0' => 1,
+     *    'k2.k22.k223.1' => 2,
+     *    'k2.k22.k223.2' => 3,
+     * ]);
+     * ```
+     *
+     * @param iterable $array 対象配列
+     * @param string|\Closure|null $delimiter キーの区切り文字。 null を与えると連番になる
+     * @return array フラット化された配列
+     */
+    function array_flatten($array, $delimiter = null)
+    {
+        $result = [];
+        $core = function ($array, $delimiter, $parents) use (&$core, &$result) {
+            foreach ($array as $k => $v) {
+                $keys = $parents;
+                $keys[] = $k;
+                if (is_iterable($v)) {
+                    $core($v, $delimiter, $keys);
+                }
+                else {
+                    if ($delimiter === null) {
+                        $result[] = $v;
+                    }
+                    elseif ($delimiter instanceof \Closure) {
+                        $result[$delimiter($keys)] = $v;
+                    }
+                    else {
+                        $result[implode($delimiter, $keys)] = $v;
+                    }
+                }
+            }
+        };
+
+        $core($array, $delimiter, []);
+        return $result;
+    }
+}
+if (function_exists("ryunosuke\\NightDragon\\array_flatten") && !defined("ryunosuke\\NightDragon\\array_flatten")) {
+    define("ryunosuke\\NightDragon\\array_flatten", "ryunosuke\\NightDragon\\array_flatten");
+}
+
+if (!isset($excluded_functions["reflect_types"]) && (!function_exists("ryunosuke\\NightDragon\\reflect_types") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\reflect_types"))->isInternal()))) {
+    /**
+     * ReflectionType の型配列を返す
+     *
+     * ReflectionType のインターフェース・仕様がコロコロ変わってついていけないので関数化した。
+     *
+     * ReflectionType に準ずるインスタンスを渡すと取り得る候補を配列ライクなオブジェクトで返す。
+     * 引数は配列で複数与えても良い。よしなに扱って複数型として返す。
+     * また「Type が一意に導出できる Reflection」を渡しても良い（ReflectionProperty など）。
+     * null を与えた場合はエラーにはならず、スルーされる（getType は null を返し得るので利便性のため）。
+     *
+     * 単純に ReflectionType の配列ライクなオブジェクトを返すが、そのオブジェクトは `__toString` が実装されており、文字列化するとパイプ区切りの型文字列を返す。
+     * これは 8.0 における ReflectionUnionType の `__toString` を模倣したものである。
+     * 互換性のある型があった場合、上位の型に内包されて型文字列としては出現しない。
+     *
+     * Countable も実装されているが、その結果は「内部 Type の数」ではなく、論理的に「取り得る型の数」を返す。
+     * 例えば `?int` は型としては1つだが、実際は int, null の2つを取り得るため、 count は 2 を返す。
+     * 端的に言えば「`__toString` のパイプ区切りの型の数」を返す。
+     *
+     * あとは便利メソッドとして下記が生えている。
+     *
+     * - jsonSerialize: JsonSerializable 実装
+     * - getTypes: 取り得る型をすべて返す（ReflectionUnionType 互換）
+     * - getName: ReflectionUnionType 非互換 toString な型宣言文字列を返す
+     * - allows: その値を取りうるか判定して返す
+     *
+     * ReflectionUnionType とは完全互換ではないので、php8.0が完全に使える環境であれば素直に ReflectionUnionType を使ったほうが良い。
+     * （「常に（型分岐せずに）複数形で扱える」程度のメリットしかない。allows は惜しいが）。
+     *
+     * ちなみに型の変遷は下記の通り。
+     *
+     * - php7.1: ReflectionType::__toString が非推奨になった
+     * - php7.1: ReflectionNamedType が追加され、各種 getType でそれを返すようになった
+     * - php8.0: ReflectionType::__toString が非推奨ではなくなった
+     * - php8.0: ReflectionUnionType が追加され、複合の場合は getType でそれを返すようになった
+     *
+     * Example:
+     * ```php
+     * $object = new class {
+     *     function method(object $o):?string {}
+     * };
+     * $method = new \ReflectionMethod($object, 'method');
+     * $types = reflect_types($method->getParameters()[0]->getType());
+     * // 文字列化すると型宣言文字列を返すし、配列アクセスや count, iterable でそれぞれの型が得られる
+     * that((string) $types)->is('object');
+     * that($types[0])->isInstanceOf(\ReflectionType::class);
+     * that(iterator_to_array($types))->eachIsInstanceOf(\ReflectionType::class);
+     * that(count($types))->is(1);
+     * // 返り値でも同じ（null 許容なので null が付くし count も 2 になる）
+     * $types = reflect_types($method->getReturnType());
+     * that((string) $types)->is('string|null');
+     * that(count($types))->is(2);
+     * ```
+     *
+     * @param \ReflectionFunctionAbstract|\ReflectionType|\ReflectionType[]|null $reflection_type getType 等で得られるインスタンス
+     * @return \Traversable|\ArrayAccess|\Countable|\ReflectionNamedType|\ReflectionUnionType
+     */
+    function reflect_types($reflection_type = null)
+    {
+        if (!is_array($reflection_type)) {
+            $reflection_type = [$reflection_type];
+        }
+
+        foreach ($reflection_type as $n => $rtype) {
+            if ($rtype instanceof \ReflectionProperty) {
+                /** @noinspection PhpElementIsNotAvailableInCurrentPhpVersionInspection */
+                $reflection_type[$n] = $rtype->getType();
+            }
+            if ($rtype instanceof \ReflectionFunctionAbstract) {
+                $reflection_type[$n] = $rtype->getReturnType();
+            }
+            if ($rtype instanceof \ReflectionParameter) {
+                $reflection_type[$n] = $rtype->getType();
+            }
+        }
+
+        return new class(...$reflection_type)
+            extends \stdClass
+            implements \IteratorAggregate, \ArrayAccess, \Countable, \JsonSerializable {
+
+            private const PSEUDO = [
+                'mixed'    => [],
+                'static'   => ['object', 'mixed'],
+                'self'     => ['static', 'object', 'mixed'],
+                'parent'   => ['static', 'object', 'mixed'],
+                'callable' => ['mixed'],
+                'iterable' => ['mixed'],
+                'object'   => ['mixed'],
+                'array'    => ['iterable', 'mixed'],
+                'string'   => ['mixed'],
+                'int'      => ['mixed'],
+                'float'    => ['mixed'],
+                'bool'     => ['mixed'],
+                'false'    => ['bool', 'mixed'],
+                'null'     => ['mixed'],
+                'void'     => [],
+            ];
+
+            public function __construct(?\ReflectionType ...$reflection_types)
+            {
+                $types = [];
+                foreach ($reflection_types as $type) {
+                    if ($type === null) {
+                        continue;
+                    }
+
+                    /** @noinspection PhpElementIsNotAvailableInCurrentPhpVersionInspection */
+                    $types = array_merge($types, $type instanceof \ReflectionUnionType ? $type->getTypes() : [$type]);
+                }
+
+                // 配列キャストで配列を得たいので下手にフィールドを宣言せず直に生やす
+                foreach ($types as $n => $type) {
+                    $this->$n = $type;
+                }
+            }
+
+            public function __toString()
+            {
+                return implode('|', $this->toStrings(true, true));
+            }
+
+            public function getIterator()
+            {
+                // yield from $this->getTypes();
+                return new \ArrayIterator($this->getTypes());
+            }
+
+            public function offsetExists($offset)
+            {
+                return isset($this->$offset);
+            }
+
+            public function offsetGet($offset)
+            {
+                return $this->$offset;
+            }
+
+            public function offsetSet($offset, $value)
+            {
+                // for debug
+                if (is_string($value)) {
+                    $value = new class ($value, self::PSEUDO) extends \ReflectionNamedType {
+                        private $typename;
+                        private $nullable;
+                        private $builtins;
+
+                        public function __construct($typename, $builtins)
+                        {
+                            $this->typename = ltrim($typename, '?');
+                            $this->nullable = $typename[0] === '?';
+                            $this->builtins = $builtins;
+                        }
+
+                        public function getName() { return $this->typename; }
+
+                        public function allowsNull() { return $this->nullable; }
+
+                        public function isBuiltin() { return isset($this->builtins[$this->typename]); }
+
+                        public function __toString() { return $this->getName(); }
+                    };
+                }
+
+                assert($value instanceof \ReflectionType);
+                if ($offset === null) {
+                    $offset = max(array_keys($this->getTypes()) ?: [-1]) + 1;
+                }
+                $this->$offset = $value;
+            }
+
+            public function offsetUnset($offset)
+            {
+                unset($this->$offset);
+            }
+
+            public function count()
+            {
+                return count($this->toStrings(true, false));
+            }
+
+            public function jsonSerialize()
+            {
+                return $this->toStrings(true, true);
+            }
+
+            public function getName()
+            {
+                $types = array_flip($this->toStrings(true, true));
+                $nullable = false;
+                if (isset($types['null']) && count($types) === 2) {
+                    unset($types['null']);
+                    $nullable = true;
+                }
+
+                $result = [];
+                foreach ($types as $type => $dummy) {
+                    $result[] = (isset(self::PSEUDO[$type]) ? '' : '\\') . $type;
+                }
+                return ($nullable ? '?' : '') . implode('|', $result);
+            }
+
+            public function getTypes()
+            {
+                return (array) $this;
+            }
+
+            public function allows($type, $strict = false)
+            {
+                $types = array_flip($this->toStrings(false, false));
+
+                if (isset($types['mixed'])) {
+                    return true;
+                }
+
+                foreach ($types as $allow => $dummy) {
+                    if (function_exists($f = "is_$allow") && $f($type)) {
+                        return true;
+                    }
+                    if (is_a($type, $allow, true)) {
+                        return true;
+                    }
+                }
+
+                if (!$strict) {
+                    if (is_int($type) || is_float($type) || is_bool($type)) {
+                        if (isset($types['int']) || isset($types['float']) || isset($types['bool']) || isset($types['string'])) {
+                            return true;
+                        }
+                    }
+                    if (is_string($type) || (is_object($type) && method_exists($type, '__toString'))) {
+                        if (isset($types['string'])) {
+                            return true;
+                        }
+                        if ((isset($types['int']) || isset($types['float'])) && is_numeric("$type")) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+
+            private function toStrings($ignore_compatible = true, $sort = true)
+            {
+                $types = [];
+                foreach ($this->getTypes() as $type) {
+                    // ドキュメント上は「ReflectionNamedType を返す可能性があります」とのことなので getName 前提はダメ
+                    // かといって文字列化前提だと 7.1 以降で deprecated が出てしまう
+                    // つまり愚直に分岐するか @ で抑制するくらいしか多バージョン対応する術がない（7.1 の deprecated を解除して欲しい…）
+                    $types[$type instanceof \ReflectionNamedType ? $type->getName() : (string) $type] = true;
+
+                    if ($type->allowsNull()) {
+                        $types['null'] = true;
+                    }
+                }
+
+                if ($ignore_compatible) {
+                    $types = array_filter($types, function ($type) use ($types) {
+                        // いくつか互換のある内包疑似型が存在する（iterable は array を内包するし、 bool は false を内包する）
+                        foreach (self::PSEUDO[$type] ?? [] as $parent) {
+                            if (isset($types[$parent])) {
+                                return false;
+                            }
+                        }
+                        // さらに object 疑似型は全てのクラス名を内包する
+                        if (isset($types['object']) && !isset(self::PSEUDO[$type])) {
+                            return false;
+                        }
+                        return true;
+                    }, ARRAY_FILTER_USE_KEY);
+                }
+
+                if ($sort) {
+                    static $orders = null;
+                    $orders = $orders ?? array_flip(array_keys(self::PSEUDO));
+                    uksort($types, function ($a, $b) use ($orders) {
+                        $issetA = isset($orders[$a]);
+                        $issetB = isset($orders[$b]);
+                        switch (true) {
+                            case $issetA && $issetB:   // 共に疑似型
+                                return $orders[$a] - $orders[$b];
+                            case !$issetA && !$issetB: // 共にクラス名
+                                return strcasecmp($a, $b);
+                            case !$issetA && $issetB:  // A だけがクラス名
+                                return -1;
+                            case $issetA && !$issetB:  // B だけがクラス名
+                                return +1;
+                        }
+                    });
+                }
+                return array_keys($types);
+            }
+        };
+    }
+}
+if (function_exists("ryunosuke\\NightDragon\\reflect_types") && !defined("ryunosuke\\NightDragon\\reflect_types")) {
+    define("ryunosuke\\NightDragon\\reflect_types", "ryunosuke\\NightDragon\\reflect_types");
 }
 
 if (!isset($excluded_functions["get_object_properties"]) && (!function_exists("ryunosuke\\NightDragon\\get_object_properties") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\get_object_properties"))->isInternal()))) {
@@ -854,7 +1189,7 @@ if (!isset($excluded_functions["concat"]) && (!function_exists("ryunosuke\\Night
      * that(concat('prefix-', '', '-suffix'))->isSame('');
      * ```
      *
-     * @param mixed $variadic 結合する文字列（可変引数）
+     * @param mixed ...$variadic 結合する文字列（可変引数）
      * @return string 結合した文字列
      */
     function concat(...$variadic)
@@ -871,79 +1206,6 @@ if (!isset($excluded_functions["concat"]) && (!function_exists("ryunosuke\\Night
 }
 if (function_exists("ryunosuke\\NightDragon\\concat") && !defined("ryunosuke\\NightDragon\\concat")) {
     define("ryunosuke\\NightDragon\\concat", "ryunosuke\\NightDragon\\concat");
-}
-
-if (!isset($excluded_functions["strpos_quoted"]) && (!function_exists("ryunosuke\\NightDragon\\strpos_quoted") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\strpos_quoted"))->isInternal()))) {
-    /**
-     * クオートを考慮して strpos する
-     *
-     * Example:
-     * ```php
-     * // クオート中は除外される
-     * that(strpos_quoted('hello "this" is world', 'is'))->isSame(13);
-     * // 開始位置やクオート文字は指定できる（5文字目以降の \* に囲まれていない hoge の位置を返す）
-     * that(strpos_quoted('1:hoge, 2:*hoge*, 3:hoge', 'hoge', 5, '*'))->isSame(20);
-     * ```
-     *
-     * @param string $haystack 対象文字列
-     * @param string|iterable $needle 位置を取得したい文字列
-     * @param int $offset 開始位置
-     * @param string|array $enclosure 囲い文字。この文字中にいる $from, $to 文字は走査外になる
-     * @param string $escape エスケープ文字。この文字が前にある $from, $to 文字は走査外になる
-     * @return false|int $needle の位置
-     */
-    function strpos_quoted($haystack, $needle, $offset = 0, $enclosure = "'\"", $escape = '\\')
-    {
-        if (is_string($enclosure) || is_null($enclosure)) {
-            if (strlen($enclosure)) {
-                $chars = str_split($enclosure);
-                $enclosure = array_combine($chars, $chars);
-            }
-            else {
-                $enclosure = [];
-            }
-        }
-        $needles = arrayval($needle);
-
-        $strlen = strlen($haystack);
-
-        if ($offset < 0) {
-            $offset += $strlen;
-        }
-
-        $enclosing = [];
-        for ($i = $offset; $i < $strlen; $i++) {
-            if ($i !== 0 && $haystack[$i - 1] === $escape) {
-                continue;
-            }
-            foreach ($enclosure as $start => $end) {
-                if (substr_compare($haystack, $end, $i, strlen($end)) === 0) {
-                    if ($enclosing && $enclosing[count($enclosing) - 1] === $end) {
-                        array_pop($enclosing);
-                        $i += strlen($end) - 1;
-                        continue 2;
-                    }
-                }
-                if (substr_compare($haystack, $start, $i, strlen($start)) === 0) {
-                    $enclosing[] = $end;
-                    $i += strlen($start) - 1;
-                    continue 2;
-                }
-            }
-
-            if (empty($enclosing)) {
-                foreach ($needles as $needle) {
-                    if (substr_compare($haystack, $needle, $i, strlen($needle)) === 0) {
-                        return $i;
-                    }
-                }
-            }
-        }
-        return false;
-    }
-}
-if (function_exists("ryunosuke\\NightDragon\\strpos_quoted") && !defined("ryunosuke\\NightDragon\\strpos_quoted")) {
-    define("ryunosuke\\NightDragon\\strpos_quoted", "ryunosuke\\NightDragon\\strpos_quoted");
 }
 
 if (!isset($excluded_functions["str_chop"]) && (!function_exists("ryunosuke\\NightDragon\\str_chop") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\str_chop"))->isInternal()))) {
@@ -1005,6 +1267,198 @@ if (function_exists("ryunosuke\\NightDragon\\str_lchop") && !defined("ryunosuke\
     define("ryunosuke\\NightDragon\\str_lchop", "ryunosuke\\NightDragon\\str_lchop");
 }
 
+if (!isset($excluded_functions["html_strip"]) && (!function_exists("ryunosuke\\NightDragon\\html_strip") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\html_strip"))->isInternal()))) {
+    /**
+     * html の空白類を除去して minify する
+     *
+     * 文字列的ではなく DOM 的に行うのでおかしな部分 html を食わせると意図しない結果になる可能性がある。
+     * その副作用として属性のクオートやタグ内空白は全て正規化される。
+     *
+     * html コメントも削除される。
+     * また、空白が意味を持つタグ（textarea, pre）は対象にならない。
+     * さらに、php を含むような html （テンプレート）の php タグは一切の対象外となる。
+     *
+     * これらの挙動の一部はオプションで指定が可能。
+     *
+     * Example:
+     * ```php
+     * // e.g. id が " でクオートされている
+     * // e.g. class のクオートが " になっている
+     * // e.g. タグ内空白（id, class の間隔等）がスペース1つになっている
+     * // e.g. php タグは一切変更されていない
+     * // e.g. textarea は保持されている
+     * that(html_strip("<span  id=id  class='c1  c2  c3'><?= '<hoge>  </hoge>' ?> a  b  c </span> <pre> a  b  c </pre>"))->isSame('<span id="id" class="c1  c2  c3"><?= \'<hoge>  </hoge>\' ?> a b c </span><pre> a  b  c </pre>');
+     * ```
+     *
+     * @param string $html html 文字列
+     * @param array $options オプション配列
+     * @return string 空白除去された html 文字列
+     */
+    function html_strip($html, $options = [])
+    {
+        $options += [
+            'error-level'    => E_USER_ERROR, // エラー時の報告レベル
+            'encoding'       => 'UTF-8',      // html のエンコーディング
+            'escape-phpcode' => true,         // php タグを退避するか
+            'html-comment'   => true,         // html コメントも対象にするか
+            'ignore-tags'    => [
+                // 空白を除去しない特別タグ
+                'pre',      // html の仕様でそのまま表示
+                'textarea', // html の仕様...なのかスタイルなのかは分からないが普通はそのまま表示だろう
+                'script',   // type が js とは限らない。そもそも js だとしても下手にいじるのは怖すぎる
+                'style',    // 同上
+            ],
+        ];
+
+        $preserving = unique_string($html, 64, range('a', 'z'));
+        $mapping = [];
+
+        if ($options['escape-phpcode']) {
+            $mapping = [];
+            $html = strip_php($html, [
+                'replacer'       => $preserving,
+                'trailing_break' => false,
+            ], $mapping);
+        }
+
+        // xml 宣言がないとマルチバイト文字が html エンティティになってしまうし documentElement がないと <p> が自動付与されてしまう
+        $docTag = "root-$preserving";
+        $mapping["<$docTag>"] = '';
+        $mapping["</$docTag>"] = '';
+        $html = "<?xml encoding=\"{$options['encoding']}\"><$docTag>$html</$docTag>";
+
+        // dom 化
+        libxml_clear_errors();
+        $current = libxml_use_internal_errors(true);
+        $dom = new \DOMDocument();
+        $dom->loadHTML($html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD | LIBXML_NOXMLDECL);
+        if ($options['error-level']) {
+            // http://www.xmlsoft.org/html/libxml-xmlerror.html
+            $nohandling = [];
+            $nohandling[] = 801;
+            if (!$options['escape-phpcode']) {
+                $nohandling[] = 46;
+            }
+            foreach (libxml_get_errors() as $error) {
+                if (!in_array($error->code, $nohandling, true)) {
+                    trigger_error($error->code . ': ' . $error->message, $options['error-level']);
+                }
+            }
+        }
+        libxml_use_internal_errors($current);
+
+        $xpath = new \DOMXPath($dom);
+
+        if ($options['html-comment']) {
+            /** @var \DOMComment[] $comments */
+            $comments = iterator_to_array($xpath->query('//comment()'), true);
+            foreach ($comments as $comment) {
+                $comment->parentNode->removeChild($comment);
+            }
+            $dom->documentElement->normalize();
+        }
+
+        /** @var \DOMText[] $texts */
+        $texts = iterator_to_array($xpath->query('//text()'), true);
+        $texts = array_values(array_filter($texts, function (\DOMNode $node) use ($options) {
+            while ($node = $node->parentNode) {
+                if (in_array($node->nodeName, $options['ignore-tags'], true)) {
+                    return false;
+                }
+            }
+            return true;
+        }));
+        // @see https://developer.mozilla.org/ja/docs/Web/API/Document_Object_Model/Whitespace
+        foreach ($texts as $n => $text) {
+            // 連続空白の正規化
+            $text->data = preg_replace("#[\t\n\r ]+#u", " ", $text->data);
+
+            // 空白の直後に他の空白がある場合は (2 つが別々なインライン要素をまたぐ場合も含めて) 無視
+            if (($next = $texts[$n + 1] ?? null) && ($text->data[-1] ?? null) === ' ') {
+                $next->data = ltrim($next->data, "\t\n\r ");
+            }
+
+            // 行頭と行末の一連の空白が削除される
+            $prev = $text->previousSibling ?? $text->parentNode->previousSibling;
+            if (!$prev || in_array($prev->nodeName, $options['ignore-tags'], true)) {
+                $text->data = ltrim($text->data, "\t\n\r ");
+            }
+            $next = $text->nextSibling ?? $text->parentNode->nextSibling;
+            if (!$next || in_array($next->nodeName, $options['ignore-tags'], true)) {
+                $text->data = rtrim($text->data, "\t\n\r ");
+            }
+        }
+        return trim(strtr($dom->saveHTML($dom->documentElement), $mapping), "\t\n\r ");
+    }
+}
+if (function_exists("ryunosuke\\NightDragon\\html_strip") && !defined("ryunosuke\\NightDragon\\html_strip")) {
+    define("ryunosuke\\NightDragon\\html_strip", "ryunosuke\\NightDragon\\html_strip");
+}
+
+if (!isset($excluded_functions["unique_string"]) && (!function_exists("ryunosuke\\NightDragon\\unique_string") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\unique_string"))->isInternal()))) {
+    /**
+     * 文字列に含まれない文字列を生成する
+     *
+     * 例えば http のマルチパートバウンダリのような、「競合しない文字列」を生成する。
+     * 実装は愚直に文字列を調べて存在しなければそれを返すようになっている。
+     * 一応初期値や文字セットは指定可能。
+     *
+     * $initial に int を与えると初期値としてその文字数分 $charlist から確保する。
+     * 例えば生成後の変更が前提で、ある程度の長さを担保したいときに指定すれば最低でもその長さ以上は保証される。
+     * $initial に string を与えるとそれがそのまま初期値として使用される。
+     * 例えば「ほぼ存在しない文字列」が予測できるのであればそれを指定すれば無駄な処理が省ける。
+     *
+     * Example:
+     * ```php
+     * // 単純に呼ぶと生成1,2文字程度の文字列になる
+     * that(unique_string('hello, world'))->stringLengthEqualsAny([1, 2]);
+     * // 数値を含んでいないので候補文字に数値のみを指定すれば1文字で「存在しない文字列」となる
+     * that(unique_string('hello, world', null, range(0, 9)))->stringLengthEquals(1);
+     * // int を渡すと最低でもそれ以上は保証される
+     * that(unique_string('hello, world', 5))->stringLengthEqualsAny([5, 6]);
+     * // string を渡すとそれが初期値となる
+     * that(unique_string('hello, world', 'prefix-'))->stringStartsWith('prefix');
+     * ```
+     *
+     * @param string $source 元文字列
+     * @param string|int $initial 初期文字列あるいは文字数
+     * @param string|array $charlist 使用する文字セット
+     * @return string 一意な文字列
+     */
+    function unique_string($source, $initial = null, $charlist = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')
+    {
+        assert(is_stringable($initial) || is_int($initial) || is_null($initial));
+
+        if (is_stringable($charlist)) {
+            $charlist = preg_split('//', $charlist, -1, PREG_SPLIT_NO_EMPTY);
+        }
+
+        $charlength = count($charlist);
+        if ($charlength === 0) {
+            throw new \InvalidArgumentException('charlist is empty.');
+        }
+
+        $result = '';
+        if (is_int($initial)) {
+            shuffle($charlist);
+            $result = implode('', array_slice($charlist, 0, $initial));
+        }
+        elseif (is_stringable($initial)) {
+            $result = $initial;
+        }
+
+        $p = 0;
+        do {
+            $result .= $charlist[mt_rand(0, $charlength - 1)];
+        } while (($p = strpos($source, $result, $p)) !== false);
+
+        return $result;
+    }
+}
+if (function_exists("ryunosuke\\NightDragon\\unique_string") && !defined("ryunosuke\\NightDragon\\unique_string")) {
+    define("ryunosuke\\NightDragon\\unique_string", "ryunosuke\\NightDragon\\unique_string");
+}
+
 if (!isset($excluded_functions["evaluate"]) && (!function_exists("ryunosuke\\NightDragon\\evaluate") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\evaluate"))->isInternal()))) {
     /**
      * eval のプロキシ関数
@@ -1046,13 +1500,15 @@ if (!isset($excluded_functions["evaluate"]) && (!function_exists("ryunosuke\\Nig
 
         try {
             if ($cachefile) {
-                return ($dummy = static function () {
+                /** @noinspection PhpMethodParametersCountMismatchInspection */
+                return (static function () {
                     extract(func_get_arg(1));
                     return require func_get_arg(0);
                 })($cachefile, $contextvars);
             }
             else {
-                return ($dummy = static function () {
+                /** @noinspection PhpMethodParametersCountMismatchInspection */
+                return (static function () {
                     extract(func_get_arg(1));
                     return eval(func_get_arg(0));
                 })($phpcode, $contextvars);
@@ -1076,6 +1532,334 @@ if (!isset($excluded_functions["evaluate"]) && (!function_exists("ryunosuke\\Nig
 }
 if (function_exists("ryunosuke\\NightDragon\\evaluate") && !defined("ryunosuke\\NightDragon\\evaluate")) {
     define("ryunosuke\\NightDragon\\evaluate", "ryunosuke\\NightDragon\\evaluate");
+}
+
+if (!isset($excluded_functions["parse_php"]) && (!function_exists("ryunosuke\\NightDragon\\parse_php") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\parse_php"))->isInternal()))) {
+    /**
+     * php のコード断片をパースする
+     *
+     * 結果配列は token_get_all したものだが、「字句の場合に文字列で返す」仕様は適用されずすべて配列で返す。
+     * つまり必ず `[TOKENID, TOKEN, LINE, POS]` で返す。
+     *
+     * @todo 現在の仕様では php タグが自動で付与されるが、標準と異なり直感的ではないのでその仕様は除去する
+     * @todo そもそも何がしたいのかよくわからない関数になってきたので動作の洗い出しが必要
+     *
+     * Example:
+     * ```php
+     * $phpcode = 'namespace Hogera;
+     * class Example
+     * {
+     *     // something
+     * }';
+     *
+     * // namespace ～ ; を取得
+     * $part = parse_php($phpcode, [
+     *     'begin' => T_NAMESPACE,
+     *     'end'   => ';',
+     * ]);
+     * that(implode('', array_column($part, 1)))->isSame('namespace Hogera;');
+     *
+     * // class ～ { を取得
+     * $part = parse_php($phpcode, [
+     *     'begin' => T_CLASS,
+     *     'end'   => '{',
+     * ]);
+     * that(implode('', array_column($part, 1)))->isSame("class Example\n{");
+     * ```
+     *
+     * @param string $phpcode パースする php コード
+     * @param array|int $option パースオプション
+     * @return array トークン配列
+     */
+    function parse_php($phpcode, $option = [])
+    {
+        if (is_int($option)) {
+            $option = ['flags' => $option];
+        }
+
+        $default = [
+            'phptag'         => true, // 初めに php タグを付けるか
+            'short_open_tag' => null, // ショートオープンタグを扱うか（null だと余計なことはせず ini に従う）
+            'line'           => [],   // 行の範囲（以上以下）
+            'position'       => [],   // 文字位置の範囲（以上以下）
+            'begin'          => [],   // 開始トークン
+            'end'            => [],   // 終了トークン
+            'offset'         => 0,    // 開始トークン位置
+            'flags'          => 0,    // token_get_all の $flags. TOKEN_PARSE を与えると ParseError が出ることがあるのでデフォルト 0
+            'cache'          => true, // キャッシュするか否か
+            'nest_token'     => [
+                ')' => '(',
+                '}' => '{',
+                ']' => '[',
+            ],
+        ];
+        $option += $default;
+
+        $cachekey = $option['flags'] . '-' . $option['phptag'] . '-' . var_export($option['short_open_tag'], true);
+        static $cache = [];
+        if (!($option['cache'] && isset($cache[$phpcode][$cachekey]))) {
+            $phptag = $option['phptag'] ? '<?php ' : '';
+            $phpcode = $phptag . $phpcode;
+            $position = -strlen($phptag);
+
+            $tokens = [];
+            $tmp = token_get_all($phpcode, $option['flags']);
+            for ($i = 0; $i < count($tmp); $i++) {
+                $token = $tmp[$i];
+
+                // token_get_all の結果は微妙に扱いづらいので少し調整する（string/array だったり、名前変換の必要があったり）
+                if (!is_array($token)) {
+                    $last = $tokens[count($tokens) - 1] ?? [null, 1, 0];
+                    $token = [ord($token), $token, $last[2] + preg_match_all('/(?:\r\n|\r|\n)/', $last[1])];
+                }
+
+                // @codeCoverageIgnoreStart
+                if ($option['short_open_tag'] === true && $token[0] === T_INLINE_HTML && ($p = strpos($token[1], '<?')) !== false) {
+                    $newtokens = [];
+                    $nlcount = 0;
+
+                    if ($p !== 0) {
+                        $html = substr($token[1], 0, $p);
+                        $nlcount = preg_match_all('#\r\n|\r|\n#u', $html);
+                        $newtokens[] = [T_INLINE_HTML, $html, $token[2]];
+                    }
+
+                    $code = substr($token[1], $p + 2);
+                    $subtokens = token_get_all("<?php $code");
+                    $subtokens[0][1] = '<?';
+                    foreach ($subtokens as $subtoken) {
+                        if (is_array($subtoken)) {
+                            $subtoken[2] += $token[2] + $nlcount - 1;
+                        }
+                        $newtokens[] = $subtoken;
+                    }
+
+                    array_splice($tmp, $i + 1, 0, $newtokens);
+                    continue;
+                }
+                if ($option['short_open_tag'] === false && $token[0] === T_OPEN_TAG && $token[1] === '<?') {
+                    for ($j = $i + 1; $j < count($tmp); $j++) {
+                        if ($tmp[$j][0] === T_CLOSE_TAG) {
+                            break;
+                        }
+                    }
+                    $html = implode('', array_map(function ($token) {
+                        return is_array($token) ? $token[1] : $token;
+                    }, array_slice($tmp, $i, $j - $i + 1)));
+                    array_splice($tmp, $i + 1, $j - $i, [[T_INLINE_HTML, $html, $token[2]]]);
+                    continue;
+                }
+                // @codeCoverageIgnoreEnd
+
+                $token[] = $position;
+                if ($option['flags'] & TOKEN_NAME) {
+                    $token[] = token_name($token[0]);
+                }
+
+                $position += strlen($token[1]);
+                $tokens[] = $token;
+            }
+            // @codeCoverageIgnoreStart
+            if ($option['short_open_tag'] === false) {
+                for ($i = 0; $i < count($tokens); $i++) {
+                    if ($tokens[$i][0] === T_INLINE_HTML && isset($tokens[$i + 1]) && $tokens[$i + 1][0] === T_INLINE_HTML) {
+                        $tokens[$i][1] .= $tokens[$i + 1][1];
+                        array_splice($tokens, $i + 1, 1, []);
+                        $i--;
+                    }
+                }
+            }
+            // @codeCoverageIgnoreEnd
+            $cache[$phpcode][$cachekey] = $tokens;
+        }
+        $tokens = $cache[$phpcode][$cachekey];
+
+        $lines = $option['line'] + [-PHP_INT_MAX, PHP_INT_MAX];
+        $positions = $option['position'] + [-PHP_INT_MAX, PHP_INT_MAX];
+        $begin_tokens = (array) $option['begin'];
+        $end_tokens = (array) $option['end'];
+        $nest_tokens = $option['nest_token'];
+
+        $result = [];
+        $starting = !$begin_tokens;
+        $nesting = 0;
+        $offset = is_array($option['offset']) ? ($option['offset'][0] ?? 0) : $option['offset'];
+        $endset = is_array($option['offset']) ? ($option['offset'][1] ?? count($tokens)) : count($tokens);
+
+        for ($i = $offset; $i < $endset; $i++) {
+            $token = $tokens[$i];
+
+            if ($lines[0] > $token[2]) {
+                continue;
+            }
+            if ($lines[1] < $token[2]) {
+                continue;
+            }
+            if ($positions[0] > $token[3]) {
+                continue;
+            }
+            if ($positions[1] < $token[3]) {
+                continue;
+            }
+
+            foreach ($begin_tokens as $t) {
+                if ($t === $token[0] || $t === $token[1]) {
+                    $starting = true;
+                    break;
+                }
+            }
+            if (!$starting) {
+                continue;
+            }
+
+            $result[$i] = $token;
+
+            foreach ($end_tokens as $t) {
+                if (isset($nest_tokens[$t])) {
+                    $nest_token = $nest_tokens[$t];
+                    if ($token[0] === $nest_token || $token[1] === $nest_token) {
+                        $nesting++;
+                    }
+                }
+                if ($t === $token[0] || $t === $token[1]) {
+                    $nesting--;
+                    if ($nesting <= 0) {
+                        break 2;
+                    }
+                    break;
+                }
+            }
+        }
+        return $result;
+    }
+}
+if (function_exists("ryunosuke\\NightDragon\\parse_php") && !defined("ryunosuke\\NightDragon\\parse_php")) {
+    define("ryunosuke\\NightDragon\\parse_php", "ryunosuke\\NightDragon\\parse_php");
+}
+
+if (!isset($excluded_functions["strip_php"]) && (!function_exists("ryunosuke\\NightDragon\\strip_php") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\strip_php"))->isInternal()))) {
+    /**
+     * 文字列から php コードを取り除く
+     *
+     * 正確にはオプションの replacer で指定したものに置換される（デフォルト空文字なので削除になる）。
+     * replacer にクロージャを渡すと(phpコード, 出現番号) が渡ってくるので、それに応じて値を返せばそれに置換される。
+     * 文字列を指定すると自動で出現番号が付与される。
+     *
+     * 歴史的な理由によりオプションには直接 replacer を渡せるが、互換性のためでありその指定は推奨されない。
+     *
+     * $mapping 配列には「どれをどのように」と言った変換表が格納される。
+     * 典型的には strtr に渡して php コードを復元させるのに使用する。
+     *
+     * Example:
+     * ```php
+     * $phtml = 'begin php code <?php echo 123 ?> end';
+     * // php コードが消えている
+     * that(strip_php($phtml))->is('begin php code  end');
+     * // $mapping を使用すると元の文字列に復元できる
+     * $html = strip_php($phtml, null, $mapping);
+     * that(strtr($html, $mapping))->is($phtml);
+     * ```
+     *
+     * @param string $phtml php コードを含む文字列
+     * @param array|string|\Closure $option オプション配列
+     * @param array $mapping 変換表が格納される参照変数
+     * @return string php コードが除かれた文字列
+     */
+    function strip_php($phtml, $option = [], &$mapping = [])
+    {
+        // for compatible
+        if (!is_array($option)) {
+            $option = [
+                'replacer' => $option,
+            ];
+        }
+
+        $option = array_replace([
+            'short_open_tag' => true,
+            'trailing_break' => true,
+            'replacer'       => '',
+        ], $option, [
+            //'flags'  => TOKEN_NAME,
+            //'cache'  => false,
+            'phptag' => false,
+        ]);
+
+        $replacer = $option['replacer'];
+        if ($replacer === '') {
+            $replacer = function ($phptag, $n) { return ''; };
+        }
+        if ($replacer === null) {
+            $replacer = unique_string($phtml, 64);
+        }
+
+        $tmp = parse_php($phtml, $option);
+
+        if ($option['trailing_break']) {
+            $tokens = $tmp;
+        }
+        else {
+            $tokens = [];
+            $echoopen = false;
+            $taglength = strlen('?>');
+            foreach ($tmp as $token) {
+                if ($token[0] === T_OPEN_TAG_WITH_ECHO) {
+                    $echoopen = true;
+                }
+                if ($echoopen && $token[0] === T_CLOSE_TAG && isset($token[1][$taglength])) {
+                    $echoopen = false;
+
+                    $tokens[] = [
+                        $token[0],
+                        rtrim($token[1]),
+                        $token[2],
+                        $token[3],
+                    ];
+                    $tokens[] = [
+                        T_INLINE_HTML,
+                        substr($token[1], $taglength),
+                        $token[2],
+                        $token[3] + $taglength,
+                    ];
+                }
+                else {
+                    $tokens[] = $token;
+                }
+            }
+        }
+
+        $offsets = [];
+        foreach ($tokens as $token) {
+            if ($token[0] === T_OPEN_TAG || $token[0] === T_OPEN_TAG_WITH_ECHO) {
+                $offsets[] = [$token[3], null];
+            }
+            elseif ($token[0] === T_CLOSE_TAG) {
+                $lastkey = count($offsets) - 1;
+                $offsets[$lastkey][1] = $token[3] + strlen($token[1]) - $offsets[$lastkey][0];
+            }
+        }
+        if ($offsets) {
+            $lastkey = count($offsets) - 1;
+            $offsets[$lastkey][1] = $offsets[$lastkey][1] ?? strlen($phtml) - $offsets[$lastkey][0];
+        }
+
+        $mapping = [];
+        foreach (array_reverse($offsets) as $n => [$offset, $length]) {
+            if ($replacer instanceof \Closure) {
+                $mapping[$n] = substr($phtml, $offset, $length);
+                $phtml = substr_replace($phtml, $replacer($mapping[$n], $n), $offset, $length);
+            }
+            else {
+                $tag = $replacer . $n;
+                $mapping[$tag] = substr($phtml, $offset, $length);
+                $phtml = substr_replace($phtml, $tag, $offset, $length);
+            }
+        }
+
+        return $phtml;
+    }
+}
+if (function_exists("ryunosuke\\NightDragon\\strip_php") && !defined("ryunosuke\\NightDragon\\strip_php")) {
+    define("ryunosuke\\NightDragon\\strip_php", "ryunosuke\\NightDragon\\strip_php");
 }
 
 if (!isset($excluded_functions["indent_php"]) && (!function_exists("ryunosuke\\NightDragon\\indent_php") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\indent_php"))->isInternal()))) {
@@ -1338,13 +2122,14 @@ if (!isset($excluded_functions["cache"]) && (!function_exists("ryunosuke\\NightD
                     // 変更されているもののみ保存
                     foreach ($this->changed as $namespace => $dummy) {
                         $filepath = $this->cachedir . '/' . rawurlencode($namespace) . self::CACHE_EXT;
+                        /** @noinspection PhpUnreachableStatementInspection */
                         $content = "<?php\nreturn " . var_export($this->cache[$namespace], true) . ";\n";
 
                         $temppath = tempnam(sys_get_temp_dir(), 'cache');
                         if (file_put_contents($temppath, $content) !== false) {
                             @chmod($temppath, 0644);
                             if (!@rename($temppath, $filepath)) {
-                                @unlink($temppath);
+                                @unlink($temppath); // @codeCoverageIgnore
                             }
                         }
                     }
@@ -1583,6 +2368,44 @@ if (function_exists("ryunosuke\\NightDragon\\is_primitive") && !defined("ryunosu
     define("ryunosuke\\NightDragon\\is_primitive", "ryunosuke\\NightDragon\\is_primitive");
 }
 
+if (!isset($excluded_functions["is_stringable"]) && (!function_exists("ryunosuke\\NightDragon\\is_stringable") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\is_stringable"))->isInternal()))) {
+    /**
+     * 変数が文字列化できるか調べる
+     *
+     * 「配列」「__toString を持たないオブジェクト」が false になる。
+     * （厳密に言えば配列は "Array" になるので文字列化できるといえるがここでは考えない）。
+     *
+     * Example:
+     * ```php
+     * // こいつらは true
+     * that(is_stringable(null))->isTrue();
+     * that(is_stringable(true))->isTrue();
+     * that(is_stringable(3.14))->isTrue();
+     * that(is_stringable(STDOUT))->isTrue();
+     * that(is_stringable(new \Exception()))->isTrue();
+     * // こいつらは false
+     * that(is_stringable(new \ArrayObject()))->isFalse();
+     * that(is_stringable([1, 2, 3]))->isFalse();
+     * ```
+     *
+     * @param mixed $var 調べる値
+     * @return bool 文字列化できるなら true
+     */
+    function is_stringable($var)
+    {
+        if (is_array($var)) {
+            return false;
+        }
+        if (is_object($var) && !method_exists($var, '__toString')) {
+            return false;
+        }
+        return true;
+    }
+}
+if (function_exists("ryunosuke\\NightDragon\\is_stringable") && !defined("ryunosuke\\NightDragon\\is_stringable")) {
+    define("ryunosuke\\NightDragon\\is_stringable", "ryunosuke\\NightDragon\\is_stringable");
+}
+
 if (!isset($excluded_functions["is_arrayable"]) && (!function_exists("ryunosuke\\NightDragon\\is_arrayable") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\is_arrayable"))->isInternal()))) {
     /**
      * 変数が配列アクセス可能か調べる
@@ -1594,7 +2417,7 @@ if (!isset($excluded_functions["is_arrayable"]) && (!function_exists("ryunosuke\
      * that(is_arrayable(new \stdClass()))->isFalse();
      * ```
      *
-     * @param array $var 調べる値
+     * @param array|object $var 調べる値
      * @return bool 配列アクセス可能なら true
      */
     function is_arrayable($var)
@@ -1633,6 +2456,75 @@ if (!isset($excluded_functions["is_countable"]) && (!function_exists("ryunosuke\
 }
 if (function_exists("ryunosuke\\NightDragon\\is_countable") && !defined("ryunosuke\\NightDragon\\is_countable")) {
     define("ryunosuke\\NightDragon\\is_countable", "ryunosuke\\NightDragon\\is_countable");
+}
+
+if (!isset($excluded_functions["var_type"]) && (!function_exists("ryunosuke\\NightDragon\\var_type") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\var_type"))->isInternal()))) {
+    /**
+     * 値の型を取得する（gettype + get_class）
+     *
+     * プリミティブ型（gettype で得られるやつ）はそのまま、オブジェクトのときのみクラス名を返す。
+     * ただし、オブジェクトの場合は先頭に '\\' が必ず付く。
+     * また、 $valid_name を true にするとタイプヒントとして正当な名前を返す（integer -> int, double -> float など）。
+     * 互換性のためデフォルト false になっているが、将来的にこの引数は削除されるかデフォルト true に変更される。
+     *
+     * 無名クラスの場合は extends, implements の優先順位でその名前を使う。
+     * 継承も実装もされていない場合は標準の get_class の結果を返す。
+     *
+     * Example:
+     * ```php
+     * // プリミティブ型は gettype と同義
+     * that(var_type(false))->isSame('boolean');
+     * that(var_type(123))->isSame('integer');
+     * that(var_type(3.14))->isSame('double');
+     * that(var_type([1, 2, 3]))->isSame('array');
+     * // オブジェクトは型名を返す
+     * that(var_type(new \stdClass))->isSame('\\stdClass');
+     * that(var_type(new \Exception()))->isSame('\\Exception');
+     * // 無名クラスは継承元の型名を返す（インターフェース実装だけのときはインターフェース名）
+     * that(var_type(new class extends \Exception{}))->isSame('\\Exception');
+     * that(var_type(new class implements \JsonSerializable{
+     *     public function jsonSerialize() { return ''; }
+     * }))->isSame('\\JsonSerializable');
+     * ```
+     *
+     * @param mixed $var 型を取得する値
+     * @param bool $valid_name タイプヒントとして有効な名前を返すか
+     * @return string 型名
+     */
+    function var_type($var, $valid_name = false)
+    {
+        if (is_object($var)) {
+            $ref = new \ReflectionObject($var);
+            if ($ref->isAnonymous()) {
+                if ($pc = $ref->getParentClass()) {
+                    return '\\' . $pc->name;
+                }
+                if ($is = $ref->getInterfaceNames()) {
+                    return '\\' . reset($is);
+                }
+            }
+            return '\\' . get_class($var);
+        }
+        $type = gettype($var);
+        if (!$valid_name) {
+            return $type;
+        }
+        switch ($type) {
+            default:
+                return $type;
+            case 'NULL':
+                return 'null';
+            case 'boolean':
+                return 'bool';
+            case 'integer':
+                return 'int';
+            case 'double':
+                return 'float';
+        }
+    }
+}
+if (function_exists("ryunosuke\\NightDragon\\var_type") && !defined("ryunosuke\\NightDragon\\var_type")) {
+    define("ryunosuke\\NightDragon\\var_type", "ryunosuke\\NightDragon\\var_type");
 }
 
 if (!isset($excluded_functions["var_export2"]) && (!function_exists("ryunosuke\\NightDragon\\var_export2") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\var_export2"))->isInternal()))) {
