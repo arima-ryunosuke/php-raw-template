@@ -79,7 +79,7 @@ dummy
         $this->assertEquals($expected, $rewrite($actual, [
                 'customTagHandler' => [
                     'delete' => function ($contents, $attrs) { return ''; },
-                ]
+                ],
             ] + self::defaultOption));
         $this->assertEquals(1, RewriteWrapper::getLineMapping("undefined", 1));
         $this->assertEquals(2, RewriteWrapper::getLineMapping("undefined", 2));
@@ -163,8 +163,8 @@ dummy
                     'fuga' => [
                         1 => [
                             'key' => ' XYhello worldYX ',
-                        ]
-                    ]
+                        ],
+                    ],
                 ],
             ];
             $filter = function ($v) { return str_replace(' ', '(space)', $v); };

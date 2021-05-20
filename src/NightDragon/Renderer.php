@@ -510,7 +510,7 @@ return {$V(var_export2($consts, 1))};
         }
 
         $filename = realpath($this->resolvePath($filename));
-        if (!isset($this->assignedVars[$filename])){
+        if (!isset($this->assignedVars[$filename])) {
             $this->assignedVars[$filename] = [];
         }
         foreach ($vars as $k => $v) {

@@ -38,7 +38,7 @@ class TemplateTest extends \ryunosuke\Test\AbstractTestCase
                     'stdClass' => (object) [
                         'ArrayObject' => new \ArrayObject(['e' => new \Exception('nesting')]),
                     ],
-                ]
+                ],
             ],
         ]);
         $this->assertEquals('&lt;tag&gt;hoge&lt;/tag&gt;

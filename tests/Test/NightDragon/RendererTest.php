@@ -4,7 +4,6 @@ namespace ryunosuke\Test\NightDragon;
 
 use ryunosuke\NightDragon\HtmlString;
 use ryunosuke\NightDragon\Renderer;
-use stdClass;
 
 class RendererTest extends \ryunosuke\Test\AbstractTestCase
 {
@@ -299,10 +298,10 @@ line3
 
         $outputConstFile($FILENAME, [
             'accessor' => [
-                'hoge1' => 'hoge1'
+                'hoge1' => 'hoge1',
             ],
             'modifier' => [
-                'fuga1' => 'fuga1'
+                'fuga1' => 'fuga1',
             ],
         ]);
         $this->assertStringEqualsFile($FILENAME, <<<'EXPECTED'
@@ -366,10 +365,10 @@ EXPECTED
         file_put_contents($FILENAME, '<?php syntax error.');
         $outputConstFile($FILENAME, [
             'accessor' => [
-                'hoge1' => 'hoge1'
+                'hoge1' => 'hoge1',
             ],
             'modifier' => [
-                'fuga1' => 'fuga1'
+                'fuga1' => 'fuga1',
             ],
         ]);
         $this->assertStringEqualsFile($FILENAME, <<<'EXPECTED'
@@ -454,7 +453,7 @@ var2
                 'inner2' => 'inner2',
                 'inner3' => 'ex-inner3',
             ],
-            realpath(self::TEMPLATE_DIR . '/vars-inner.phtml')   => [
+            realpath(self::TEMPLATE_DIR . '/vars-inner.phtml')  => [
                 'inner1' => 'ex-inner1',
                 'inner2' => 'ex-inner2',
                 'inner3' => 'ex-inner3',
@@ -550,7 +549,7 @@ near:
             $renderer->render(self::TEMPLATE_DIR . '/error.phtml', [
                 'object' => new class {
                     public function undefinedMethod() { throw new \Exception('msg'); }
-                }
+                },
             ]);
         }
         catch (\Throwable $e) {
@@ -621,7 +620,7 @@ near:
             $renderer->render(self::TEMPLATE_DIR . '/error.phtml', [
                 'object' => new class {
                     public function undefinedMethod() { throw new \Exception('msg2', 2, new \Exception('msg1', 1)); }
-                }
+                },
             ]);
         }
         catch (\Throwable $e) {
