@@ -303,7 +303,7 @@ php の素材の味を生かしたシンプルなテンプレートエンジン�
     <h2>カスタムタグ</h2>
     タグのコールバックを登録すると特定タグに対してコールバックが実行されます。
     例えばデフォルトでは strip タグが登録されていて、空白を除去できます（Smarty の {strip} に相当） 。
-    このタグ内の空白はすべて除去されます。ただし、変数の中身には関与しません。<div id="stripping" class="hoge fuga piyo"><?=\ryunosuke\NightDragon\Renderer::html($multiline)?></div>
+    このタグ内の空白はすべて除去されます。ただし、変数の中身には関与しません。 <div id="stripping" class="hoge fuga piyo"><?=\ryunosuke\NightDragon\Renderer::html($multiline)?></div>
 </section>
 
 <section>
@@ -641,19 +641,20 @@ echo $renderer->render(__DIR__ . '/action.phtml', [
 テンプレートファイルの書き換えオプションです。
 テンプレート内に `<?php # meta template data ?>` というコメントを入れるとその位置に下記のようなメタ情報が挿入されます。
 
-```php<?php
+```php
+<?php
 # meta template data
 // @formatter:off
 // using variables:
 /** @var \ryunosuke\NightDragon\Template $this */
 /** @var mixed $_ */
+/** @var null $null */
+/** @var float $float */
 /** @var string $string */
-/** @var double $float */
-/** @var NULL $null */
+/** @var string $multiline */
 /** @var array $array */
 /** @var \stdClass $object */
 /** @var \Closure $closure */
-/** @var string $multiline */
 // using modifier functions:
 if (false) {function strtoupper(...$args){define('strtoupper', \strtoupper(...[]));return \strtoupper(...$args);}}
 if (false) {function str_replace(...$args){define('str_replace', \str_replace(...[]));return \str_replace(...$args);}}
@@ -733,7 +734,7 @@ php ソース書き換え用のカスタムストリームラッパー名を指�
 html ソース書き換えのオプションです。
 
 `[タグ名 => 文字列callable]` のような配列を指定しておくと、文字列的にそのタグ（配列のキー）に出くわしたときにコールバックが実行されます。
-コールバックは `(タグコンテンツ, タグ属性配列)` が引数として渡ってきます。
+コールバックは `(タグコンテンツ, タグ属性オブジェクト)` が引数として渡ってきます。
 
 デフォルトで `strip` が登録されています。
 これは html 中の空白を削除して（基本的に）1行化するコールバックです。

@@ -22,6 +22,16 @@
   - microsoft/tolerant-php-parser を試す
 - パス周りがメチャクチャなので正規化して realpath したい
 
+## 1.2.6
+
+- bump version
+  - php: 7.4
+- [change][Renderer] 変数埋め込みの改善
+- [change][Renderer] strip の実装を外部化
+- [fixbug][RewriteWrapper] カスタムタグの書き換えで html エスケープされたり php タグで即死したりする不具合を修正
+- [feature][HtmlString] エスケープされない HtmlString を導入
+- [refactor][Source] 行数の取得の厳密化
+
 ## 1.2.5
 
 - [feature] package update
