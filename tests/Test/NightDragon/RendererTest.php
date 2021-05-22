@@ -144,6 +144,7 @@ line3
             'string' => 'hoge',
             'array'  => ['x' => 'X', 'y' => 'Y', 'z' => 'Z'],
             'object' => new \Exception('exception', 123),
+            'hoge'   => 123,
         ];
         $PARENT = [
             'parent1' => 123,
@@ -155,9 +156,9 @@ line3
             'compileDir'      => self::COMPILE_DIR,
             'defaultClass'    => \template\T::class,
             'specialVariable' => [
-                '$both' => ['integer', 'float'],
-                '$null' => '',
-                '$hoge' => 'integer',
+                '$both'  => ['int'],
+                '$null'  => '',
+                '$undef' => 'int',
             ],
         ]);
 
@@ -166,16 +167,19 @@ line3
         $template = file_get_contents(self::TEMPLATE_DIR . '/meta.phtml');
         $this->assertContains("define('x', 'x')", $template);
         $this->assertContains("define('strtoupper', \\strtoupper(...[]))", $template);
-        $this->assertContains('@var integer $int', $template);
-        $this->assertContains('@var boolean $bool', $template);
-        $this->assertContains('@var integer|float $both', $template);
+        $this->assertContains('@var \\ryunosuke\\NightDragon\\Template $this', $template);
+        $this->assertContains('@var mixed $_', $template);
+        $this->assertContains('@var int $int', $template);
+        $this->assertContains('@var bool $bool', $template);
+        $this->assertContains('@var int|float $both', $template);
         $this->assertContains('@var string $string', $template);
         $this->assertContains('@var string[] $array', $template);
         $this->assertContains('@var \Exception $object', $template);
+        $this->assertContains('@var string|int $hoge', $template);
+        $this->assertContains('@var int $parent1 */', $template); // 使用している親変数は含まれる
         $this->assertNotContains('$null */', $template); // 空文字指定は含まれない
-        $this->assertNotContains('$hoge', $template); // そもそも存在しないものを追加したりはしない
-        $this->assertContains('$parent1 */', $template); // 使用している親変数は含まれる
-        $this->assertNotContains('$parent2', $template); // 使用していない親変数は含まれない
+        $this->assertNotContains('undef */', $template); // そもそも存在しないものを追加したりはしない
+        $this->assertNotContains('@var int $parent2 */', $template); // 使用していないので含まれない
 
         // 名前空間も問題ない
         $renderer->compile(self::TEMPLATE_DIR . '/namespace.phtml', []);
@@ -199,8 +203,8 @@ line3
         $template = file_get_contents(self::TEMPLATE_DIR . '/meta.phtml');
         $this->assertNotContains("define('x', 'x')", $template);
         $this->assertNotContains("define('strtoupper', strtoupper(...[]))", $template);
-        $this->assertContains('@var integer $int', $template);
-        $this->assertContains('@var boolean $bool', $template);
+        $this->assertContains('@var int $int', $template);
+        $this->assertContains('@var bool $bool', $template);
         $this->assertContains('@var string $string', $template);
         $this->assertContains('@var string[] $array', $template);
         $this->assertContains('@var \Exception $object', $template);
@@ -234,45 +238,46 @@ line3
         $detectType = $this->publishMethod($renderer, 'detectType');
 
         // シンプルな奴ら
-        $this->assertEquals('integer', $detectType(123));
-        $this->assertEquals('double', $detectType(3.14));
-        $this->assertEquals('boolean', $detectType(false));
-        $this->assertEquals('string', $detectType('string'));
-        $this->assertEquals('resource', $detectType(STDOUT));
-        $this->assertEquals('array', $detectType([]));
-        $this->assertEquals('\\Exception', $detectType(new \Exception()));
-        $this->assertEquals('DateTime|DateTimeImmutable', $detectType(new \DateTime()));
+        $this->assertEquals(['int'], $detectType(123));
+        $this->assertEquals(['float'], $detectType(3.14));
+        $this->assertEquals(['bool'], $detectType(false));
+        $this->assertEquals(['string'], $detectType('string'));
+        $this->assertEquals(['resource'], $detectType(STDOUT));
+        $this->assertEquals(['array'], $detectType([]));
+        $this->assertEquals(['\\Exception'], $detectType(new \Exception()));
+        $this->assertEquals(['DateTime', 'DateTimeImmutable'], $detectType(new \DateTime()));
 
         // 素の匿名クラスは object
-        $this->assertEquals('object', $detectType(new class {
+        $this->assertEquals(['object'], $detectType(new class {
         }));
         // 継承していばそいつ
-        $this->assertEquals('\\stdClass', $detectType(new class extends \stdClass {
+        $this->assertEquals(['\\stdClass'], $detectType(new class extends \stdClass {
         }));
         // 実装していばそいつ
-        $this->assertEquals('\\Countable', $detectType(new class implements \Countable {
+        $this->assertEquals(['\\Countable'], $detectType(new class implements \Countable {
             public function count() { }
         }));
-        // 継承も実装もしてれば | で両方
-        $this->assertEquals('\\stdClass|\\Countable', $detectType(new class extends \stdClass implements \Countable {
+        // 継承も実装もしてれば両方
+        $this->assertEquals(['\\stdClass', '\\Countable'], $detectType(new class extends \stdClass implements \Countable {
             public function count() { }
         }));
         // ただし継承元に実装メソッドが含まれている場合は含まれない
-        $this->assertEquals('\\ArrayObject|\\JsonSerializable', $detectType(new class extends \ArrayObject implements \Countable, \JsonSerializable {
+        $this->assertEquals(['\\ArrayObject', '\\JsonSerializable'], $detectType(new class extends \ArrayObject implements \Countable, \JsonSerializable {
             public function jsonSerialize() { }
         }));
 
         // 配列系のシンプルな奴ら
-        $this->assertEquals('array', $detectType([1, 'a', null]));
-        $this->assertEquals('DateTime[]|DateTimeImmutable[]', $detectType([new \DateTime(), new \DateTime()]));
-        $this->assertEquals('DateTime[][]|DateTimeImmutable[][]', $detectType([[new \DateTime()], [new \DateTime()]]));
+        $this->assertEquals(['int[]'], $detectType([1, 2, 3]));
+        $this->assertEquals(['array'], $detectType([1, 'a', null]));
+        $this->assertEquals(['DateTime[]', 'DateTimeImmutable[]'], $detectType([new \DateTime(), new \DateTime()]));
+        $this->assertEquals(['DateTime[][]', 'DateTimeImmutable[][]'], $detectType([[new \DateTime()], [new \DateTime()]]));
         // 配列の配列系
-        $this->assertEquals('string[]', $detectType(["a", "b", "c"]));
-        $this->assertEquals('string[][]', $detectType([["a"], ["b"], ["c"]]));
+        $this->assertEquals(['string[]'], $detectType(["a", "b", "c"]));
+        $this->assertEquals(['string[][]'], $detectType([["a"], ["b"], ["c"]]));
         // オブジェクト配列反変
-        $this->assertEquals('\\Exception[]', $detectType([new \Exception(), new \RuntimeException()]));
-        $this->assertEquals('\\Exception[]', $detectType([new \RuntimeException(), new \Exception()]));
-        $this->assertEquals('\\Exception[][]', $detectType([[new \Exception()], [new \Exception()]]));
+        $this->assertEquals(['\\Exception[]'], $detectType([new \Exception(), new \RuntimeException()]));
+        $this->assertEquals(['\\Exception[]'], $detectType([new \RuntimeException(), new \Exception()]));
+        $this->assertEquals(['\\Exception[][]'], $detectType([[new \Exception()], [new \Exception()]]));
     }
 
     function test_outputConstFile()

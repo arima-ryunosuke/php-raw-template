@@ -133,6 +133,14 @@ class Renderer
             'varExpander'        => '', // for compatible. In the future the default will be "`"
         ];
 
+        $explodes = function ($types) {
+            return array_map(function ($types) {
+                return array_flatten(array_map(function ($v) {
+                    return explode('|', $v);
+                }, (array) $types));
+            }, $types);
+        };
+
         $this->debug = (bool) $options['debug'];
         $this->errorHandling = (bool) $options['errorHandling'];
         $this->wrapperProtocol = (string) $options['wrapperProtocol'];
@@ -143,8 +151,8 @@ class Renderer
             'gatherModifier'  => (bool) $options['gatherModifier'],
             'gatherAccessor'  => (bool) $options['gatherAccessor'],
             'constFilename'   => (string) $options['constFilename'],
-            'typeMapping'     => (array) $options['typeMapping'],
-            'specialVariable' => (array) $options['specialVariable'],
+            'typeMapping'     => $explodes((array) $options['typeMapping']),
+            'specialVariable' => $explodes((array) $options['specialVariable']),
         ];
         $this->renderOptions = [
             'customTagHandler'   => (array) $options['customTagHandler'],
@@ -273,29 +281,37 @@ class Renderer
         return $this->stats[$filename] = $fileid;
     }
 
-    private function detectType($var): string
+    private function detectType($var): array
     {
         $map = function ($type) use (&$map) {
             if (is_array($type)) {
-                return array_map($map, $type);
+                return array_flatten(array_map($map, $type));
             }
-            $result = $this->gatherOptions['typeMapping'][$type] ?? $type;
-            if (is_array($result)) {
-                return implode('|', $result);
+            if (isset($this->gatherOptions['typeMapping'][$type])) {
+                return $this->gatherOptions['typeMapping'][$type];
             }
-            return $result;
+            return [$type];
         };
 
         // 配列は array じゃなくて Type[] にできる可能性がある
+        $is_subclass_of = function ($v, $types) {
+            foreach ($types as $type) {
+                if (is_subclass_of($v, $type)) {
+                    return true;
+                }
+            }
+            return false;
+        };
         if (is_array($var) && count($var) > 0) {
-            $type = $this->detectType(array_shift($var));
+            $first = array_shift($var);
+            $type = $this->detectType($first);
             // 型がバラバラでも抽象型の可能性があるので反変を取る
             foreach ($var as $v) {
                 $next = $this->detectType($v);
-                if ($next === $type || is_subclass_of($next, $type)) {
+                if ($next === $type || $is_subclass_of($v, $type)) {
                     continue;
                 }
-                elseif (is_subclass_of($type, $next)) {
+                elseif ($is_subclass_of($first, $next)) {
                     $type = $next;
                     continue;
                 }
@@ -305,7 +321,7 @@ class Renderer
                 }
             }
             if ($type) {
-                return array_sprintf(explode('|', $type), '%s[]', '|');
+                return array_sprintf($type, '%s[]');
             }
         }
 
@@ -315,10 +331,10 @@ class Renderer
             if ($ref->isAnonymous()) {
                 if ($pc = $ref->getParentClass()) {
                     $is = array_diff($ref->getInterfaceNames(), $pc->getInterfaceNames());
-                    return array_sprintf(array_merge([$pc->name], $map($is)), '\\%s', '|');
+                    return array_sprintf(array_merge([$pc->name], $map($is)), '\\%s');
                 }
                 if ($is = $ref->getInterfaceNames()) {
-                    return array_sprintf($map($is), '\\%s', '|');
+                    return array_sprintf($map($is), '\\%s');
                 }
                 // 本当に匿名ならどうしようもないので object
                 return $map('object');
@@ -326,44 +342,51 @@ class Renderer
             return $map('\\' . get_class($var));
         }
 
-        return $map(gettype($var));
+        return $map(var_type($var, true));
     }
 
     private function gatherVariable(Source $source, string $receiver, array $vars, array $parentVars): array
     {
-        // 固定変数
-        $result = [
-            '$this'   => $this->templateClass,
-            $receiver => "mixed",
-        ];
+        $result = [];
 
-        // グローバル
-        foreach ($this->globalVars as $name => $var) {
-            $result['$' . $name] = $this->detectType($var);
+        // 既存宣言
+        foreach ($source->match([
+            T_OPEN_TAG,
+            function (Token $token) { return $token->id === T_COMMENT && trim($token->token) === self::META_COMMENT; },
+            Source::MATCH_MANY,
+            T_CLOSE_TAG,
+        ]) as $tokens) {
+            preg_match_all('#/\*\* @var\s+([^\s]+?)\s+([^\s]+).*?\*/#msu', (string) $tokens, $matches, PREG_SET_ORDER);
+            $result += array_map(function ($v) { return explode('|', $v); }, array_column($matches, 1, 2));
         }
 
-        // 親
-        foreach ($source->match([T_VARIABLE]) as $tokens) {
-            $code = (string) $tokens->shift();
-            $vname = substr($code, 1);
-            if (array_key_exists($vname, $parentVars)) {
-                $result[$code] = $this->detectType($parentVars[$vname]);
-            }
-        }
-
-        // 自身
-        foreach ($vars as $name => $var) {
-            $result['$' . $name] = $this->detectType($var);
+        // 変数群（グローバル < 親 < 自身の優先度で代入）
+        foreach (array_merge($this->globalVars, $parentVars, $vars) as $name => $var) {
+            $result['$' . $name] = array_merge($result['$' . $name] ?? [], $this->detectType($var));
         }
 
         // 明示指定
-        foreach ($this->gatherOptions['specialVariable'] as $name => $type) {
+        foreach ($this->gatherOptions['specialVariable'] as $name => $types) {
             if (array_key_exists($name, $result)) {
-                $result[$name] = is_array($type) ? implode('|', $type) : $type;
+                $result[$name] = array_merge($result[$name], $types);
             }
         }
 
-        return array_filter($result, 'strlen');
+        // 固定変数を付与して使用している物だけにフィルタ
+        $result = [
+                '$this'   => [$this->templateClass],
+                $receiver => ["mixed"],
+            ] + array_intersect_key($result, array_flip(array_map('strval', $source->match([T_VARIABLE]))));
+
+        static $orders = null;
+        $orders = $orders ?? array_flip(['mixed', 'object', 'callable', 'iterable', 'array', 'string', 'int', 'float', 'bool', 'null']);
+        return array_map(function ($types) use ($orders) {
+            $types = array_unique($types);
+            usort($types, function ($a, $b) use ($orders) {
+                return ($orders[$a] ?? $a) <=> ($orders[$b] ?? $b);
+            });
+            return implode('|', $types);
+        }, $result);
     }
 
     private function gatherModifier(Source $source, array $modifiers, array $namespaces, array $classes): array

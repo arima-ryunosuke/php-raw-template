@@ -4,12 +4,14 @@
 // using variables:
 /** @var \ryunosuke\NightDragon\Template $this */
 /** @var mixed $_ */
-/** @var integer $int */
-/** @var boolean $bool */
-/** @var double $both */
+/** @var int $parent1 */
+/** @var int $int */
+/** @var bool $bool */
+/** @var int|float $both */
 /** @var string $string */
 /** @var string[] $array */
 /** @var \Exception $object */
+/** @var string|int $hoge */
 // @formatter:on
 ?>
 <?= $null ?>
@@ -21,3 +23,5 @@
 <?= $array | implode(', ', $_) ?>
 <?= $object->getMessage() ?>
 <?= $parent1 ?>
+<?= $hoge ?>
+<?= $fuga ?>
