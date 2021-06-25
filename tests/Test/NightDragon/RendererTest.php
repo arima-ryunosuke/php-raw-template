@@ -508,7 +508,7 @@ var2
 near:
 *a<?= $undefined ?>z
 ', $e->getMessage());
-            $this->assertNotContains(' ' . Renderer::DEFAULT_PROTOCOL, $e->getTraceAsString());
+            $this->assertStringNotContainsString(' ' . Renderer::DEFAULT_PROTOCOL, $e->getTraceAsString());
             return;
         }
         $this->fail();
@@ -534,7 +534,7 @@ near:
  ?>
  dummy line 8
 ', $e->getMessage());
-            $this->assertNotContains(' ' . Renderer::DEFAULT_PROTOCOL, $e->getTraceAsString());
+            $this->assertStringNotContainsString(' ' . Renderer::DEFAULT_PROTOCOL, $e->getTraceAsString());
             return;
         }
         $this->fail();
@@ -556,7 +556,7 @@ near:
             $this->assertEquals(0, $e->getCode());
             $this->assertEquals(__FILE__, $e->getFile());
             $this->assertEquals('msg', $e->getMessage());
-            $this->assertNotContains(' ' . Renderer::DEFAULT_PROTOCOL, $e->getTraceAsString());
+            $this->assertStringNotContainsString(' ' . Renderer::DEFAULT_PROTOCOL, $e->getTraceAsString());
             return;
         }
         $this->fail();
@@ -627,13 +627,13 @@ near:
             $this->assertEquals(2, $e->getCode());
             $this->assertEquals(__FILE__, $e->getFile());
             $this->assertEquals('msg2', $e->getMessage());
-            $this->assertNotContains(' ' . Renderer::DEFAULT_PROTOCOL, $e->getTraceAsString());
+            $this->assertStringNotContainsString(' ' . Renderer::DEFAULT_PROTOCOL, $e->getTraceAsString());
 
             $e = $e->getPrevious();
             $this->assertEquals(1, $e->getCode());
             $this->assertEquals(__FILE__, $e->getFile());
             $this->assertEquals('msg1', $e->getMessage());
-            $this->assertNotContains(' ' . Renderer::DEFAULT_PROTOCOL, $e->getTraceAsString());
+            $this->assertStringNotContainsString(' ' . Renderer::DEFAULT_PROTOCOL, $e->getTraceAsString());
 
             return;
         }
@@ -660,7 +660,7 @@ near:
  dummy line 5
  dummy line 6
 ', $e->getMessage());
-            $this->assertNotContains(' ' . Renderer::DEFAULT_PROTOCOL, $e->getTraceAsString());
+            $this->assertStringNotContainsString(' ' . Renderer::DEFAULT_PROTOCOL, $e->getTraceAsString());
             return;
         }
         $this->fail();

@@ -27,10 +27,10 @@ class Renderer
     private $compileDir;
 
     /** @var array テンプレート書き換えオプション */
-    private $gatherOptions = [];
+    private $gatherOptions;
 
     /** @var array レンダリングオプション */
-    private $renderOptions = [];
+    private $renderOptions;
 
     /** @var array ファイルシステムのキャッシュ */
     private $stats = [];
@@ -263,7 +263,7 @@ class Renderer
                     function (Token $token) { return $token->id === T_COMMENT && trim($token->token) === self::META_COMMENT; },
                     Source::MATCH_MANY,
                     T_CLOSE_TAG,
-                ], "<?php\n" . self::META_COMMENT . "\n// $formatter:off\n" . implode("\n", $meta) . "\n// $formatter:on\n?>\n");
+                ], /** @lang */ "<?php\n" . self::META_COMMENT . "\n// $formatter:off\n" . implode("\n", $meta) . "\n// $formatter:on\n?>\n");
 
                 // phpstorm が「変更された」と感知して ctrl+z が効かなくなるので書き換えられた場合のみ保存する
                 if ($content !== $newcontent) {
@@ -460,7 +460,7 @@ class Renderer
                 return "define({$E($v)}, {$E($v)});";
             }, "\n");
 
-            return "<?php
+            return /** @lang */ "<?php
 if (null) {
     {$V(self::MODIFIER_FUNCTION_COMMENT)}
     {$V(indent_php($ms, 4))}

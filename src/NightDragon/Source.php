@@ -30,7 +30,7 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
 
         $tokens = is_string($eitherCodeOrTokens) ? token_get_all($eitherCodeOrTokens) : array_values($eitherCodeOrTokens);
         $last = null;
-        foreach ($tokens as $i => $token) {
+        foreach ($tokens as $token) {
             // ショートタグ互換ならそのインラインテキストを再パース
             if ($this->compatibleShortTagMode > 0 && is_array($token) && $token[0] === T_INLINE_HTML) {
                 $inline = str_replace('<?', self::SHORT_OPEN_TAG, $token[1]);

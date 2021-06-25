@@ -282,6 +282,7 @@ class Template
      */
     private function fetch(string $filename, array $vars = [])
     {
+        /** @noinspection PhpMethodParametersCountMismatchInspection */
         return (function () {
             ob_start();
             extract(func_get_arg(1));
