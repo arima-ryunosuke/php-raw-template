@@ -4,6 +4,7 @@ namespace ryunosuke\Test\NightDragon;
 
 use ryunosuke\NightDragon\HtmlString;
 use ryunosuke\NightDragon\Renderer;
+use ryunosuke\NightDragon\Source;
 
 class RendererTest extends \ryunosuke\Test\AbstractTestCase
 {
@@ -275,7 +276,7 @@ PHP
         $this->assertFileExists(self::COMPILE_DIR);
     }
 
-    function test_gatherVariable()
+    function test_detectType()
     {
         $renderer = new Renderer([
             'debug'       => true,
@@ -328,6 +329,34 @@ PHP
         $this->assertEquals(['\\Exception[]'], $detectType([new \Exception(), new \RuntimeException()]));
         $this->assertEquals(['\\Exception[]'], $detectType([new \RuntimeException(), new \Exception()]));
         $this->assertEquals(['\\Exception[][]'], $detectType([[new \Exception()], [new \Exception()]]));
+    }
+
+    function test_gatherVariable()
+    {
+        $renderer = new Renderer([
+            'debug'           => true,
+            'typeMapping'     => [
+                '\\DateTime' => [\DateTime::class, \DateTimeImmutable::class],
+            ],
+            'specialVariable' => [
+                '$var' => ['float', 'int', 'array'],
+            ],
+        ]);
+
+        /** @see Renderer::gatherVariable() */
+        $gatherVariable = $this->publishMethod($renderer, 'gatherVariable');
+
+        // 普通にマージされる
+        $vars = $gatherVariable(new Source(""), '$_', [], [
+            'var' => 'string',
+        ]);
+        $this->assertEquals('array|string|int|float', $vars['$var']);
+
+        // 明示的な配列を含む場合は array は消える
+        $vars = $gatherVariable(new Source(""), '$_', [], [
+            'var' => ['a', 'b'],
+        ]);
+        $this->assertEquals('string[]|int|float', $vars['$var']);
     }
 
     function test_outputConstFile()

@@ -402,14 +402,24 @@ class Renderer
             }
         }
 
-        $result = array_filter($result, function ($types) {
-            return array_filter($types, 'strlen');
-        });
+        // 空フィルタ兼上位型の除去
+        $result = array_filter(array_map(function ($types) {
+            $types = array_flip(array_filter($types, 'strlen'));
+
+            // 明示的な配列型が来ている場合 array は不要
+            if (array_filter($types, function ($type) {
+                return !!preg_match('#\[]$#', $type);
+            }, ARRAY_FILTER_USE_KEY)) {
+                unset($types['array']);
+            }
+
+            return array_keys($types);
+        }, $result));
 
         static $orders = null;
         $orders = $orders ?? array_flip(['mixed', 'object', 'callable', 'iterable', 'array', 'string', 'int', 'float', 'bool', 'null']);
         return array_map(function ($types) use ($orders) {
-            $types = array_filter(array_unique($types), 'strlen');
+            $types = array_unique($types);
             usort($types, function ($a, $b) use ($orders) {
                 return ($orders[$a] ?? $a) <=> ($orders[$b] ?? $b);
             });
