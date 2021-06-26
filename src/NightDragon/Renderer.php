@@ -9,6 +9,12 @@ class Renderer
     const MODIFIER_FUNCTION_COMMENT = '// using modifier functions:';
     const ACCESS_KEY_COMMENT        = '// using array keys:';
 
+    const FIXED    = 1 << 0; // $this などの固定変数
+    const GLOBAL   = 1 << 1; // $this などの固定変数
+    const ASSIGNED = 1 << 2; // アサインされている変数
+    const USING    = 1 << 3; // 使用されている変数
+    const DECLARED = 1 << 4; // 既存の @var 変数
+
     const DEFAULT_PROTOCOL = 'RewriteWrapper';
 
     /** @var bool デバッグモード */
@@ -141,13 +147,18 @@ class Renderer
             }, $types);
         };
 
+        // for compatible
+        if ($options['gatherVariable'] === true) {
+            $options['gatherVariable'] = self::DECLARED | self::FIXED | self::GLOBAL | self::ASSIGNED | self::USING;
+        }
+
         $this->debug = (bool) $options['debug'];
         $this->errorHandling = (bool) $options['errorHandling'];
         $this->wrapperProtocol = (string) $options['wrapperProtocol'];
         $this->templateClass = '\\' . ltrim($options['templateClass'], '\\');
         $this->compileDir = (string) $options['compileDir'];
         $this->gatherOptions = [
-            'gatherVariable'  => (bool) $options['gatherVariable'],
+            'gatherVariable'  => (int) $options['gatherVariable'],
             'gatherModifier'  => (bool) $options['gatherModifier'],
             'gatherAccessor'  => (bool) $options['gatherAccessor'],
             'constFilename'   => (string) $options['constFilename'],
@@ -209,7 +220,7 @@ class Renderer
     {
         $this->setAssignedVar($filename, $vars);
 
-        if (isset($this->stats[$filename])) {
+        if (!$this->debug && isset($this->stats[$filename])) {
             return $this->stats[$filename];
         }
 
@@ -347,7 +358,29 @@ class Renderer
 
     private function gatherVariable(Source $source, string $receiver, array $vars, array $parentVars): array
     {
-        $result = [];
+        $results = [];
+
+        // 固定変数
+        $results[self::FIXED] = [
+            '$this'   => [$this->templateClass],
+            $receiver => ["mixed"],
+        ];
+
+        // グローバル変数
+        foreach ($this->globalVars as $name => $var) {
+            $results[self::GLOBAL]['$' . $name] = $this->detectType($var);
+        }
+
+        // アサイン変数（親 < 自身の優先度で代入）
+        foreach (array_merge($parentVars, $vars) as $name => $var) {
+            $results[self::ASSIGNED]['$' . $name] = $this->detectType($var);
+        }
+
+        // 使用変数
+        foreach ($source->match([T_VARIABLE]) as $var) {
+            $varname = (string) $var;
+            $results[self::USING][$varname] = $results[self::GLOBAL][$varname] ?? $results[self::ASSIGNED][$varname] ?? [];
+        }
 
         // 既存宣言
         foreach ($source->match([
@@ -357,31 +390,26 @@ class Renderer
             T_CLOSE_TAG,
         ]) as $tokens) {
             preg_match_all('#/\*\* @var\s+([^\s]+?)\s+([^\s]+).*?\*/#msu', (string) $tokens, $matches, PREG_SET_ORDER);
-            $result += array_map(function ($v) { return explode('|', $v); }, array_column($matches, 1, 2));
+            $results[self::DECLARED] = array_map(function ($v) { return explode('|', $v); }, array_column($matches, 1, 2));
         }
 
-        // 変数群（グローバル < 親 < 自身の優先度で代入）
-        foreach (array_merge($this->globalVars, $parentVars, $vars) as $name => $var) {
-            $result['$' . $name] = array_merge($result['$' . $name] ?? [], $this->detectType($var));
-        }
-
-        // 明示指定
-        foreach ($this->gatherOptions['specialVariable'] as $name => $types) {
-            if (array_key_exists($name, $result)) {
-                $result[$name] = array_merge($result[$name], $types);
+        $result = [];
+        foreach ($results as $kind => $vars) {
+            if ($this->gatherOptions['gatherVariable'] & $kind) {
+                foreach ($vars as $name => $types) {
+                    $result[$name] = array_merge($result[$name] ?? [], $types, $this->gatherOptions['specialVariable'][$name] ?? []);
+                }
             }
         }
 
-        // 固定変数を付与して使用している物だけにフィルタ
-        $result = [
-                '$this'   => [$this->templateClass],
-                $receiver => ["mixed"],
-            ] + array_intersect_key($result, array_flip(array_map('strval', $source->match([T_VARIABLE]))));
+        $result = array_filter($result, function ($types) {
+            return array_filter($types, 'strlen');
+        });
 
         static $orders = null;
         $orders = $orders ?? array_flip(['mixed', 'object', 'callable', 'iterable', 'array', 'string', 'int', 'float', 'bool', 'null']);
         return array_map(function ($types) use ($orders) {
-            $types = array_unique($types);
+            $types = array_filter(array_unique($types), 'strlen');
             usort($types, function ($a, $b) use ($orders) {
                 return ($orders[$a] ?? $a) <=> ($orders[$b] ?? $b);
             });

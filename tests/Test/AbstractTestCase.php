@@ -55,6 +55,20 @@ class AbstractTestCase extends TestCase
         self::fail(get_class($e) . ' is not thrown.' . $message);
     }
 
+    public static function publishProperty($class, $property)
+    {
+        $ref = new \ReflectionProperty($class, $property);
+        $ref->setAccessible(true);
+        return static function () use ($class, $ref) {
+            if (func_num_args()) {
+                return $ref->isStatic() ? $ref->setValue(func_get_arg(0)) : $ref->setValue($class, func_get_arg(0));
+            }
+            else {
+                return $ref->isStatic() ? $ref->getValue() : $ref->getValue($class);
+            }
+        };
+    }
+
     public static function publishMethod($class, $method)
     {
         $ref = new \ReflectionMethod($class, $method);
