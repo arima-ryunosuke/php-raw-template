@@ -22,6 +22,11 @@
   - microsoft/tolerant-php-parser を試す
 - パス周りがメチャクチャなので正規化して realpath したい
 
+## 1.2.7
+
+- [feature][Renderer] 互換性のある型の除去機能
+- [feature][Renderer] gatherVariable の収集を種別単位で指定可能にした
+
 ## 1.2.6
 
 - bump version
