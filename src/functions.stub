@@ -451,7 +451,6 @@ if (!isset($excluded_functions["reflect_types"]) && (!function_exists("ryunosuke
 
         foreach ($reflection_type as $n => $rtype) {
             if ($rtype instanceof \ReflectionProperty) {
-                /** @noinspection PhpElementIsNotAvailableInCurrentPhpVersionInspection */
                 $reflection_type[$n] = $rtype->getType();
             }
             if ($rtype instanceof \ReflectionFunctionAbstract) {
@@ -710,14 +709,20 @@ if (!isset($excluded_functions["get_object_properties"]) && (!function_exists("r
      * ```
      *
      * @param object $object オブジェクト
+     * @param array $privates 継承ツリー上の private が格納される
      * @return array 全プロパティの配列
      */
-    function get_object_properties($object)
+    function get_object_properties($object, &$privates = [])
     {
         $fields = [];
         foreach ((array) $object as $name => $field) {
-            if (preg_match('#\A\\000(.+?)\\000(.+)#usm', $name, $m)) {
-                $name = $m[2];
+            $names = explode("\0", $name);
+            if (count($names) > 1) {
+                $name = array_pop($names);
+                $cname = $names[1];
+                if ($cname !== '*' && $cname !== get_class($object)) {
+                    $privates[$cname][$name] = $field;
+                }
             }
             if (!array_key_exists($name, $fields)) {
                 $fields[$name] = $field;
@@ -941,10 +946,7 @@ if (!isset($excluded_functions["path_normalize"]) && (!function_exists("ryunosuk
         }
 
         $result = [];
-        foreach (preg_split("#[$ds]#u", $path) as $n => $part) {
-            if ($n > 0 && $part === '') {
-                continue;
-            }
+        foreach (preg_split("#[$ds]+#u", $path) as $part) {
             if ($part === '.') {
                 continue;
             }
@@ -956,6 +958,9 @@ if (!isset($excluded_functions["path_normalize"]) && (!function_exists("ryunosuk
                 continue;
             }
             $result[] = $part;
+        }
+        if (count($result) > 2 && $result[count($result) - 1] === '') {
+            array_pop($result);
         }
         return implode(DIRECTORY_SEPARATOR, $result);
     }
