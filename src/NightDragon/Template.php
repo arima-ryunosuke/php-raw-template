@@ -274,6 +274,23 @@ class Template
     }
 
     /**
+     * 指定されたパスを解決する
+     *
+     * 絶対パスはそのまま、相対パスは自身のディレクトリが基底となる。
+     * compileDir やストリームラッパーなどの状態によらず、 __DIR__ などの定数は使用可能（適宜読み替えられる）。
+     *
+     * @param string $filename
+     * @return string パス名
+     */
+    protected function resolvePath(string $filename): string
+    {
+        if (path_is_absolute($filename)) {
+            return $this->renderer->resolvePath($filename);
+        }
+        return dirname($this->getFilename()) . "/$filename";
+    }
+
+    /**
      * 指定配列を展開しつつファイルを require するキモメソッド
      *
      * @param string $filename 読み込むファイル名
@@ -289,23 +306,6 @@ class Template
             require func_get_arg(0);
             return ob_get_clean();
         })($filename, $vars + $this->vars + $this->parentVars);
-    }
-
-    /**
-     * 指定されたパスを解決する
-     *
-     * 絶対パスはそのまま、相対パスは自身のディレクトリが基底となる。
-     * compileDir やストリームラッパーなどの状態によらず、 __DIR__ などの定数は使用可能（適宜読み替えられる）。
-     *
-     * @param string $filename
-     * @return string パス名
-     */
-    private function resolvePath(string $filename): string
-    {
-        if (path_is_absolute($filename)) {
-            return $this->renderer->resolvePath($filename);
-        }
-        return dirname($this->getFilename()) . "/$filename";
     }
 
     /**
