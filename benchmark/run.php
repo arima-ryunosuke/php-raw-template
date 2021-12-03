@@ -8,9 +8,6 @@
  *
  * 本当の意味では web サーバを立ち上げてリクエストで検証するのが最も良いと思うのでそれらしい小細工もしてある。
  *
- * 1度実行しておかないと（compiles を作成しないと）night-dragon と blade が異常に遅い。
- * 暖機的にベンチ外で1度は実行しているはずだけど原因不明。
- *
  * cli:
  * ```
  * php benchmark/run.php
@@ -161,12 +158,15 @@ if (php_sapi_name() === 'cli') {
 else {
     $result = [];
     foreach ($engines as $name => $engine) {
+        $name = sprintf("%-14s", $name);
         foreach (['single', 'layout'] as $case) {
             $t = microtime(true);
             $engine[$case]($vars);
-            $result[$name][$case] = microtime(true) - $t;
+            $result[$case][$name] = number_format(microtime(true) - $t, 6);
         }
     }
+    asort($result['single']);
+    asort($result['layout']);
     header('Content-Type: text/plain');
     echo json_encode($result, JSON_PRETTY_PRINT);
 }
