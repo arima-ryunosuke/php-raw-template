@@ -9,7 +9,7 @@ class AbstractTestCase extends TestCase
     const TEMPLATE_DIR = __DIR__ . '/files/template';
     const COMPILE_DIR  = __DIR__ . '/files/compile';
 
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
 
@@ -48,7 +48,7 @@ class AbstractTestCase extends TestCase
             }
             // メッセージも指定されていたときのみ
             if (strlen($e->getMessage()) > 0) {
-                self::assertContains($e->getMessage(), $ex->getMessage(), $message);
+                self::assertStringContainsString($e->getMessage(), $ex->getMessage(), $message);
             }
             return;
         }

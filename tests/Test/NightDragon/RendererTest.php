@@ -177,56 +177,56 @@ PHP
         $gatherOptions($current);
         $renderer->compile(self::TEMPLATE_DIR . '/meta.phtml', $VARS, $PARENT);
         $template = file_get_contents(self::TEMPLATE_DIR . '/meta.phtml');
-        $this->assertContains('@var \\ryunosuke\\NightDragon\\Template $this', $template);
-        $this->assertContains('@var mixed $_', $template);
-        $this->assertNotContains('$undef */', $template);
-        $this->assertNotContains('@var int $int', $template);
-        $this->assertNotContains('@var int $parent1', $template);
-        $this->assertNotContains('@var null $global', $template);
-        $this->assertNotContains('@var null $local', $template);
-        $this->assertNotContains('@var null $parent', $template);
+        $this->assertStringContainsString('@var \\ryunosuke\\NightDragon\\Template $this', $template);
+        $this->assertStringContainsString('@var mixed $_', $template);
+        $this->assertStringNotContainsString('$undef */', $template);
+        $this->assertStringNotContainsString('@var int $int', $template);
+        $this->assertStringNotContainsString('@var int $parent1', $template);
+        $this->assertStringNotContainsString('@var null $global', $template);
+        $this->assertStringNotContainsString('@var null $local', $template);
+        $this->assertStringNotContainsString('@var null $parent', $template);
 
         // 固定と使用が埋め込まれる
         $current['gatherVariable'] = Renderer::FIXED | Renderer::USING;
         $gatherOptions($current);
         $renderer->compile(self::TEMPLATE_DIR . '/meta.phtml', $VARS, $PARENT);
         $template = file_get_contents(self::TEMPLATE_DIR . '/meta.phtml');
-        $this->assertContains('@var \\ryunosuke\\NightDragon\\Template $this', $template);
-        $this->assertContains('@var mixed $_', $template);
-        $this->assertContains('$undef */', $template);
-        $this->assertContains('@var int $int', $template);
-        $this->assertContains('@var int $parent1', $template);
-        $this->assertNotContains('@var null $global', $template);
-        $this->assertNotContains('@var null $local', $template);
-        $this->assertNotContains('@var null $parent', $template);
+        $this->assertStringContainsString('@var \\ryunosuke\\NightDragon\\Template $this', $template);
+        $this->assertStringContainsString('@var mixed $_', $template);
+        $this->assertStringContainsString('$undef */', $template);
+        $this->assertStringContainsString('@var int $int', $template);
+        $this->assertStringContainsString('@var int $parent1', $template);
+        $this->assertStringNotContainsString('@var null $global', $template);
+        $this->assertStringNotContainsString('@var null $local', $template);
+        $this->assertStringNotContainsString('@var null $parent', $template);
 
         // 固定と使用とグローバルが埋め込まれる
         $current['gatherVariable'] = Renderer::FIXED | Renderer::USING | Renderer::GLOBAL;
         $gatherOptions($current);
         $renderer->compile(self::TEMPLATE_DIR . '/meta.phtml', $VARS, $PARENT);
         $template = file_get_contents(self::TEMPLATE_DIR . '/meta.phtml');
-        $this->assertContains('@var \\ryunosuke\\NightDragon\\Template $this', $template);
-        $this->assertContains('@var mixed $_', $template);
-        $this->assertContains('$undef */', $template);
-        $this->assertContains('@var int $int', $template);
-        $this->assertContains('@var int $parent1', $template);
-        $this->assertContains('@var null $global', $template);
-        $this->assertNotContains('@var null $local', $template);
-        $this->assertNotContains('@var null $parent', $template);
+        $this->assertStringContainsString('@var \\ryunosuke\\NightDragon\\Template $this', $template);
+        $this->assertStringContainsString('@var mixed $_', $template);
+        $this->assertStringContainsString('$undef */', $template);
+        $this->assertStringContainsString('@var int $int', $template);
+        $this->assertStringContainsString('@var int $parent1', $template);
+        $this->assertStringContainsString('@var null $global', $template);
+        $this->assertStringNotContainsString('@var null $local', $template);
+        $this->assertStringNotContainsString('@var null $parent', $template);
 
         // 固定とグローバルとアサインが埋め込まれる
         $current['gatherVariable'] = Renderer::FIXED | Renderer::USING | Renderer::GLOBAL | Renderer::ASSIGNED;
         $gatherOptions($current);
         $renderer->compile(self::TEMPLATE_DIR . '/meta.phtml', $VARS, $PARENT);
         $template = file_get_contents(self::TEMPLATE_DIR . '/meta.phtml');
-        $this->assertContains('@var \\ryunosuke\\NightDragon\\Template $this', $template);
-        $this->assertContains('@var mixed $_', $template);
-        $this->assertContains('$undef */', $template);
-        $this->assertContains('@var int $int', $template);
-        $this->assertContains('@var int $parent1', $template);
-        $this->assertContains('@var null $global', $template);
-        $this->assertContains('@var null $local', $template);
-        $this->assertContains('@var null $parent', $template);
+        $this->assertStringContainsString('@var \\ryunosuke\\NightDragon\\Template $this', $template);
+        $this->assertStringContainsString('@var mixed $_', $template);
+        $this->assertStringContainsString('$undef */', $template);
+        $this->assertStringContainsString('@var int $int', $template);
+        $this->assertStringContainsString('@var int $parent1', $template);
+        $this->assertStringContainsString('@var null $global', $template);
+        $this->assertStringContainsString('@var null $local', $template);
+        $this->assertStringContainsString('@var null $parent', $template);
 
         // これまでの結果がマージされる
         $current['gatherVariable'] = Renderer::FIXED | Renderer::USING | Renderer::GLOBAL | Renderer::ASSIGNED | Renderer::DECLARED;
@@ -234,16 +234,16 @@ PHP
         $renderer->assign('mixed', 'string');
         $renderer->compile(self::TEMPLATE_DIR . '/meta.phtml', $VARS, $PARENT);
         $template = file_get_contents(self::TEMPLATE_DIR . '/meta.phtml');
-        $this->assertContains('@var string|int $mixed', $template);
+        $this->assertStringContainsString('@var string|int $mixed', $template);
 
         // 名前空間も問題ない
         $renderer->compile(self::TEMPLATE_DIR . '/namespace.phtml', []);
         $template = file_get_contents(self::TEMPLATE_DIR . '/namespace.phtml');
-        $this->assertContains("define('globaled', \\globaled(...[]))", $template);
-        $this->assertContains("define('spaced', \\template\\spaced(...[]))", $template);
-        $this->assertContains("define('fully\\\\qualified', \\fully\\qualified(...[]))", $template);
-        $this->assertContains("define('method', \\template\\T::method(...[]))", $template);
-        $this->assertContains("define('ucwords", $template);
+        $this->assertStringContainsString("define('globaled', \\globaled(...[]))", $template);
+        $this->assertStringContainsString("define('spaced', \\template\\spaced(...[]))", $template);
+        $this->assertStringContainsString("define('fully\\\\qualified', \\fully\\qualified(...[]))", $template);
+        $this->assertStringContainsString("define('method', \\template\\T::method(...[]))", $template);
+        $this->assertStringContainsString("define('ucwords", $template);
 
         $renderer = new Renderer([
             'debug'          => true,
@@ -256,9 +256,9 @@ PHP
         // 指定した Variable だけのメタ情報が埋め込まれている
         $renderer->compile(self::TEMPLATE_DIR . '/meta.phtml', $VARS);
         $template = file_get_contents(self::TEMPLATE_DIR . '/meta.phtml');
-        $this->assertContains(Renderer::VARIABLE_COMMENT, $template);
-        $this->assertNotContains(Renderer::MODIFIER_FUNCTION_COMMENT, $template);
-        $this->assertNotContains(Renderer::ACCESS_KEY_COMMENT, $template);
+        $this->assertStringContainsString(Renderer::VARIABLE_COMMENT, $template);
+        $this->assertStringNotContainsString(Renderer::MODIFIER_FUNCTION_COMMENT, $template);
+        $this->assertStringNotContainsString(Renderer::ACCESS_KEY_COMMENT, $template);
     }
 
     function test_compile_dir()
