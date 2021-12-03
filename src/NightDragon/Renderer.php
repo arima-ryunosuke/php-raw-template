@@ -402,29 +402,33 @@ class Renderer
             }
         }
 
-        // 空フィルタ兼上位型の除去
-        $result = array_filter(array_map(function ($types) {
-            $types = array_flip(array_filter($types, 'strlen'));
-
-            // 明示的な配列型が来ている場合 array は不要
-            if (array_filter($types, function ($type) {
-                return !!preg_match('#\[]$#', $type);
-            }, ARRAY_FILTER_USE_KEY)) {
-                unset($types['array']);
-            }
-
-            return array_keys($types);
-        }, $result));
-
         static $orders = null;
         $orders = $orders ?? array_flip(['mixed', 'object', 'callable', 'iterable', 'array', 'string', 'int', 'float', 'bool', 'null']);
-        return array_map(function ($types) use ($orders) {
-            $types = array_unique($types);
-            usort($types, function ($a, $b) use ($orders) {
-                return ($orders[$a] ?? $a) <=> ($orders[$b] ?? $b);
-            });
-            return implode('|', $types);
-        }, $result);
+        foreach ($result as $varname => $types) {
+            $types = array_flip(array_unique(array_filter($types, 'strlen')));
+            foreach ($types as $type1 => $dummy1) {
+                foreach ($types as $type2 => $dummy2) {
+                    // 明示的な配列型が来ている場合 array は不要
+                    if (preg_match('#\[]$#', $type1) && $type2 === 'array') {
+                        unset($types[$type2]);
+                    }
+                    if (preg_match('#\[]$#', $type2) && $type1 === 'array') {
+                        unset($types[$type1]);
+                    }
+                    // 継承関係は末端を優先
+                    if (is_subclass_of($type1, $type2)) {
+                        unset($types[$type2]);
+                    }
+                    if (is_subclass_of($type2, $type1)) {
+                        unset($types[$type1]);
+                    }
+                }
+            }
+
+            uksort($types, fn($a, $b) => ($orders[$a] ?? $a) <=> ($orders[$b] ?? $b));
+            $result[$varname] = implode('|', array_keys($types));
+        }
+        return array_filter($result);
     }
 
     private function gatherModifier(Source $source, array $modifiers, array $namespaces, array $classes): array

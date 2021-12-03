@@ -339,9 +339,11 @@ PHP
                 '\\DateTime' => [\DateTime::class, \DateTimeImmutable::class],
             ],
             'specialVariable' => [
-                '$var' => ['float', 'int', 'array'],
+                '$var'      => ['float', 'int', 'array'],
+                '$multiple' => ['array', 'stdClass'],
             ],
         ]);
+        $renderer->assign('multiple', new \RuntimeException());
 
         /** @see Renderer::gatherVariable() */
         $gatherVariable = $this->publishMethod($renderer, 'gatherVariable');
@@ -357,6 +359,16 @@ PHP
             'var' => ['a', 'b'],
         ]);
         $this->assertEquals('string[]|int|float', $vars['$var']);
+
+        // 継承関係は末端が優先される
+        $vars = $gatherVariable(new Source(""), '$_', [], [
+            'multiple' => new \Exception(),
+        ]);
+        $this->assertEquals('\\RuntimeException|stdClass|array', $vars['$multiple']);
+        $vars = $gatherVariable(new Source(""), '$_', [], [
+            'multiple' => new \UnexpectedValueException(),
+        ]);
+        $this->assertEquals('\\UnexpectedValueException|stdClass|array', $vars['$multiple']);
     }
 
     function test_outputConstFile()
