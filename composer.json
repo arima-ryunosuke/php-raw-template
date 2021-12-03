@@ -19,10 +19,10 @@
   },
   "require-dev": {
     "ryunosuke/functions": "1.4.*",
-    "phpunit/phpunit": "7.*",
-    "twig/twig": "2.*",
+    "phpunit/phpunit": "8.*",
+    "twig/twig": "3.*",
     "jenssegers/blade": "1.*",
-    "smarty/smarty": "3.*",
+    "smarty/smarty": "4.*",
     "league/plates": "3.*"
   },
   "autoload": {

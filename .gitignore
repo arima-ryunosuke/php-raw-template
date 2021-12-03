@@ -3,4 +3,5 @@
 /demo/compiles
 /tests/coverage
 /tests/phpunit.xml
+/tests/.phpunit.result.cache
 /tests/Test/files/compile
