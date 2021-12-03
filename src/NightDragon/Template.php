@@ -189,7 +189,7 @@ class Template
 
         $name = end($this->currentBlocks);
         $this->blocks[$name][] = ob_get_clean();
-        $this->blocks[$name][] = function () use ($name) { return $this->parent->closestBlock($name); };
+        $this->blocks[$name][] = fn() => $this->parent->closestBlock($name);
         ob_start();
     }
 

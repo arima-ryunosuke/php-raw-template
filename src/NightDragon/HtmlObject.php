@@ -112,13 +112,8 @@ class HtmlObject implements \ArrayAccess
      */
     public function attribute()
     {
-        $attributes = array_filter($this->attributes(), function ($v) { return $v !== false; });
-        return array_sprintf($attributes, function ($v, $k) {
-            if ($v === true) {
-                return $k;
-            }
-            return "$k=\"$v\"";
-        }, ' ');
+        $attributes = array_filter($this->attributes(), fn($v) => $v !== false);
+        return array_sprintf($attributes, fn($v, $k) => $v === true ? $k : "$k=\"$v\"", ' ');
     }
 
     /**

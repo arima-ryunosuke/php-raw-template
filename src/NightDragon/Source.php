@@ -210,7 +210,7 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
      */
     public function strip($type = T_WHITESPACE)
     {
-        $this->tokens = array_values(array_filter($this->tokens, function (Token $token) use ($type) { return !$token->equals($type); }));
+        $this->tokens = array_values(array_filter($this->tokens, fn(Token $token) => !$token->equals($type)));
         return $this;
     }
 
@@ -249,7 +249,7 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
      */
     public function split($condition)
     {
-        $parts = array_explode($this->tokens, function (Token $token) use ($condition) { return $token->equals($condition); });
+        $parts = array_explode($this->tokens, fn(Token $token) => $token->equals($condition));
 
         $result = [];
         foreach ($parts as $part) {

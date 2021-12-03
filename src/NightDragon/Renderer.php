@@ -139,13 +139,7 @@ class Renderer
             'varExpander'        => '', // for compatible. In the future the default will be "`"
         ];
 
-        $explodes = function ($types) {
-            return array_map(function ($types) {
-                return array_flatten(array_map(function ($v) {
-                    return explode('|', $v);
-                }, (array) $types));
-            }, $types);
-        };
+        $explodes = fn($types) => array_map(fn($types) => array_flatten(array_map(fn($v) => explode('|', $v), (array) $types)), $types);
 
         // for compatible
         if ($options['gatherVariable'] === true) {
@@ -235,7 +229,7 @@ class Renderer
             $content = file_get_contents($filename);
             $source = new Source($content, $ropt['compatibleShortTag'] ? Source::SHORT_TAG_REPLACE : Source::SHORT_TAG_NOTHING);
 
-            $E = function ($v) { return var_export($v, true); };
+            $E = fn($v) => var_export($v, true);
             $meta = [];
             if ($this->gatherOptions['gatherVariable']) {
                 $variables = $this->gatherVariable($source, $ropt['varReceiver'], $vars, $parentVars);
@@ -249,9 +243,7 @@ class Renderer
                 }
                 else {
                     $meta[] = self::MODIFIER_FUNCTION_COMMENT;
-                    $meta[] = array_sprintf($modifiers, function ($v, $k) use ($E) {
-                        return "if (false) {function $k(...\$args){define({$E($k)}, $v(...[]));return $v(...\$args);}}";
-                    }, "\n");
+                    $meta[] = array_sprintf($modifiers, fn($v, $k) => "if (false) {function $k(...\$args){define({$E($k)}, $v(...[]));return $v(...\$args);}}", "\n");
                 }
             }
             if ($this->gatherOptions['gatherAccessor']) {
@@ -261,9 +253,7 @@ class Renderer
                 }
                 else {
                     $meta[] = self::ACCESS_KEY_COMMENT;
-                    $meta[] = array_sprintf($accessors, function ($v, $k) use ($E) {
-                        return "true or define({$E($v)}, {$E($v)});";
-                    }, "\n");
+                    $meta[] = array_sprintf($accessors, fn($v, $k) => "true or define({$E($v)}, {$E($v)});", "\n");
                 }
             }
 
@@ -271,7 +261,7 @@ class Renderer
                 $formatter = "@formatter";
                 $newcontent = (string) $source->replace([
                     T_OPEN_TAG,
-                    function (Token $token) { return $token->id === T_COMMENT && trim($token->token) === self::META_COMMENT; },
+                    fn(Token $token) => $token->id === T_COMMENT && trim($token->token) === self::META_COMMENT,
                     Source::MATCH_MANY,
                     T_CLOSE_TAG,
                 ], /** @lang */ "<?php\n" . self::META_COMMENT . "\n// $formatter:off\n" . implode("\n", $meta) . "\n// $formatter:on\n?>\n");
@@ -385,12 +375,12 @@ class Renderer
         // 既存宣言
         foreach ($source->match([
             T_OPEN_TAG,
-            function (Token $token) { return $token->id === T_COMMENT && trim($token->token) === self::META_COMMENT; },
+            fn(Token $token) => $token->id === T_COMMENT && trim($token->token) === self::META_COMMENT,
             Source::MATCH_MANY,
             T_CLOSE_TAG,
         ]) as $tokens) {
             preg_match_all('#/\*\* @var\s+([^\s]+?)\s+([^\s]+).*?\*/#msu', (string) $tokens, $matches, PREG_SET_ORDER);
-            $results[self::DECLARED] = array_map(function ($v) { return explode('|', $v); }, array_column($matches, 1, 2));
+            $results[self::DECLARED] = array_map(fn($v) => explode('|', $v), array_column($matches, 1, 2));
         }
 
         $result = [];
@@ -493,24 +483,22 @@ class Renderer
             ksort($consts['modifier']);
             ksort($consts['accessor']);
 
-            $E = function ($v) { return var_export($v, true); };
-            $V = function ($v) { return $v; };
-            $ms = array_sprintf($consts['modifier'], function ($v, $k) use ($E) {
-                return "function $k(...\$args){define({$E($k)}, $v(...[]));return $v(...\$args);}";
-            }, "\n");
-            $as = array_sprintf($consts['accessor'], function ($v, $k) use ($E) {
-                return "define({$E($v)}, {$E($v)});";
-            }, "\n");
+            $E = fn($v) => var_export($v, true);
+            $V = fn($v) => $v;
+            $ms = array_sprintf($consts['modifier'], fn($v, $k) => "function $k(...\$args){define({$E($k)}, $v(...[]));return $v(...\$args);}", "\n");
+            $as = array_sprintf($consts['accessor'], fn($v, $k) => "define({$E($v)}, {$E($v)});", "\n");
 
-            return /** @lang */ "<?php
-if (null) {
-    {$V(self::MODIFIER_FUNCTION_COMMENT)}
-    {$V(indent_php($ms, 4))}
-    {$V(self::ACCESS_KEY_COMMENT)}
-    {$V(indent_php($as, 4))}
-}
-return {$V(var_export2($consts, 1))};
-";
+            return <<<PHP
+                <?php
+                if (null) {
+                    {$V(self::MODIFIER_FUNCTION_COMMENT)}
+                    {$V(indent_php($ms, 4))}
+                    {$V(self::ACCESS_KEY_COMMENT)}
+                    {$V(indent_php($as, 4))}
+                }
+                return {$V(var_export2($consts, 1))};
+                
+                PHP;
         }, LOCK_EX);
     }
 
@@ -598,7 +586,7 @@ return {$V(var_export2($consts, 1))};
 
         if ($this->errorHandling) {
             $already = set_error_handler(function (int $errno, string $errstr, string $errfile, int $errline) use (&$already) {
-                if (error_reporting() === 0) {
+                if (!(error_reporting() & $errno)) {
                     return $already !== null ? $already(...func_get_args()) : false;
                 }
                 throw new \ErrorException($errstr, 0, $errno, $errfile, $errline);
