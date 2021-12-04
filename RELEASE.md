@@ -22,6 +22,11 @@
   - microsoft/tolerant-php-parser を試す
 - パス周りがメチャクチャなので正規化して realpath したい
 
+## 1.2.9
+
+- [refactor][all] 一部を 7.4 記法に変更
+- [feature][Renderer] 継承関係のある型の除去機能
+
 ## 1.2.8
 
 - [change][Template] resolvePath はライブラリ外でも有用なので protected にする
