@@ -22,6 +22,11 @@
   - microsoft/tolerant-php-parser を試す
 - パス周りがメチャクチャなので正規化して realpath したい
 
+## 1.2.10
+
+- [feature][RewriteWrapper] 行書き換えマッピングの改善
+- [fixbug][Renderer] compileDir の作成に失敗すると元ファイルが書き換わってしまう不具合を修正
+
 ## 1.2.9
 
 - [refactor][all] 一部を 7.4 記法に変更
