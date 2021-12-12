@@ -635,6 +635,7 @@ near:
 *$object->undefinedMethod()
  ?>
  dummy line 8
+ dummy line 9
 ', $e->getMessage());
             $this->assertStringNotContainsString(' ' . Renderer::DEFAULT_PROTOCOL, $e->getTraceAsString());
             return;

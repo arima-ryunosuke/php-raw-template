@@ -14,23 +14,22 @@ class RewriteWrapper
 
     public static function getLineMapping(string $file, int $line)
     {
-        $lines = self::$lineMapping[(string) realpath($file)] ?? [];
+        $mapping = self::$lineMapping[(string) realpath($file)] ?? [];
 
         // 完全一致するならそれを返せば良い
-        if (isset($lines[$line])) {
-            return $lines[$line];
+        if (isset($mapping[$line])) {
+            return range(...$mapping[$line]);
         }
 
         // php コードが複数行ある場合は一致しないが、近傍範囲にズレを加算すれば求められる
-        foreach ($lines as $from => $to) {
-            if ($from > $line && isset($delta)) {
-                return $line + $delta;
+        foreach (array_reverse($mapping, true) as $to => $froms) {
+            if ($to < $line) {
+                return [$froms[1] - $to + $line];
             }
-            $delta = $to - $from;
         }
 
         // 書き換えてないとかとんでもなく複雑なコードだとかの場合は本当に確定できない。その場合はそのまま返す
-        return $line;
+        return [$line];
     }
 
     public static function register(string $scheme)
@@ -87,19 +86,8 @@ class RewriteWrapper
 
     private function rewrite(string $source, array $options): Source
     {
-        $froms = [];
+        $source = $this->rewriteCustomTag($source, $options['customTagHandler'] ?? [], self::$lineMapping[$this->path]);
         $source = new Source($source, $options['compatibleShortTag'] ? Source::SHORT_TAG_REWRITE : Source::SHORT_TAG_NOTHING);
-        foreach ($source->filter([T_OPEN_TAG_WITH_ECHO, T_OPEN_TAG]) as $i => $token) {
-            $froms[$i] = $token->line;
-        }
-
-        $source = $this->rewriteCustomTag($source, $options['customTagHandler'] ?? []);
-
-        $source = new Source($source, $options['compatibleShortTag'] ? Source::SHORT_TAG_REWRITE : Source::SHORT_TAG_NOTHING);
-
-        foreach ($source->filter([T_OPEN_TAG_WITH_ECHO, T_OPEN_TAG]) as $i => $token) {
-            self::$lineMapping[$this->path][$token->line] = $froms[$i];
-        }
 
         $options['defaultNamespace'][] = $source->namespace();
 
@@ -137,21 +125,41 @@ class RewriteWrapper
         return $source;
     }
 
-    private function rewriteCustomTag(string $tokens, array $handlers)
+    private function rewriteCustomTag(string $tokens, array $handlers, &$mappling = null)
     {
+        $line_count = function ($subject) {
+            preg_match_all('#\R#u', $subject, $m, PREG_SET_ORDER);
+            return count($m);
+        };
+
+        $last = 0;
+        $mappling ??= [];
         $tags = implode('|', array_keys($handlers ?? []));
-        return preg_replace_callback("#<($tags)(.*?)</\\1>#su", function ($m) use ($handlers) {
-            $html = new HtmlObject($m[0]);
+        return preg_replace_callback("#<($tags)(.*?)</\\1>#su", function ($m) use ($tokens, $handlers, &$mappling, &$last, $line_count) {
+            [$matched, $offset] = $m[0];
+            $html = new HtmlObject($matched);
             $handler = $handlers[$html->tagname()];
 
             /** @noinspection PhpPossiblePolymorphicInvocationInspection */
             if (reflect_types(reflect_callable($handler)->getParameters()[0] ?? null)->allows($html)) {
-                return $handler($html) ?? $m[0];
+                $replaced = $handler($html) ?? $matched;
+            }
+            // for compatible
+            else {
+                $replaced = $handler($html->contents(), $html->attributes()) ?? $matched;
             }
 
-            // for compatible
-            return $handler($html->contents(), $html->attributes()) ?? $m[0];
-        }, $tokens);
+            $matched_len = $line_count($matched);
+            $replaced_len = $line_count($replaced);
+            $begin = $line_count(substr($tokens, 0, $offset)) + 1;
+            $end = $begin + $matched_len;
+            foreach (range(0, $replaced_len) as $n) {
+                $mappling[$begin + $last + $n] = [$begin, $end];
+            }
+            $last += $replaced_len - $matched_len;
+
+            return $replaced;
+        }, $tokens, -1, $count, PREG_OFFSET_CAPTURE);
     }
 
     private function rewriteExpand(Source $tokens, string $expander)

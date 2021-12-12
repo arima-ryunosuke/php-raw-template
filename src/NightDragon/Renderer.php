@@ -626,11 +626,13 @@ class Renderer
             return $innerfile === $file ? null : $innerfile;
         };
 
-        $remessage = function ($file, $line) {
+        $remessage = function ($file, $lines) {
             $LENGTH = 3;
-            $partial = array_slice(file($file), max(0, $line - $LENGTH - 1), $LENGTH * 2, true);
+            $min = max(0, min($lines) - $LENGTH - 1);
+            $max = max($lines) + $LENGTH;
+            $partial = array_slice(file($file), $min, $max - $min, true);
             foreach ($partial as $n => $row) {
-                $partial[$n] = ($n === $line - 1 ? '*' : ' ') . $row;
+                $partial[$n] = (in_array($n + 1, $lines, true) ? '*' : ' ') . $row;
             }
             return "\nnear:\n" . rtrim(implode('', $partial)) . "\n";
         };
@@ -641,7 +643,7 @@ class Renderer
         if ($innerfile = $refile($ex->getFile())) {
             $innerline = RewriteWrapper::getLineMapping($innerfile, $ex->getLine());
             $rewritten['file'] = $innerfile;
-            $rewritten['line'] = $innerline;
+            $rewritten['line'] = first_value($innerline);
             $rewritten['message'] = $ex->getMessage() . $remessage($innerfile, $innerline);
         }
 
@@ -649,7 +651,7 @@ class Renderer
         $rewritten['trace'] = array_map(function ($trace) use ($refile) {
             if (isset($trace['file'], $trace['line']) && $innerfile = $refile($trace['file'])) {
                 $trace['file'] = $innerfile ?? $trace['file'];
-                $trace['line'] = RewriteWrapper::getLineMapping($innerfile, $trace['line']);
+                $trace['line'] = first_value(RewriteWrapper::getLineMapping($innerfile, $trace['line']));
             }
             return $trace;
         }, $ex->getTrace());
