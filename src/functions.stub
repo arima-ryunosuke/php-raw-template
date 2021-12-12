@@ -43,6 +43,64 @@ if (function_exists("ryunosuke\\NightDragon\\is_hasharray") && !defined("ryunosu
     define("ryunosuke\\NightDragon\\is_hasharray", "ryunosuke\\NightDragon\\is_hasharray");
 }
 
+if (!isset($excluded_functions["first_value"]) && (!function_exists("ryunosuke\\NightDragon\\first_value") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\first_value"))->isInternal()))) {
+    /**
+     * 配列の最初の値を返す
+     *
+     * 空の場合は $default を返す。
+     *
+     * Example:
+     * ```php
+     * that(first_value(['a', 'b', 'c']))->isSame('a');
+     * that(first_value([], 999))->isSame(999);
+     * ```
+     *
+     * @param iterable $array 対象配列
+     * @param mixed $default 無かった場合のデフォルト値
+     * @return mixed 最初の値
+     */
+    function first_value($array, $default = null)
+    {
+        if (is_empty($array)) {
+            return $default;
+        }
+        /** @noinspection PhpUnusedLocalVariableInspection */
+        [$k, $v] = first_keyvalue($array);
+        return $v;
+    }
+}
+if (function_exists("ryunosuke\\NightDragon\\first_value") && !defined("ryunosuke\\NightDragon\\first_value")) {
+    define("ryunosuke\\NightDragon\\first_value", "ryunosuke\\NightDragon\\first_value");
+}
+
+if (!isset($excluded_functions["first_keyvalue"]) && (!function_exists("ryunosuke\\NightDragon\\first_keyvalue") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\first_keyvalue"))->isInternal()))) {
+    /**
+     * 配列の最初のキー/値ペアをタプルで返す
+     *
+     * 空の場合は $default を返す。
+     *
+     * Example:
+     * ```php
+     * that(first_keyvalue(['a', 'b', 'c']))->isSame([0, 'a']);
+     * that(first_keyvalue([], 999))->isSame(999);
+     * ```
+     *
+     * @param iterable $array 対象配列
+     * @param mixed $default 無かった場合のデフォルト値
+     * @return array [最初のキー, 最初の値]
+     */
+    function first_keyvalue($array, $default = null)
+    {
+        foreach ($array as $k => $v) {
+            return [$k, $v];
+        }
+        return $default;
+    }
+}
+if (function_exists("ryunosuke\\NightDragon\\first_keyvalue") && !defined("ryunosuke\\NightDragon\\first_keyvalue")) {
+    define("ryunosuke\\NightDragon\\first_keyvalue", "ryunosuke\\NightDragon\\first_keyvalue");
+}
+
 if (!isset($excluded_functions["array_explode"]) && (!function_exists("ryunosuke\\NightDragon\\array_explode") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\array_explode"))->isInternal()))) {
     /**
      * 配列を指定条件で分割する
