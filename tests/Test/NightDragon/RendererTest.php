@@ -106,6 +106,15 @@ line3
         $this->assertEquals("76: Opening and ending tag mismatch: div and s", trim(error_get_last()['message']));
     }
 
+    function test___construct()
+    {
+        $this->assertException('is not writable directory', function () {
+            return new Renderer([
+                'compileDir' => DIRECTORY_SEPARATOR === '/' ? '/dev/null' : 'nul',
+            ]);
+        });
+    }
+
     function test___destruct()
     {
         @unlink(self::COMPILE_DIR . '/defined.php');

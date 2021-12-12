@@ -177,7 +177,10 @@ class Renderer
         if (!strlen($this->compileDir)) {
             $this->compileDir = sys_get_temp_dir() . '/' . $this->wrapperProtocol;
         }
-        mkdir_p($this->compileDir);
+        @mkdir_p($this->compileDir);
+        if (!(is_dir($this->compileDir) && is_writable($this->compileDir))) {
+            throw new \InvalidArgumentException("{$this->compileDir} is not writable directory.");
+        }
         // Windows では {C:\compile}\C;\path\to\file, Linux では {/compile}/path/to/file となり、DS の有無が異なる
         // （Windows だと DS も含めないとフルパスにならない、Linux だと DS を含めるとフルパスにならない）
         $this->compileDir = realpath($this->compileDir) . (DIRECTORY_SEPARATOR === '\\' ? '\\' : '');
