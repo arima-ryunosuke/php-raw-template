@@ -51,8 +51,7 @@ class RewriteWrapper
         parse_str($parts['query'] ?? '', $this->options);
 
         $this->path = realpath(substr($parts['path'], 1));
-        $data = file_get_contents($this->path);
-        if ($data === false) {
+        if ($this->path === false || ($data = file_get_contents($this->path)) === false) {
             return false;
         }
 

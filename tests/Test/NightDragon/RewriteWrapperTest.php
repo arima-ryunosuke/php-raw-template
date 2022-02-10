@@ -128,9 +128,9 @@ z
         $this->assertEquals(filesize(__FILE__), filesize($path));
         $this->assertStringEqualsFile(__FILE__, file_get_contents("$path?" . http_build_query(self::defaultOption)));
 
-        error_clear_last();
-        @file_get_contents("$path/notfound");
-        $this->assertRegExp('#file_get_contents.*failed to open stream#', error_get_last()['message']);
+        $this->assertException('file_get_contents', function () use ($path) {
+            return file_get_contents("$path/notfound");
+        });
     }
 
     function test_rewrite()

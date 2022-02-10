@@ -66,7 +66,7 @@ class Renderer
                 $result .= $string;
             }
             else {
-                $result .= htmlspecialchars($string, ENT_QUOTES);
+                $result .= htmlspecialchars($string ?? '', ENT_QUOTES);
             }
         }
         return $result;

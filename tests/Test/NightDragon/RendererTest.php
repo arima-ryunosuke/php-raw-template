@@ -367,17 +367,17 @@ PHP
         $vars = $gatherVariable(new Source(""), '$_', [], [
             'var' => ['a', 'b'],
         ]);
-        $this->assertEquals('string[]|int|float', $vars['$var']);
+        $this->assertEqualsCanonicalizing(['string[]', 'int', 'float'], explode('|', $vars['$var']));
 
         // 継承関係は末端が優先される
         $vars = $gatherVariable(new Source(""), '$_', [], [
             'multiple' => new \Exception(),
         ]);
-        $this->assertEquals('\\RuntimeException|stdClass|array', $vars['$multiple']);
+        $this->assertEqualsCanonicalizing(['\\RuntimeException', 'stdClass', 'array'], explode('|', $vars['$multiple']));
         $vars = $gatherVariable(new Source(""), '$_', [], [
             'multiple' => new \UnexpectedValueException(),
         ]);
-        $this->assertEquals('\\UnexpectedValueException|stdClass|array', $vars['$multiple']);
+        $this->assertEqualsCanonicalizing(['\\UnexpectedValueException', 'stdClass', 'array'], explode('|', $vars['$multiple']));
     }
 
     function test_outputConstFile()
@@ -571,7 +571,7 @@ var2
         ]);
         error_clear_last();
         $this->assertEquals("az", @$renderer->render(self::TEMPLATE_DIR . '/notice.phtml'));
-        $this->assertEquals('Undefined variable: undefined', error_get_last()['message']);
+        $this->assertStringContainsString('Undefined variable', error_get_last()['message']);
     }
 
     function test_errorHandling_report0()
@@ -606,10 +606,8 @@ var2
         catch (\Throwable $e) {
             $this->assertEquals(0, $e->getCode());
             $this->assertEquals(realpath(self::TEMPLATE_DIR . '/notice.phtml'), $e->getFile());
-            $this->assertEquals('Undefined variable: undefined
-near:
-*a<?= $undefined ?>z
-', $e->getMessage());
+            $this->assertStringContainsString('Undefined variable', $e->getMessage());
+            $this->assertStringContainsString('*a<?= $undefined ?>z', $e->getMessage());
             $this->assertStringNotContainsString(' ' . Renderer::DEFAULT_PROTOCOL, $e->getTraceAsString());
             return;
         }
@@ -679,7 +677,7 @@ near:
         }
         catch (\Throwable $e) {
             $this->assertEquals(0, $e->getCode());
-            $this->assertEquals('Undefined index: undefined', $e->getMessage());
+            $this->assertStringContainsString('Undefined', $e->getMessage());
             $this->assertStringContainsString('error-nest9.phtml(12)', $e->getTraceAsString());
             $this->assertStringContainsString('error-nest2.phtml(6)', $e->getTraceAsString());
             $this->assertStringContainsString('error-nest1.phtml(6)', $e->getTraceAsString());
@@ -754,15 +752,8 @@ near:
         catch (\Throwable $e) {
             $this->assertEquals(0, $e->getCode());
             $this->assertEquals(realpath(self::TEMPLATE_DIR . '/syntax.html'), $e->getFile());
-            $this->assertEquals('syntax error, unexpected \'is\' (T_STRING)
-near:
- dummy line 1
- dummy line 2
-*<?php this is syntax error ?>
- dummy line 4
- dummy line 5
- dummy line 6
-', $e->getMessage());
+            $this->assertStringContainsString('syntax error, unexpected', $e->getMessage());
+            $this->assertStringContainsString('*<?php this is syntax error ?>', $e->getMessage());
             $this->assertStringNotContainsString(' ' . Renderer::DEFAULT_PROTOCOL, $e->getTraceAsString());
             return;
         }

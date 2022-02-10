@@ -389,6 +389,7 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
                     $option[$name] = $matcher[$name] ?? $default;
                     unset($matcher[$name]);
                 }
+                $matcher = array_values($matcher);
                 if (!$matcher) {
                     $matcher = true;
                 }
