@@ -12,6 +12,46 @@ if (!defined("ryunosuke\\NightDragon\\TOKEN_NAME")) {
 
 
 # functions
+if (!isset($excluded_functions["arrayize"]) && (!function_exists("ryunosuke\\NightDragon\\arrayize") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\arrayize"))->isInternal()))) {
+    /**
+     * 引数の配列を生成する。
+     *
+     * 配列以外を渡すと配列化されて追加される。
+     * 連想配列は未対応。あくまで普通の配列化のみ。
+     * iterable や Traversable は考慮せずあくまで「配列」としてチェックする。
+     *
+     * Example:
+     * ```php
+     * that(arrayize(1, 2, 3))->isSame([1, 2, 3]);
+     * that(arrayize([1], [2], [3]))->isSame([1, 2, 3]);
+     * $object = new \stdClass();
+     * that(arrayize($object, false, [1, 2, 3]))->isSame([$object, false, 1, 2, 3]);
+     * ```
+     *
+     * @param mixed ...$variadic 生成する要素（可変引数）
+     * @return array 引数を配列化したもの
+     */
+    function arrayize(...$variadic)
+    {
+        $result = [];
+        foreach ($variadic as $arg) {
+            if (!is_array($arg)) {
+                $result[] = $arg;
+            }
+            elseif (!is_hasharray($arg)) {
+                $result = array_merge($result, $arg);
+            }
+            else {
+                $result += $arg;
+            }
+        }
+        return $result;
+    }
+}
+if (function_exists("ryunosuke\\NightDragon\\arrayize") && !defined("ryunosuke\\NightDragon\\arrayize")) {
+    define("ryunosuke\\NightDragon\\arrayize", "ryunosuke\\NightDragon\\arrayize");
+}
+
 if (!isset($excluded_functions["is_hasharray"]) && (!function_exists("ryunosuke\\NightDragon\\is_hasharray") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\is_hasharray"))->isInternal()))) {
     /**
      * 配列が連想配列か調べる
@@ -1658,9 +1698,9 @@ if (!isset($excluded_functions["parse_php"]) && (!function_exists("ryunosuke\\Ni
         ];
         $option += $default;
 
-        $cachekey = $option['flags'] . '-' . $option['phptag'] . '-' . var_export($option['short_open_tag'], true);
+        $cachekey = var_hash($phpcode) . $option['flags'] . '-' . $option['phptag'] . '-' . var_export($option['short_open_tag'], true);
         static $cache = [];
-        if (!($option['cache'] && isset($cache[$phpcode][$cachekey]))) {
+        if (!($option['cache'] && isset($cache[$cachekey]))) {
             $phptag = $option['phptag'] ? '<?php ' : '';
             $phpcode = $phptag . $phpcode;
             $position = -strlen($phptag);
@@ -1733,9 +1773,9 @@ if (!isset($excluded_functions["parse_php"]) && (!function_exists("ryunosuke\\Ni
                 }
             }
             // @codeCoverageIgnoreEnd
-            $cache[$phpcode][$cachekey] = $tokens;
+            $cache[$cachekey] = $tokens;
         }
-        $tokens = $cache[$phpcode][$cachekey];
+        $tokens = $cache[$cachekey];
 
         $lines = $option['line'] + [-PHP_INT_MAX, PHP_INT_MAX];
         $positions = $option['position'] + [-PHP_INT_MAX, PHP_INT_MAX];
@@ -2518,6 +2558,52 @@ if (!isset($excluded_functions["is_countable"]) && (!function_exists("ryunosuke\
 }
 if (function_exists("ryunosuke\\NightDragon\\is_countable") && !defined("ryunosuke\\NightDragon\\is_countable")) {
     define("ryunosuke\\NightDragon\\is_countable", "ryunosuke\\NightDragon\\is_countable");
+}
+
+if (!isset($excluded_functions["var_hash"]) && (!function_exists("ryunosuke\\NightDragon\\var_hash") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\var_hash"))->isInternal()))) {
+    /**
+     * 値に複数のハッシュアルゴリズムを適用させて結合して返す
+     *
+     * $data は何らかの方法で文字列化される（この「何らかの方法」は互換性を担保しない）。
+     * 文字長がかなり増えるため、 $base64 に true を与えるとバイナリ変換してその結果を base64（url セーフ）して返す。
+     * さらに false を与えると 16進数文字列で返し、 null を与えるとバイナリ文字列で返す。
+     *
+     * Example:
+     * ```php
+     * // 配列をハッシュ化する
+     * that(var_hash(['a', 'b', 'c']))->isSame('7BDgx6NE2hkXAKtKzhpeJm6-mheMOQWNgrCe7768OiFeoWgA');
+     * // オブジェクトをハッシュ化する
+     * that(var_hash(new \ArrayObject(['a', 'b', 'c'])))->isSame('-zR2rZ58CzuYhhdHn1Oq90zkYSaxMS-dHUbmb0MTRM4gBpj2');
+     * ```
+     *
+     * @param mixed $var ハッシュ化する値
+     * @param string[] $algos ハッシュアルゴリズム
+     * @param ?bool $base64 結果を base64 化するか
+     * @return string ハッシュ文字列
+     */
+    function var_hash($var, $algos = ['md5', 'sha1'], $base64 = true)
+    {
+        if (!is_string($var)) {
+            $var = serialize($var);
+        }
+
+        $algos = arrayize($algos);
+        assert($algos);
+
+        $hash = '';
+        foreach ($algos as $algo) {
+            $hash .= hash($algo, "$var", $base64 !== false);
+        }
+
+        if ($base64 !== true) {
+            return $hash;
+        }
+
+        return rtrim(strtr(base64_encode($hash), ['+' => '-', '/' => '_']));
+    }
+}
+if (function_exists("ryunosuke\\NightDragon\\var_hash") && !defined("ryunosuke\\NightDragon\\var_hash")) {
+    define("ryunosuke\\NightDragon\\var_hash", "ryunosuke\\NightDragon\\var_hash");
 }
 
 if (!isset($excluded_functions["var_type"]) && (!function_exists("ryunosuke\\NightDragon\\var_type") || (!false && (new \ReflectionFunction("ryunosuke\\NightDragon\\var_type"))->isInternal()))) {
