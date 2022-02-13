@@ -22,6 +22,10 @@
   - microsoft/tolerant-php-parser を試す
 - パス周りがメチャクチャなので正規化して realpath したい
 
+## 1.2.11
+
+- [feature][all] php8.1 の暫定対応
+
 ## 1.2.10
 
 - [feature][RewriteWrapper] 行書き換えマッピングの改善
