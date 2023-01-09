@@ -399,6 +399,9 @@ class Renderer
         $orders = $orders ?? array_flip(['mixed', 'object', 'callable', 'iterable', 'array', 'string', 'int', 'float', 'bool', 'null']);
         foreach ($result as $varname => $types) {
             $types = array_flip(array_unique(array_filter($types, 'strlen')));
+            if (isset($types['mixed'])) {
+                $types = ['mixed' => null];
+            }
             foreach ($types as $type1 => $dummy1) {
                 foreach ($types as $type2 => $dummy2) {
                     // 明示的な配列型が来ている場合 array は不要

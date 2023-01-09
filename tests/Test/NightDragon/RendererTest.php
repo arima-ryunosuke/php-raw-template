@@ -350,6 +350,7 @@ PHP
             'specialVariable' => [
                 '$var'      => ['float', 'int', 'array'],
                 '$multiple' => ['array', 'stdClass'],
+                '$mixed'    => ['mixed', 'array', 'resource'],
             ],
         ]);
         $renderer->assign('multiple', new \RuntimeException());
@@ -362,6 +363,12 @@ PHP
             'var' => 'string',
         ]);
         $this->assertEquals('array|string|int|float', $vars['$var']);
+
+        // mixed は単一になる
+        $vars = $gatherVariable(new Source(""), '$_', [], [
+            'mixed' => ['string', 'int'],
+        ]);
+        $this->assertEqualsCanonicalizing(['mixed'], explode('|', $vars['$mixed']));
 
         // 明示的な配列を含む場合は array は消える
         $vars = $gatherVariable(new Source(""), '$_', [], [
