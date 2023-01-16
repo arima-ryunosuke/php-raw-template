@@ -22,6 +22,10 @@
   - microsoft/tolerant-php-parser を試す
 - パス周りがメチャクチャなので正規化して realpath したい
 
+## 1.2.12
+
+- [fixbug][Template] `@var` が増殖する不具合を修正
+
 ## 1.2.11
 
 - [feature][all] php8.1 の暫定対応
