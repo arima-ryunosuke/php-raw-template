@@ -50,7 +50,7 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
         }
     }
 
-    public function __toString()
+    public function __toString(): string
     {
         $tokens = $this->tokens;
         if ($this->compatibleShortTagMode === self::SHORT_TAG_REPLACE) {
@@ -77,19 +77,19 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
         return null;
     }
 
-    public function offsetExists($offset)
+    public function offsetExists($offset): bool
     {
         $offset = $this->actualOffset($offset);
         return isset($this->tokens[$offset]);
     }
 
-    public function offsetGet($offset)
+    public function offsetGet($offset): Token
     {
         $offset = $this->actualOffset($offset);
         return $this->tokens[$offset];
     }
 
-    public function offsetSet($offset, $value)
+    public function offsetSet($offset, $value): void
     {
         $offset = $this->actualOffset($offset);
         assert(!($offset !== null && !isset($this->tokens[$offset])));
@@ -102,7 +102,7 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
         }
     }
 
-    public function offsetUnset($offset)
+    public function offsetUnset($offset): void
     {
         $offset = $this->actualOffset($offset);
         unset($this->tokens[$offset]);
@@ -112,7 +112,7 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
     /**
      * @return \Generator|\Traversable|Token[] Token[] はコード補完用
      */
-    public function getIterator()
+    public function getIterator(): \Generator
     {
         $n = 0;
         foreach ($this->tokens as $token) {
@@ -139,7 +139,7 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
         return $result;
     }
 
-    public function count()
+    public function count(): int
     {
         $count = 0;
         foreach ($this->tokens as $token) {

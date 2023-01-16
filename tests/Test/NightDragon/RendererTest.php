@@ -315,14 +315,15 @@ PHP
         }));
         // 実装していばそいつ
         $this->assertEquals(['\\Countable'], $detectType(new class implements \Countable {
-            public function count() { }
+            public function count(): int { }
         }));
         // 継承も実装もしてれば両方
         $this->assertEquals(['\\stdClass', '\\Countable'], $detectType(new class extends \stdClass implements \Countable {
-            public function count() { }
+            public function count(): int { }
         }));
         // ただし継承元に実装メソッドが含まれている場合は含まれない
         $this->assertEquals(['\\ArrayObject', '\\JsonSerializable'], $detectType(new class extends \ArrayObject implements \Countable, \JsonSerializable {
+            #[\ReturnTypeWillChange]
             public function jsonSerialize() { }
         }));
 

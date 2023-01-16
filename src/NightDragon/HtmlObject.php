@@ -13,7 +13,7 @@ class HtmlObject implements \ArrayAccess
     public function __construct($string)
     {
         $boundary = 'x' . unique_string($string, 32, '0123456789abcdefghijklmnopqrstuvwxyz');
-        $string = '<?xml encoding="UTF-8">' . strip_php($string, $boundary, $this->mapper);
+        $string = '<?xml encoding="UTF-8">' . strip_php($string, ['replacer' => $boundary], $this->mapper);
 
         libxml_clear_errors();
         $current = libxml_use_internal_errors(true);
