@@ -424,7 +424,11 @@ class Renderer
             uksort($types, fn($a, $b) => ($orders[$a] ?? $a) <=> ($orders[$b] ?? $b));
             $result[$varname] = implode('|', array_keys($types));
         }
-        return array_filter($result);
+
+        $result = array_filter($result);
+        $result = array_shrink_key($results[self::DECLARED] ?? [], $result) + $result;
+
+        return $result;
     }
 
     private function gatherModifier(Source $source, array $modifiers, array $namespaces, array $classes): array

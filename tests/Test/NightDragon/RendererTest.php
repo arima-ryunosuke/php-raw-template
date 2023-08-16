@@ -386,6 +386,35 @@ PHP
             'multiple' => new \UnexpectedValueException(),
         ]);
         $this->assertEqualsCanonicalizing(['\\UnexpectedValueException', 'stdClass', 'array'], explode('|', $vars['$multiple']));
+
+        // 既存宣言の並び順が維持される
+        $vars = $gatherVariable(new Source(<<<'PHP'
+        <?php
+        # meta template data
+        /** @var string $a */
+        /** @var string $b */
+        /** @var string $c */
+        /** @var string $d */
+        /** @var string $e */
+        ?>
+        PHP
+        ), '$_', [], [
+            'b' => 'string',
+            'c' => 'string',
+            'a' => 'string',
+            'x' => 'string',
+        ]);
+        $this->assertSame([
+            '$a'        => 'string',
+            '$b'        => 'string',
+            '$c'        => 'string',
+            '$d'        => 'string',
+            '$e'        => 'string',
+            '$this'     => '\\ryunosuke\\NightDragon\\Template',
+            '$_'        => 'mixed',
+            '$multiple' => 'array|\\RuntimeException|stdClass',
+            '$x'        => 'string',
+        ], $vars);
     }
 
     function test_outputConstFile()
