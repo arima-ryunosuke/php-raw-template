@@ -18,7 +18,7 @@
     "php": ">=7.4"
   },
   "require-dev": {
-    "ryunosuke/functions": "1.5.*",
+    "ryunosuke/functions": "1.6.*",
     "phpunit/phpunit": "8.*",
     "twig/twig": "3.*",
     "jenssegers/blade": "1.*",
