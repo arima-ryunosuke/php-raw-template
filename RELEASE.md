@@ -22,6 +22,10 @@
   - microsoft/tolerant-php-parser を試す
 - パス周りがメチャクチャなので正規化して realpath したい
 
+## 1.2.13
+
+- [feature] 埋め込み変数の並び順は既存を尊重するように修正
+
 ## 1.2.12
 
 - [fixbug][Template] `@var` が増殖する不具合を修正
