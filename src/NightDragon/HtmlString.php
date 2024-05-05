@@ -2,16 +2,11 @@
 
 namespace ryunosuke\NightDragon;
 
-class HtmlString
+class HtmlString implements \Stringable
 {
-    private $html;
+    public function __construct(private string $html) { }
 
-    public function __construct($string)
-    {
-        $this->html = $string;
-    }
-
-    public function __toString()
+    public function __toString(): string
     {
         return $this->html;
     }

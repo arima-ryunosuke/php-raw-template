@@ -17,48 +17,34 @@ class Renderer
 
     const DEFAULT_PROTOCOL = 'RewriteWrapper';
 
-    /** @var bool デバッグモード */
-    private $debug;
+    private bool $debug;
 
-    /** @var bool エラーハンドリングを内部で行うか */
-    private $errorHandling;
+    private bool $errorHandling;
 
-    /** @var string ストリームプロトコル名 */
-    private $wrapperProtocol;
+    private string $wrapperProtocol;
 
-    /** @var Template テンプレートクラス名 */
-    private $templateClass;
+    private string $templateClass;
 
-    /** @var string コンパイル済ディレクトリ */
-    private $compileDir;
+    private string $compileDir;
 
-    /** @var array テンプレート書き換えオプション */
-    private $gatherOptions;
+    private array $gatherOptions;
 
-    /** @var array レンダリングオプション */
-    private $renderOptions;
+    private array $renderOptions;
 
-    /** @var array ファイルシステムのキャッシュ */
-    private $stats = [];
+    private array $stats = [];
 
-    /** @var array アサインされたグローバル変数（テンプレート変数とは別） */
-    private $globalVars = [];
+    private array $globalVars = [];
 
-    /** @var array レンダリングに使用されたすべての変数 */
-    private $assignedVars = [];
+    private array $assignedVars = [];
 
-    /** @var array レンダリング中に出くわした修飾子・配列キーを保持する配列 */
-    private $consts = ['modifier' => [], 'accessor' => []];
+    private array $consts = ['modifier' => [], 'accessor' => []];
 
     /**
      * ENT_QUOTES で htmlspecialchars するだけのラッパー関数
      *
      * デフォルトオプションとして html を指定したいがための実装だけど、ショートタグを書き換える関係上可変引数に対応している。
-     *
-     * @param string|null ...$strings 文字列
-     * @return string html 文字列
      */
-    public static function html(...$strings): string
+    public static function html(\Stringable|string|null ...$strings): string
     {
         $result = '';
         foreach ($strings as $string) {
@@ -76,12 +62,8 @@ class Renderer
      * 配列アクセス可能なら `$value[$key]`, そうでないなら `$value->$key` アクセスする
      *
      * ArrayAccess なオブジェクトは [$key] を優先する。
-     *
-     * @param array|object $value キーアクセス可能ななにか
-     * @param string ...$keys キー
-     * @return mixed キーの値
      */
-    public static function access($value, string ...$keys)
+    public static function access(mixed $value, string ...$keys): mixed
     {
         foreach ($keys as $key) {
             $value = is_arrayable($value) ? $value[$key] : $value->$key;
@@ -91,12 +73,8 @@ class Renderer
 
     /**
      * html 的文字列から空白をよしなに除去する
-     *
-     * @param string $html タグコンテンツ
-     * @param array $attrs タグの属性配列
-     * @return string 空白除去された文字列
      */
-    public static function strip($html, $attrs = [])
+    public static function strip($html, array $attrs = []): string
     {
         return html_strip(trim($html, "\t\n\r "), [
             'error-level' => ($attrs['noerror'] ?? false) ? null : E_USER_NOTICE,
@@ -195,7 +173,7 @@ class Renderer
         }
     }
 
-    public function resolvePath($filename)
+    public function resolvePath(string $filename): string
     {
         // compile ディレクトリ内で __DIR__ を使うとその絶対パスになっているので元のパスに読み替える
         $filename = strtr(str_lchop($filename, $this->compileDir), [';' => ':']);
@@ -203,16 +181,6 @@ class Renderer
         return $filename;
     }
 
-    /**
-     * テンプレートファイルのコンパイル
-     *
-     * ファイル名を与えるとコンパイルして読み込むべきファイル名を返す。
-     *
-     * @param string $filename テンプレートファイル名
-     * @param array $vars 変数配列
-     * @param array $parentVars 親変数配列
-     * @return string 読み込むべきファイル名
-     */
     public function compile(string $filename, array $vars, array $parentVars = []): string
     {
         $this->setAssignedVar($filename, $vars);
@@ -264,7 +232,7 @@ class Renderer
                 $formatter = "@formatter";
                 $newcontent = (string) $source->replace([
                     T_OPEN_TAG,
-                    fn(Token $token) => $token->id === T_COMMENT && trim($token->token) === self::META_COMMENT,
+                    fn(Token $token) => $token->id === T_COMMENT && trim($token->text) === self::META_COMMENT,
                     Source::MATCH_MANY,
                     T_CLOSE_TAG,
                 ], /** @lang */ "<?php\n" . self::META_COMMENT . "\n// $formatter:off\n" . implode("\n", $meta) . "\n// $formatter:on\n?>\n");
@@ -285,7 +253,7 @@ class Renderer
         return $this->stats[$filename] = $fileid;
     }
 
-    private function detectType($var): array
+    private function detectType(mixed $var): array
     {
         $map = function ($type) use (&$map) {
             if (is_array($type)) {
@@ -378,7 +346,7 @@ class Renderer
         // 既存宣言
         foreach ($source->match([
             T_OPEN_TAG,
-            fn(Token $token) => $token->id === T_COMMENT && trim($token->token) === self::META_COMMENT,
+            fn(Token $token) => $token->id === T_COMMENT && trim($token->text) === self::META_COMMENT,
             Source::MATCH_MANY,
             T_CLOSE_TAG,
         ]) as $tokens) {
@@ -473,17 +441,17 @@ class Renderer
         return $result;
     }
 
-    private function outputConstFile(string $filename, array $consts)
+    private function outputConstFile(string $filename, array $consts): ?int
     {
         if (!$consts['modifier'] && !$consts['accessor']) {
-            return false;
+            return null;
         }
 
-        file_rewrite_contents($filename, function ($contents) use ($consts) {
+        return file_rewrite_contents($filename, function ($contents) use ($consts) {
             try {
                 $current = eval('?>' . $contents);
             }
-            catch (\Throwable $t) {
+            catch (\Throwable) {
                 $current = [];
             }
 
@@ -519,12 +487,8 @@ class Renderer
      *
      * - 配列を与えるとすべて追加する
      * - $name, $value を与えるとその名前・値で1つだけアサインする
-     *
-     * @param string|array $name 変数名 or 変数配列
-     * @param mixed $value アサインする値
-     * @return $this
      */
-    public function assign($name, $value = null)
+    public function assign(string|array $name, mixed $value = null): static
     {
         if (is_array($name)) {
             foreach ($name as $k => $v) {
@@ -539,14 +503,11 @@ class Renderer
 
     /**
      * デバッグ用のアサイン変数を設定する
-     *
-     * @param string $filename テンプレートファイル名
-     * @param array $vars 変数配列
      */
-    public function setAssignedVar($filename, array $vars)
+    public function setAssignedVar(string $filename, array $vars): static
     {
         if (!$this->debug) {
-            return;
+            return $this;
         }
 
         $filename = realpath($this->resolvePath($filename));
@@ -556,6 +517,7 @@ class Renderer
         foreach ($vars as $k => $v) {
             $this->assignedVars[$filename][$k] = $v;
         }
+        return $this;
     }
 
     /**
@@ -563,11 +525,8 @@ class Renderer
      *
      * debug 時は一度でもレンダリングが走ったテンプレートの変数もまとめて返す。
      * 基本的に debug 時の使用を想定していて本運用環境での使用は推奨しない。
-     *
-     * @param bool $perTemplate テンプレートごとに返すか
-     * @return array アサインされた全変数
      */
-    public function getAssignedVars($perTemplate = false): array
+    public function getAssignedVars(bool $perTemplate = false): array
     {
         if (!$perTemplate) {
             $result = [];
@@ -582,12 +541,8 @@ class Renderer
 
     /**
      * ファイル名を指定してレンダリング
-     *
-     * @param string $filename テンプレートファイル名
-     * @param array $vars 変数配列
-     * @return string レンダリングされたコンテント文字列
      */
-    public function render(string $filename, array $vars = [])
+    public function render(string $filename, array $vars = []): string
     {
         /** @var Template $template */
 
@@ -624,7 +579,7 @@ class Renderer
         }
     }
 
-    private function rewriteException(\Throwable $ex)
+    private function rewriteException(\Throwable $ex): void
     {
         // @memo 例外の属性をリフレクションで書き換えるのはどうかと思うけど、投げ方を工夫するより後から書き換えたほうが楽だと思う
 

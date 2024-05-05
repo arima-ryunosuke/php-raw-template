@@ -4,26 +4,20 @@ namespace ryunosuke\NightDragon;
 
 class Template
 {
-    /** @var Renderer 親レンダラー */
-    private $renderer;
+    private Renderer $renderer;
 
-    /** @var string テンプレートファイル名 */
-    private $filename;
+    private string $filename;
 
-    /** @var array アサインされた変数 */
-    private $vars = [], $parentVars = [];
+    private array $vars       = [];
+    private array $parentVars = [];
 
-    /** @var static 継承を経た場合の元テンプレートオブジェクト */
-    private $original;
+    private self $original;
 
-    /** @var static 親テンプレートオブジェクト */
-    private $parent;
+    private self $parent;
 
-    /** @var string[][] 宣言されたブロック配列 */
-    private $blocks = [];
+    private array $blocks = [];
 
-    /** @var array begin で始められた現在のブロック名 */
-    private $currentBlocks = [];
+    private array $currentBlocks = [];
 
     public function __construct(Renderer $renderer, string $filename)
     {
@@ -32,7 +26,7 @@ class Template
         $this->original = $this;
     }
 
-    public function __get($name)
+    public function __get(string $name)
     {
         return $this->vars[$name];
     }
@@ -51,12 +45,8 @@ class Template
      * ただし注意点として、assign した変数はローカルコンテキストに生えない。
      * アクセスには $this->>varname を使用する必要がある。
      * （ローカルコンテキストに生えている varname は親や子から渡ってきた変数である）。
-     *
-     * @param string|array $name 変数名
-     * @param mixed $value 変数値
-     * @return array アサインした変数群
      */
-    public function assign($name, $value = null)
+    public function assign(string|array $name, mixed $value = null): array
     {
         if (!is_array($name)) {
             $name = [$name => $value];
@@ -70,10 +60,6 @@ class Template
 
     /**
      * 変数を指定してレンダリング
-     *
-     * @param array $vars 変数配列
-     * @param array $parentVars 親変数配列
-     * @return string レンダリング結果
      */
     public function render(array $vars = [], array $parentVars = []): string
     {
@@ -82,7 +68,7 @@ class Template
 
         $contents = $this->fetch($this->renderer->compile($this->filename, $this->vars, $this->parentVars));
 
-        if ($this->parent) {
+        if (isset($this->parent)) {
             assert(strlen(trim($contents)) === 0, "child template can't have content outside blocks [$contents]");
             return $this->parent->render($this->vars, $this->parentVars);
         }
@@ -92,26 +78,21 @@ class Template
 
     /**
      * テンプレートの継承を宣言する
-     *
-     * @param string $filename 親テンプレート名
-     * @return static 継承したテンプレートオブジェクト
      */
-    public function extend(string $filename)
+    public function extend(string $filename): static
     {
-        assert($this->parent === null, "this template is already extended.");
+        assert(!isset($this->parent), "this template is already extended.");
 
         $this->parent = new static($this->renderer, $this->resolvePath($filename));
         $this->parent->original = $this->original;
-        $this->original = null;
+        unset($this->original);
         return $this->parent;
     }
 
     /**
      * ブロックを開始する
-     *
-     * @param string $name ブロック名
      */
-    public function begin(string $name)
+    public function begin(string $name): void
     {
         // 継承しないとブロック機能を使えない…ようにしようとしたけど止めた。継承を使わなくてもブロックに名前をつける意義はある
         // assert($this->parent !== null, "this template is not extended.");
@@ -130,18 +111,18 @@ class Template
     /**
      * ブロックを終了する
      */
-    public function end()
+    public function end(): void
     {
         assert(!empty($this->currentBlocks), "block is not begun.");
 
         $name = array_pop($this->currentBlocks);
         $this->blocks[$name][] = ob_get_clean();
 
-        if (!$this->original && $this->currentBlocks) {
+        if (!isset($this->original) && $this->currentBlocks) {
             $this->blocks[end($this->currentBlocks)][$name] = null;
         }
 
-        if ($this->original) {
+        if (isset($this->original)) {
             $recho = function ($iterator) use (&$recho) {
                 foreach ($iterator as $key => $block) {
                     if ($block === null) {
@@ -168,11 +149,8 @@ class Template
      * - `<?php $this->begin('block') ?>hoge<?php $this->end() ?>`
      *
      * コンテンツは省略すると空文字になるので「親がコンテンツを持たない場合」には単にこのメソッドを呼ぶだけで良い。
-     *
-     * @param string $name ブロック名
-     * @param string $contents ブロックのコンテンツ
      */
-    public function block(string $name, string $contents = '')
+    public function block(string $name, string $contents = ''): void
     {
         $this->begin($name);
         echo $contents;
@@ -182,7 +160,7 @@ class Template
     /**
      * 親ブロックの内容を出力する
      */
-    public function parent()
+    public function parent(): void
     {
         assert($this->parent !== null, "this template is not extended.");
         assert(!empty($this->currentBlocks), "block is not begun.");
@@ -199,11 +177,8 @@ class Template
      * ファイルはテンプレートファイルとしてレンダリングして取り込まれる。
      * 極論すると別テンプレートの結果を出力する。 $this は $this ではないし、begin ～ end のブロックはそのテンプレートのものとなる。
      * その分 $filename が継承をしていようと何をしていようとその出力が得られる。
-     *
-     * @param string $filename 読み込むファイル名
-     * @param array $vars 変数配列
      */
-    public function import(string $filename, array $vars = [])
+    public function import(string $filename, array $vars = []): void
     {
         $template = new static($this->renderer, $this->resolvePath($filename));
         echo $template->render($vars, $this->vars + $this->parentVars);
@@ -215,11 +190,8 @@ class Template
      * ファイルはテンプレートファイルとして取り込まれる。
      * 極論するとコピペと同じ。 $this は $this だし、begin ～ end のブロックも自身のブロックとして定義される。
      * $filename が継承をしていたり（意図してない）ブロックを定義していたりするとおそらく意図通りには動かない。
-     *
-     * @param string $filename 読み込むファイル名
-     * @param array $vars 変数配列
      */
-    public function include(string $filename, array $vars = [])
+    public function include(string $filename, array $vars = []): void
     {
         echo $this->fetch($this->renderer->compile($this->resolvePath($filename), $vars, $this->vars + $this->parentVars), $vars);
     }
@@ -229,10 +201,8 @@ class Template
      *
      * ファイルはただのテキストファイルとして取り込まれる。
      * 極論すると echo file_get_contents と同じ。
-     *
-     * @param string $filename 読み込むファイル名
      */
-    public function content(string $filename)
+    public function content(string $filename): void
     {
         $filename = $this->resolvePath($filename);
         echo file_get_contents($filename);
@@ -247,10 +217,8 @@ class Template
      * - 自身と同じ拡張子: テンプレートファイルとして import する
      * - glob 記法: マッチしたファイルで上記が全て呼ばれる
      * - その他: 現在の実装ではスルーされる
-     *
-     * @param string $filename 読み込むファイル名
      */
-    public function load(string $filename)
+    public function load(string $filename): void
     {
         $curExt = pathinfo($this->getFilename(), PATHINFO_EXTENSION);
         $filename = $this->resolvePath($filename);
@@ -278,9 +246,6 @@ class Template
      *
      * 絶対パスはそのまま、相対パスは自身のディレクトリが基底となる。
      * compileDir やストリームラッパーなどの状態によらず、 __DIR__ などの定数は使用可能（適宜読み替えられる）。
-     *
-     * @param string $filename
-     * @return string パス名
      */
     protected function resolvePath(string $filename): string
     {
@@ -292,12 +257,8 @@ class Template
 
     /**
      * 指定配列を展開しつつファイルを require するキモメソッド
-     *
-     * @param string $filename 読み込むファイル名
-     * @param array $vars 変数配列
-     * @return mixed 読み込んだコンテンツ
      */
-    private function fetch(string $filename, array $vars = [])
+    private function fetch(string $filename, array $vars = []): string
     {
         /** @noinspection PhpMethodParametersCountMismatchInspection */
         return (function () {
@@ -311,10 +272,9 @@ class Template
     /**
      * 指定ブロックを持つ直上の親を返す（自身も含む）
      *
-     * @param string $name ブロック名
      * @return string[] 指定ブロック
      */
-    private function closestBlock($name)
+    private function closestBlock(string $name): array
     {
         $that = $this;
         while (!isset($that->blocks[$name])) {

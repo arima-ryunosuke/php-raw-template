@@ -2,15 +2,15 @@
 
 namespace ryunosuke\NightDragon;
 
-class HtmlObject implements \ArrayAccess
+class HtmlObject implements \ArrayAccess, \Stringable
 {
-    private $mapper;
+    private array $mapper = [];
 
-    private $tagname;
-    private $attributes;
-    private $contents;
+    private string $tagname;
+    private array  $attributes;
+    private string $contents;
 
-    public function __construct($string)
+    public function __construct(string $string)
     {
         $boundary = 'x' . unique_string($string, 32, '0123456789abcdefghijklmnopqrstuvwxyz');
         $string = '<?xml encoding="UTF-8">' . php_strip($string, ['replacer' => $boundary], $this->mapper);
@@ -39,33 +39,28 @@ class HtmlObject implements \ArrayAccess
         }
     }
 
-    /**
-     * 完全な html タグを返す
-     *
-     * @return string タグ
-     */
-    public function __toString()
+    public function __toString(): string
     {
         $attribute = concat(' ', $this->attribute());
         return "<{$this->tagname()}$attribute>{$this->contents()}</{$this->tagname()}>";
     }
 
-    public function offsetExists($offset)
+    public function offsetExists(mixed $offset): bool
     {
         return isset($this->attributes[$offset]);
     }
 
-    public function offsetGet($offset)
+    public function offsetGet(mixed $offset): mixed
     {
         return $this->attributes[$offset];
     }
 
-    public function offsetSet($offset, $value)
+    public function offsetSet(mixed $offset, mixed $value): void
     {
         $this->attributes[$offset] = $value;
     }
 
-    public function offsetUnset($offset)
+    public function offsetUnset(mixed $offset): void
     {
         unset($this->attributes[$offset]);
     }
@@ -74,11 +69,8 @@ class HtmlObject implements \ArrayAccess
      * タグ名を設定・取得する
      *
      * 引数を与えると設定される。
-     *
-     * @param string|null $tagname
-     * @return string
      */
-    public function tagname($tagname = null)
+    public function tagname(?string $tagname = null): string
     {
         if ($tagname !== null) {
             $this->tagname = $tagname;
@@ -86,12 +78,7 @@ class HtmlObject implements \ArrayAccess
         return $this->tagname;
     }
 
-    /**
-     * 属性配列を返す
-     *
-     * @return array 属性配列
-     */
-    public function attributes()
+    public function attributes(): array
     {
         $attrstr = [];
         foreach ($this->attributes as $name => $value) {
@@ -105,23 +92,13 @@ class HtmlObject implements \ArrayAccess
         return $attrstr;
     }
 
-    /**
-     * 属性文字列を返す
-     *
-     * @return array 属性文字列
-     */
-    public function attribute()
+    public function attribute(): string
     {
         $attributes = array_filter($this->attributes(), fn($v) => $v !== false);
         return array_sprintf($attributes, fn($v, $k) => $v === true ? $k : "$k=\"$v\"", ' ');
     }
 
-    /**
-     * コンテンツ文字列を返す
-     *
-     * @return string コンテンツ文字列
-     */
-    public function contents()
+    public function contents(): string
     {
         return strtr($this->contents, $this->mapper);
     }

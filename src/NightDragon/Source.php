@@ -17,36 +17,26 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
     const MATCH_NOT       = -98;  // 否定フラグ
     const MATCH_NOCAPTURE = -99;  // キャプチャしないフラグ
 
-    /** @var int ショートタグ互換モード */
-    private $compatibleShortTagMode;
+    private int $compatibleShortTagMode;
 
-    /** @var Token[] トークン配列 */
-    private $tokens = [];
+    /** @var Token[] */
+    private array $tokens = [];
 
-    public function __construct($eitherCodeOrTokens, int $compatibleShortTagMode = self::SHORT_TAG_NOTHING)
+    public function __construct(string|array $eitherCodeOrTokens, int $compatibleShortTagMode = self::SHORT_TAG_NOTHING)
     {
         // php.ini でショートタグが有効なら標準に身を任せてこのクラスでは何もしない
         $this->compatibleShortTagMode = ini_get('short_open_tag') ? self::SHORT_TAG_NOTHING : $compatibleShortTagMode;
 
-        $tokens = is_string($eitherCodeOrTokens) ? token_get_all($eitherCodeOrTokens) : array_values($eitherCodeOrTokens);
-        $last = null;
+        $tokens = is_string($eitherCodeOrTokens) ? Token::tokenize($eitherCodeOrTokens) : array_values($eitherCodeOrTokens);
         foreach ($tokens as $token) {
             // ショートタグ互換ならそのインラインテキストを再パース
-            if ($this->compatibleShortTagMode > 0 && is_array($token) && $token[0] === T_INLINE_HTML) {
-                $inline = str_replace('<?', self::SHORT_OPEN_TAG, $token[1]);
+            if ($this->compatibleShortTagMode > 0 && $token->is(T_INLINE_HTML)) {
+                $inline = str_replace('<?', self::SHORT_OPEN_TAG, $token->text);
                 $this->tokens = array_merge($this->tokens, (new self($inline, self::SHORT_TAG_NOTHING))->tokens);
                 continue;
             }
 
-            // 配列だったり文字列トークンだったりで統一性がないので配列に正規化する
-            if (is_string($token)) {
-                $line = ($last->line ?? 1) + preg_match_all('/(?:\r\n|\r|\n)/', $last->token ?? '');
-                $token = Token::instance(TOKEN::UNKNOWN_ID, $token, $line);
-            }
-            else {
-                $token = Token::instance($token);
-            }
-            $this->tokens[] = $last = $token;
+            $this->tokens[] = $token;
         }
     }
 
@@ -55,20 +45,20 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
         $tokens = $this->tokens;
         if ($this->compatibleShortTagMode === self::SHORT_TAG_REPLACE) {
             $tokens = array_map(function (Token $token) {
-                if ($token->equals(self::SHORT_OPEN_TAG)) {
-                    $token->token = '<?';
+                if ($token->is(self::SHORT_OPEN_TAG)) {
+                    $token->text = '<?';
                 }
                 return $token;
             }, $tokens);
         }
-        return implode('', array_column($tokens, 'token'));
+        return implode('', array_column($tokens, 'text'));
     }
 
-    private function actualOffset($offset)
+    private function actualOffset(mixed $offset)
     {
         $n = 0;
         foreach ($this->tokens as $i => $token) {
-            if (!$token->isWhitespace()) {
+            if (!$token->is(T_WHITESPACE)) {
                 if ($offset === $n++) {
                     return $i;
                 }
@@ -77,19 +67,19 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
         return null;
     }
 
-    public function offsetExists($offset): bool
+    public function offsetExists(mixed $offset): bool
     {
         $offset = $this->actualOffset($offset);
         return isset($this->tokens[$offset]);
     }
 
-    public function offsetGet($offset): Token
+    public function offsetGet(mixed $offset): Token
     {
         $offset = $this->actualOffset($offset);
         return $this->tokens[$offset];
     }
 
-    public function offsetSet($offset, $value): void
+    public function offsetSet(mixed $offset, mixed $value): void
     {
         $offset = $this->actualOffset($offset);
         assert(!($offset !== null && !isset($this->tokens[$offset])));
@@ -102,7 +92,7 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
         }
     }
 
-    public function offsetUnset($offset): void
+    public function offsetUnset(mixed $offset): void
     {
         $offset = $this->actualOffset($offset);
         unset($this->tokens[$offset]);
@@ -116,7 +106,7 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
     {
         $n = 0;
         foreach ($this->tokens as $token) {
-            if (!$token->isWhitespace()) {
+            if (!$token->is(T_WHITESPACE)) {
                 yield $n++ => $token;
             }
         }
@@ -125,14 +115,13 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
     /**
      * 指定 type の Generator を返す
      *
-     * @param mixed $type 抽出トークン
      * @return Token[] $type に一致したトークン配列
      */
-    public function filter($type)
+    public function filter(mixed $type): array
     {
         $result = [];
         foreach ($this->tokens as $token) {
-            if ($token->equals($type)) {
+            if ($token->is($type)) {
                 $result[] = $token;
             }
         }
@@ -143,7 +132,7 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
     {
         $count = 0;
         foreach ($this->tokens as $token) {
-            if (!$token->isWhitespace()) {
+            if (!$token->is(T_WHITESPACE)) {
                 $count++;
             }
         }
@@ -154,14 +143,11 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
      * トークン先頭から1つ取り出す
      *
      * 取り出したトークンは失われる。
-     *
-     * @param mixed $type 無視トークン
-     * @return Token|null 先頭トークン
      */
-    public function shift($type = T_WHITESPACE): ?Token
+    public function shift(mixed $type = T_WHITESPACE): ?Token
     {
         while ($token = array_shift($this->tokens)) {
-            if (!$token->equals($type)) {
+            if (!$token->is($type)) {
                 return $token;
             }
         }
@@ -172,14 +158,11 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
      * トークン末尾から1つ取り出す
      *
      * 取り出したトークンは失われる。
-     *
-     * @param mixed $type 無視トークン
-     * @return Token|null 末尾トークン
      */
-    public function pop($type = T_WHITESPACE): ?Token
+    public function pop(mixed $type = T_WHITESPACE): ?Token
     {
         while ($token = array_pop($this->tokens)) {
-            if (!$token->equals($type)) {
+            if (!$token->is($type)) {
                 return $token;
             }
         }
@@ -190,11 +173,10 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
      * トークン先頭・末尾から1つ取り出す
      *
      * 取り出したトークンは失われる。
-     *
-     * @param mixed $type 無視トークン
+
      * @return Token[] トークン配列（[前, 後]）
      */
-    public function shrink($type = T_WHITESPACE)
+    public function shrink(mixed $type = T_WHITESPACE): array
     {
         return [
             $this->shift($type),
@@ -204,33 +186,27 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
 
     /**
      * 全ての T_WHITESPACE を除去する
-     *
-     * @param mixed $type 除去トークン
-     * @return $this
      */
-    public function strip($type = T_WHITESPACE)
+    public function strip(mixed $type = T_WHITESPACE): static
     {
-        $this->tokens = array_values(array_filter($this->tokens, fn(Token $token) => !$token->equals($type)));
+        $this->tokens = array_values(array_filter($this->tokens, fn(Token $token) => !$token->is($type)));
         return $this;
     }
 
     /**
      * 前後の T_WHITESPACE を除去する
-     *
-     * @param mixed $type 除去トークン
-     * @return $this
      */
-    public function trim($type = T_WHITESPACE)
+    public function trim(mixed $type = T_WHITESPACE): static
     {
         for ($i = count($this->tokens) - 1; $i >= 0; $i--) {
-            if (!$this->tokens[$i]->equals($type)) {
+            if (!$this->tokens[$i]->is($type)) {
                 break;
             }
             unset($this->tokens[$i]);
         }
 
         for ($i = 0; $i < count($this->tokens); $i++) {
-            if (!$this->tokens[$i]->equals($type)) {
+            if (!$this->tokens[$i]->is($type)) {
                 break;
             }
             unset($this->tokens[$i]);
@@ -244,12 +220,11 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
     /**
      * 指定トークンで分割してトークン配列の配列で返す
      *
-     * @param mixed $condition 分割条件
      * @return self[] トークン配列の配列
      */
-    public function split($condition)
+    public function split(mixed $condition): array
     {
-        $parts = array_explode($this->tokens, fn(Token $token) => $token->equals($condition));
+        $parts = array_explode($this->tokens, fn(Token $token) => $token->is($condition));
 
         $result = [];
         foreach ($parts as $part) {
@@ -263,8 +238,6 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
      *
      * 他の場所でも結構使うので共通処理としてこのクラスに定義する。
      * 混在していたり複数宣言されていたりはサポートしない。
-     *
-     * @return string 最初に見つかった名前空間
      */
     public function namespace(): string
     {
@@ -297,10 +270,9 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
      * - [T_LNUMBER, MATCH_ANY, T_LNUMBER]: 整数リテラル同士の何らかの式トークンが得られる（整数で囲まれたなにか、とも言える）
      * - [T_NAMESPACE, MATCH_MANY ';']: namespace 文 ～ ";" までが得られる（つまり名前空間宣言が得られる）
      *
-     * @param array $matchers マッチ条件
-     * @return self[]
+     * @return static[]
      */
-    public function match(array $matchers)
+    public function match(array $matchers): array
     {
         $result = [];
         $this->scan($matchers, function ($matched) use (&$result) {
@@ -325,12 +297,9 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
      *     - [[ID, TOKEN, ...], [ID, TOKEN, ...], ...] のような階層配列: 複数トークンとみなす
      *     - [[ID, TOKEN, ...], TOKEN, ...] のような混在配列: 上記の複合とみなす
      *
-     * @param array $matchers マッチ条件
-     * @param mixed|\Closure $replace 置換トークン・文字列
-     * @param int|null $skip 置換後のポインタのオフセット（null 指定で置換後トークンは対象にならない、0 指定で再マッチが行われる）
      * @return $this
      */
-    public function replace(array $matchers, $replace, int $skip = null)
+    public function replace(array $matchers, mixed $replace, ?int $skip = null): static
     {
         return $this->scan($matchers, function ($matched) use ($replace, $skip) {
             if ($replace instanceof \Closure) {
@@ -375,7 +344,7 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
         });
     }
 
-    private function scan(array $matchers, \Closure $callback)
+    private function scan(array $matchers, \Closure $callback): static
     {
         $options = [];
         foreach ($matchers as $mindex => $matcher) {
@@ -414,11 +383,11 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
             $option = $options[$mindex];
             $token = $this->tokens[$tindex];
 
-            if ($token->isWhitespace()) {
+            if ($token->is(T_WHITESPACE)) {
                 $result[$tindex] = $token;
                 return $match($tindex + 1, $mindex, $result);
             }
-            elseif ($option[self::MATCH_NOT] xor $token->equals($matcher)) {
+            elseif ($option[self::MATCH_NOT] xor $token->is($matcher)) {
                 // MATCH_MANY は先読み
                 if ($option[self::MATCH_MANY]) {
                     for ($n = $tindex; $n < count($this->tokens); $n++) {
@@ -446,11 +415,11 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
         };
 
         for ($tindex = 0; $tindex < count($this->tokens); $tindex++) {
-            if (!$this->tokens[$tindex]->isWhitespace()) {
+            if (!$this->tokens[$tindex]->is(T_WHITESPACE)) {
                 $matched = [];
                 if ($match($tindex, 0, $matched)) {
                     foreach (array_reverse($matched, true) as $i => $token) {
-                        if (!$token->isWhitespace()) {
+                        if (!$token->is(T_WHITESPACE)) {
                             break;
                         }
                         unset($matched[$i]);

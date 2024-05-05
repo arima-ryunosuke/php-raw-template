@@ -12,7 +12,7 @@ class RewriteWrapper
     private $data;
     private $options;
 
-    public static function getLineMapping(string $file, int $line)
+    public static function getLineMapping(string $file, int $line): array
     {
         $mapping = self::$lineMapping[(string) realpath($file)] ?? [];
 
@@ -39,12 +39,12 @@ class RewriteWrapper
         }
     }
 
-    public function __construct($options = [])
+    public function __construct(array $options = [])
     {
         $this->options = $options;
     }
 
-    public function stream_open($path)
+    public function stream_open(string $path): bool
     {
         // include/require でも使用したいので $context が渡せない。のでクエリパラメータでオプションを受け取る
         $parts = parse_url($path);
@@ -61,24 +61,24 @@ class RewriteWrapper
         return true;
     }
 
-    public function stream_stat()
+    public function stream_stat(): array
     {
         return $this->stat;
     }
 
-    public function url_stat($path)
+    public function url_stat(string $path): array
     {
         return stat(substr(parse_url($path, PHP_URL_PATH), 1));
     }
 
-    public function stream_read($count)
+    public function stream_read(int $count): string
     {
         $ret = substr($this->data, $this->pos, $count);
         $this->pos += strlen($ret);
         return $ret;
     }
 
-    public function stream_eof()
+    public function stream_eof(): bool
     {
         return $this->pos >= strlen($this->data);
     }
@@ -97,13 +97,13 @@ class RewriteWrapper
             T_CLOSE_TAG,
         ], function (Source $tokens) use ($options) {
             // <?php タグは絶対に触らない
-            $open_tag = substr($tokens[0]->token, 0, 5);
+            $open_tag = substr($tokens[0]->text, 0, 5);
             if ($open_tag === '<?php') {
                 return false;
             }
 
             $filter = $options['defaultFilter'];
-            if ($tokens[1]->token === $options['nofilter']) {
+            if ($tokens[1]->text === $options['nofilter']) {
                 $filter = '';
                 unset($tokens[1]);
             }
@@ -115,7 +115,7 @@ class RewriteWrapper
 
             // <? タグは 7.4 で非推奨になるので警告が出るようになるが、せっかくプリプロセス的な処理をしてるので置換して警告を抑止する
             if (($open_tag[2] ?? '') !== '=') {
-                $tokens[0]->token = '<?php';
+                $tokens[0]->text = '<?php';
             }
 
             return $tokens;
@@ -124,7 +124,7 @@ class RewriteWrapper
         return $source;
     }
 
-    private function rewriteCustomTag(string $tokens, array $handlers, &$mappling = null)
+    private function rewriteCustomTag(string $tokens, array $handlers, &$mappling = null): string
     {
         $line_count = function ($subject) {
             preg_match_all('#\R#u', $subject, $m, PREG_SET_ORDER);
@@ -139,7 +139,6 @@ class RewriteWrapper
             $html = new HtmlObject($matched);
             $handler = $handlers[$html->tagname()];
 
-            /** @noinspection PhpPossiblePolymorphicInvocationInspection */
             if (reflect_types(reflect_callable($handler)->getParameters()[0] ?? null)->allows($html)) {
                 $replaced = $handler($html) ?? $matched;
             }
@@ -161,7 +160,7 @@ class RewriteWrapper
         }, $tokens, -1, $count, PREG_OFFSET_CAPTURE);
     }
 
-    private function rewriteExpand(Source $tokens, string $expander)
+    private function rewriteExpand(Source $tokens, string $expander): void
     {
         $tokens->replace([
             $expander,
@@ -186,12 +185,12 @@ class RewriteWrapper
         });
     }
 
-    private function rewriteAccessKey(Source $tokens, string $accessor, string $getter)
+    private function rewriteAccessKey(Source $tokens, string $accessor, string $getter): void
     {
         // "." の場合は $array.123 のような記述が T_DNUMBER として得られてしまうので特別扱いで対応（"." はデフォルトオプションなので面倒見る）
         if ($accessor === '.') {
             $tokens->replace([T_DNUMBER], function (Source $tokens) {
-                [$int, $float] = explode('.', $tokens[0]->token);
+                [$int, $float] = explode('.', $tokens[0]->text);
 
                 if ($int !== '') {
                     return $tokens;
@@ -226,13 +225,13 @@ class RewriteWrapper
             $tokens->shrink();
             return array_merge(
                 [
-                    [Token::UNKNOWN_ID, '"'],
-                    [Token::UNKNOWN_ID, '.'],
+                    [null, '"'],
+                    [null, '.'],
                 ],
                 iterator_to_array($tokens),
                 [
-                    [Token::UNKNOWN_ID, '.'],
-                    [Token::UNKNOWN_ID, '"'],
+                    [null, '.'],
+                    [null, '"'],
                 ]
             );
         });
@@ -271,7 +270,7 @@ class RewriteWrapper
         }
     }
 
-    private function rewriteModifier(Source $tokens, string $receiver, array $modifiers, array $namespaces, array $classes)
+    private function rewriteModifier(Source $tokens, string $receiver, array $modifiers, array $namespaces, array $classes): void
     {
         // @todo <?= ～ > でざっくりやってるのでもっと局所的に当てていくほうが良い
         // @todo というか普通に汚すぎるのでリファクタ対象（1.2.2 で何してるか分からなかった）
@@ -338,21 +337,21 @@ class RewriteWrapper
                     // 事前準備として "{$_}" を "" . $_ . "" にバラす
                     $parts->replace([T_CURLY_OPEN, $receiver, '}'], function () use ($receiver) {
                         return [
-                            [Token::UNKNOWN_ID, '"'],
-                            [Token::UNKNOWN_ID, '.'],
+                            [null, '"'],
+                            [null, '.'],
                             [T_VARIABLE, $receiver],
-                            [Token::UNKNOWN_ID, '.'],
-                            [Token::UNKNOWN_ID, '"'],
+                            [null, '.'],
+                            [null, '"'],
                         ];
                     });
 
                     $enclosing = false;
                     foreach ($parts as $token) {
-                        if ($token->token === '"') {
+                        if ($token->text === '"') {
                             $enclosing = !$enclosing;
                         }
-                        if ($token->equals([T_VARIABLE => $receiver])) {
-                            $token->token = $enclosing ? ('".' . $modifier['proxyvar'] . '."') : $modifier['proxyvar'];
+                        if ($token->is([T_VARIABLE => $receiver])) {
+                            $token->text = $enclosing ? ('".' . $modifier['proxyvar'] . '."') : $modifier['proxyvar'];
                         }
                     }
                     $stmt = sprintf($modifier['template'], $scope, $stmt, $resolve($parts));
@@ -365,7 +364,7 @@ class RewriteWrapper
         });
     }
 
-    private function rewriteFilter(Source $tokens, string $filter, string $closer)
+    private function rewriteFilter(Source $tokens, string $filter, string $closer): void
     {
         $tokens->replace([
             T_OPEN_TAG_WITH_ECHO,
@@ -376,7 +375,7 @@ class RewriteWrapper
             [$open, $close] = $tokens->shrink();
             $tokens->trim();
 
-            $nl = (strlen($closer) && !ctype_graph($close->token)) ? ',' . json_encode($closer) : '';
+            $nl = (strlen($closer) && !ctype_graph($close->text)) ? ',' . json_encode($closer) : '';
             $content = $filter ? "$filter($tokens)$nl" : "$tokens$nl";
 
             return [$open, $content, $close];

@@ -429,7 +429,7 @@ PHP
         /** @see Renderer::outputConstFile() */
         $outputConstFile = $this->publishMethod($renderer, 'outputConstFile');
 
-        $this->assertFalse($outputConstFile($FILENAME, [
+        $this->assertNull($outputConstFile($FILENAME, [
             'accessor' => [],
             'modifier' => [],
         ]));
@@ -624,7 +624,7 @@ var2
             $this->assertEquals('az', @$renderer->render(self::TEMPLATE_DIR . '/notice.phtml', []));
             $this->assertTrue($receiver);
         }
-        catch (\Throwable $e) {
+        catch (\Throwable) {
             $this->fail();
         }
         finally {

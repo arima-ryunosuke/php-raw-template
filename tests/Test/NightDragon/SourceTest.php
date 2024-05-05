@@ -12,8 +12,8 @@ class SourceTest extends \ryunosuke\Test\AbstractTestCase
         $source = new Source('<?php A + B + C');
 
         // ArrayAccess#offsetGet
-        $this->assertEquals(Token::instance(T_OPEN_TAG, '<?php ', 1), $source[0]);
-        $this->assertEquals(Token::instance(T_STRING, 'C', 1), $source[5]);
+        $this->assertEquals(Token::instance(T_OPEN_TAG, '<?php ', 1, 0), $source[0]);
+        $this->assertEquals(Token::instance(T_STRING, 'C', 1, 14), $source[5]);
 
         // ArrayAccess#offsetSet
         $this->assertFalse(isset($source[6]));
@@ -30,11 +30,11 @@ class SourceTest extends \ryunosuke\Test\AbstractTestCase
 
         // IteratorAggregate
         $this->assertEquals([
-            Token::instance(T_OPEN_TAG, "<?php ", 1),
-            Token::instance(-1, "+", 1),
-            Token::instance(T_STRING, "B", 1),
-            Token::instance(-1, "+", 1),
-            Token::instance(T_STRING, "C", 1),
+            Token::instance(T_OPEN_TAG, "<?php ", 1, 0),
+            Token::instance(ord('+'), "+", 1, 8),
+            Token::instance(T_STRING, "B", 1, 10),
+            Token::instance(ord('+'), "+", 1, 12),
+            Token::instance(T_STRING, "C", 1, 14),
         ], iterator_to_array($source));
 
         // Countable
@@ -49,11 +49,11 @@ class SourceTest extends \ryunosuke\Test\AbstractTestCase
         }
 
         $source = new Source('<? $var = "prefix-" . "-middle-" . __FUNCTION__ . "-suffix";', Source::SHORT_TAG_REPLACE);
-        $this->assertEquals(Token::instance(T_OPEN_TAG, '<?pHP ', 1), $source[0]);
+        $this->assertEquals(Token::instance(T_OPEN_TAG, '<?pHP ', 1, 0), $source[0]);
         $this->assertEquals('<? $var = "prefix-" . "-middle-" . __FUNCTION__ . "-suffix";', (string) $source);
 
         $source = new Source('<? $var = "prefix-" . "-middle-" . __FUNCTION__ . "-suffix";', Source::SHORT_TAG_REWRITE);
-        $this->assertEquals(Token::instance(T_OPEN_TAG, '<?pHP ', 1), $source[0]);
+        $this->assertEquals(Token::instance(T_OPEN_TAG, '<?pHP ', 1, 0), $source[0]);
         $this->assertEquals('<?pHP  $var = "prefix-" . "-middle-" . __FUNCTION__ . "-suffix";', (string) $source);
     }
 
@@ -70,21 +70,21 @@ $func = function () {
 };
 ');
 
-        $this->assertEquals(Token::instance(T_OPEN_TAG, "<?php\n", 1), $source[0]);
-        $this->assertEquals(Token::instance(T_VARIABLE, '$var', 2), $source[1]);
-        $this->assertEquals(Token::instance(T_CONSTANT_ENCAPSED_STRING, '"-suffix"', 2), $source[9]);
-        $this->assertEquals(Token::instance(T_VARIABLE, '$func', 3), $source[11]);
-        $this->assertEquals(Token::instance(-1, '{', 3), $source[16]);
-        $this->assertEquals(Token::instance(T_RETURN, 'return', 4), $source[17]);
-        $this->assertEquals(Token::instance(-1, '[', 4), $source[18]);
-        $this->assertEquals(Token::instance(T_CONSTANT_ENCAPSED_STRING, '"a"', 5), $source[19]);
-        $this->assertEquals(Token::instance(-1, ',', 5), $source[22]);
-        $this->assertEquals(Token::instance(T_LNUMBER, '3', 7), $source[24]);
-        $this->assertEquals(Token::instance(-1, ',', 7), $source[31]);
-        $this->assertEquals(Token::instance(-1, ']', 8), $source[32]);
-        $this->assertEquals(Token::instance(-1, ';', 8), $source[33]);
-        $this->assertEquals(Token::instance(-1, '}', 9), $source[34]);
-        $this->assertEquals(Token::instance(-1, ';', 9), $source[35]);
+        $this->assertEquals(Token::instance(T_OPEN_TAG, "<?php\n", 1, 0), $source[0]);
+        $this->assertEquals(Token::instance(T_VARIABLE, '$var', 2, 6), $source[1]);
+        $this->assertEquals(Token::instance(T_CONSTANT_ENCAPSED_STRING, '"-suffix"', 2, 53), $source[9]);
+        $this->assertEquals(Token::instance(T_VARIABLE, '$func', 3, 64), $source[11]);
+        $this->assertEquals(Token::instance(ord('{'), '{', 3, 84), $source[16]);
+        $this->assertEquals(Token::instance(T_RETURN, 'return', 4, 90), $source[17]);
+        $this->assertEquals(Token::instance(ord('['), '[', 4, 97), $source[18]);
+        $this->assertEquals(Token::instance(T_CONSTANT_ENCAPSED_STRING, '"a"', 5, 107), $source[19]);
+        $this->assertEquals(Token::instance(ord(','), ',', 5, 117), $source[22]);
+        $this->assertEquals(Token::instance(T_LNUMBER, '3', 7, 141), $source[24]);
+        $this->assertEquals(Token::instance(ord(','), ',', 7, 155), $source[31]);
+        $this->assertEquals(Token::instance(ord(']'), ']', 8, 161), $source[32]);
+        $this->assertEquals(Token::instance(ord(';'), ';', 8, 162), $source[33]);
+        $this->assertEquals(Token::instance(ord('}'), '}', 9, 164), $source[34]);
+        $this->assertEquals(Token::instance(ord(';'), ';', 9, 165), $source[35]);
     }
 
     function test_filter()
@@ -92,8 +92,8 @@ $func = function () {
         $source = new Source('<?php A + B - C');
 
         $this->assertEquals([
-            Token::instance(-1, '+', 1),
-            Token::instance(-1, '-', 1),
+            Token::instance(ord('+'), '+', 1, 8),
+            Token::instance(ord('-'), '-', 1, 12),
         ], $source->filter(['+', '-']));
     }
 
@@ -101,35 +101,35 @@ $func = function () {
     {
         $source = new Source('<?php $var = "prefix-" . "-middle-" . __FUNCTION__ . "-suffix";');
 
-        $this->assertEquals(Token::instance(T_OPEN_TAG, '<?php ', 1), $source->shift());
-        $this->assertEquals(Token::instance(T_VARIABLE, '$var', 1), $source->shift());
+        $this->assertEquals(Token::instance(T_OPEN_TAG, '<?php ', 1, 0), $source->shift());
+        $this->assertEquals(Token::instance(T_VARIABLE, '$var', 1, 6), $source->shift());
 
-        $this->assertEquals(Token::instance(-1, ';', 1), $source->pop());
-        $this->assertEquals(Token::instance(T_CONSTANT_ENCAPSED_STRING, '"-suffix"', 1), $source->pop());
+        $this->assertEquals(Token::instance(ord(';'), ';', 1, 62), $source->pop());
+        $this->assertEquals(Token::instance(T_CONSTANT_ENCAPSED_STRING, '"-suffix"', 1, 53), $source->pop());
 
         $this->assertEquals([
-            Token::instance(-1, '=', 1),
-            Token::instance(-1, ".", 1),
+            Token::instance(ord('='), '=', 1, 11),
+            Token::instance(ord('.'), ".", 1, 51),
         ], $source->shrink());
 
         $this->assertEquals(' "prefix-" . "-middle-" . __FUNCTION__ ', (string) $source);
 
         $this->assertEquals([
-            Token::instance(T_CONSTANT_ENCAPSED_STRING, '"prefix-"', 1),
-            Token::instance(T_FUNC_C, "__FUNCTION__", 1),
+            Token::instance(T_CONSTANT_ENCAPSED_STRING, '"prefix-"', 1, 13),
+            Token::instance(T_FUNC_C, "__FUNCTION__", 1, 38),
         ], $source->shrink());
 
         $this->assertEquals(' . "-middle-" . ', (string) $source);
 
         $this->assertEquals([
-            Token::instance(-1, ".", 1),
-            Token::instance(-1, ".", 1),
+            Token::instance(ord('.'), ".", 1, 23),
+            Token::instance(ord('.'), ".", 1, 36),
         ], $source->shrink());
 
         $this->assertEquals(' "-middle-" ', (string) $source);
 
         $this->assertEquals([
-            Token::instance(T_CONSTANT_ENCAPSED_STRING, '"-middle-"', 1),
+            Token::instance(T_CONSTANT_ENCAPSED_STRING, '"-middle-"', 1, 25),
             null,
         ], $source->shrink());
 
@@ -305,7 +305,7 @@ $func = function () {
     {
         $source = new Source('<?php $var = "prefix-" . __FUNCTION__ . "-suffix";');
         $source->replace([T_CONSTANT_ENCAPSED_STRING], function ($tokens) {
-            return ['A . ', [-1, $tokens[0]->token], ' . Z'];
+            return ['A . ', [-1, $tokens[0]->text], ' . Z'];
         });
         $this->assertEquals('<?php $var = A . "prefix-" . Z . __FUNCTION__ . A . "-suffix" . Z;', (string) $source);
     }
