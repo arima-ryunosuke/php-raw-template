@@ -1,7 +1,7 @@
 {
   "config": {
     "platform": {
-      "php": "7.4"
+      "php": "8.0"
     }
   },
   "name": "ryunosuke/night-dragon",
@@ -15,14 +15,14 @@
     }
   ],
   "require": {
-    "php": ">=7.4"
+    "php": ">=8.0"
   },
   "require-dev": {
-    "ryunosuke/functions": "1.6.*",
-    "phpunit/phpunit": "8.*",
+    "ryunosuke/functions": "2.0.*",
+    "phpunit/phpunit": "9.*",
     "twig/twig": "3.*",
     "jenssegers/blade": "1.*",
-    "smarty/smarty": "4.*",
+    "smarty/smarty": "5.*",
     "league/plates": "3.*"
   },
   "autoload": {
