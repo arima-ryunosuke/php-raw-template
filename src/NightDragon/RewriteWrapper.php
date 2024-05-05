@@ -142,7 +142,6 @@ class RewriteWrapper
             if (reflect_types(reflect_callable($handler)->getParameters()[0] ?? null)->allows($html)) {
                 $replaced = $handler($html) ?? $matched;
             }
-            // for compatible
             else {
                 $replaced = $handler($html->contents(), $html->attributes()) ?? $matched;
             }

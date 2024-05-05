@@ -256,7 +256,6 @@ PHP
 
         $renderer = new Renderer([
             'debug'          => true,
-            'gatherVariable' => true,
             'gatherModifier' => false,
             'gatherAccessor' => false,
             'compileDir'     => self::COMPILE_DIR,

@@ -28,7 +28,7 @@ class Token extends \PhpToken
     public function is($that): bool
     {
         if (is_array($that)) {
-            return parent::is(array_filter($that, fn($it) => $it !== null));
+            return parent::is($that);
         }
         if (is_bool($that)) {
             return $that;

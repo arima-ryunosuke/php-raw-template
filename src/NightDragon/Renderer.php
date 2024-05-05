@@ -89,7 +89,7 @@ class Renderer
             // デバッグ系
             'debug'              => $debug,
             'errorHandling'      => $debug,
-            'gatherVariable'     => $debug,
+            'gatherVariable'     => $debug ? self::DECLARED | self::FIXED | self::GLOBAL | self::ASSIGNED | self::USING : 0,
             'gatherModifier'     => $debug,
             'gatherAccessor'     => $debug,
             'constFilename'      => null,
@@ -97,32 +97,27 @@ class Renderer
             'specialVariable'    => [],
             // インジェクション系
             'wrapperProtocol'    => Renderer::DEFAULT_PROTOCOL,
-            'templateClass'      => '\\' . Template::class,
+            'templateClass'      => Template::class,
             // ディレクトリ系
             'compileDir'         => null,
             // コンパイルオプション系
             'customTagHandler'   => [
-                'strip' => '\\' . Renderer::class . '::strip',
+                'strip' => Renderer::class . '::strip',
             ],
             'compatibleShortTag' => false,
             'defaultNamespace'   => '\\',
             'defaultClass'       => '',
-            'defaultFilter'      => '\\' . Renderer::class . '::html',
-            'defaultGetter'      => '\\' . Renderer::class . '::access',
+            'defaultFilter'      => Renderer::class . '::html',
+            'defaultGetter'      => Renderer::class . '::access',
             'defaultCloser'      => "\n",
-            'nofilter'           => '', // for compatible. In the future the default will be "@"
-            'varModifier'        => '|', // for compatible. In the future the default will be ['|', '&']
+            'nofilter'           => '@',
+            'varModifier'        => ['|', '&'],
             'varReceiver'        => '$_',
             'varAccessor'        => '.',
-            'varExpander'        => '', // for compatible. In the future the default will be "`"
+            'varExpander'        => '`',
         ];
 
         $explodes = fn($types) => array_map(fn($types) => array_flatten(array_map(fn($v) => explode('|', $v), (array) $types)), $types);
-
-        // for compatible
-        if ($options['gatherVariable'] === true) {
-            $options['gatherVariable'] = self::DECLARED | self::FIXED | self::GLOBAL | self::ASSIGNED | self::USING;
-        }
 
         $this->debug = (bool) $options['debug'];
         $this->errorHandling = (bool) $options['errorHandling'];
@@ -142,10 +137,10 @@ class Renderer
             'compatibleShortTag' => (bool) $options['compatibleShortTag'],
             'defaultNamespace'   => (array) $options['defaultNamespace'],
             'defaultClass'       => (array) $options['defaultClass'],
-            'defaultFilter'      => (string) $options['defaultFilter'],
-            'defaultGetter'      => (string) $options['defaultGetter'],
+            'defaultFilter'      => (string) '\\' . ltrim($options['defaultFilter'], '\\'),
+            'defaultGetter'      => (string) '\\' . ltrim($options['defaultGetter'], '\\'),
             'defaultCloser'      => (string) $options['defaultCloser'],
-            'varModifier'        => ((array) $options['varModifier']) + [1 => ''],
+            'varModifier'        => (array) $options['varModifier'],
             'varReceiver'        => (string) $options['varReceiver'],
             'varAccessor'        => (string) $options['varAccessor'],
             'varExpander'        => (string) $options['varExpander'],
