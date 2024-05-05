@@ -274,7 +274,7 @@ PHP
     {
         \ryunosuke\NightDragon\rm_rf(self::COMPILE_DIR);
         clearstatcache();
-        $this->assertFileNotExists(self::COMPILE_DIR);
+        $this->assertFileDoesNotExist(self::COMPILE_DIR);
 
         $renderer = new Renderer([
             'debug'      => false,

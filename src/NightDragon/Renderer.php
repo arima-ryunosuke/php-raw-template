@@ -346,7 +346,7 @@ class Renderer
             return $map('\\' . get_class($var));
         }
 
-        return $map(var_type($var, true));
+        return $map(var_type($var));
     }
 
     private function gatherVariable(Source $source, string $receiver, array $vars, array $parentVars): array
@@ -502,9 +502,9 @@ class Renderer
                 <?php
                 if (null) {
                     {$V(self::MODIFIER_FUNCTION_COMMENT)}
-                    {$V(indent_php($ms, 4))}
+                    {$V(php_indent($ms, 4))}
                     {$V(self::ACCESS_KEY_COMMENT)}
-                    {$V(indent_php($as, 4))}
+                    {$V(php_indent($as, 4))}
                 }
                 return {$V(var_export2($consts, 1))};
                 
