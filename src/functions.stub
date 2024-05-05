@@ -18,6 +18,40 @@ if (!defined('ryunosuke\\NightDragon\\IS_PRIVATE')) {
     define('ryunosuke\\NightDragon\\IS_PRIVATE', 16);
 }
 
+if (!defined('ryunosuke\\NightDragon\\EN_MONTH_SHORT')) {
+    define('ryunosuke\\NightDragon\\EN_MONTH_SHORT', [
+        1  => "jan",
+        2  => "feb",
+        3  => "mar",
+        4  => "apr",
+        5  => "may",
+        6  => "jun",
+        7  => "jul",
+        8  => "aug",
+        9  => "sep",
+        10 => "oct",
+        11 => "nov",
+        12 => "dec",
+    ]);
+}
+
+if (!defined('ryunosuke\\NightDragon\\EN_MONTH_LONG')) {
+    define('ryunosuke\\NightDragon\\EN_MONTH_LONG', [
+        1  => "january",
+        2  => "february",
+        3  => "march",
+        4  => "april",
+        5  => "may",
+        6  => "june",
+        7  => "july",
+        8  => "august",
+        9  => "september",
+        10 => "october",
+        11 => "november",
+        12 => "december",
+    ]);
+}
+
 if (!defined('ryunosuke\\NightDragon\\JP_ERA')) {
     define('ryunosuke\\NightDragon\\JP_ERA', [
         [
@@ -45,6 +79,143 @@ if (!defined('ryunosuke\\NightDragon\\JP_ERA')) {
             "abbr"  => "M",
             "since" => -3216790800,
         ],
+    ]);
+}
+
+if (!defined('ryunosuke\\NightDragon\\GENERAL_MIMETYPE')) {
+    define('ryunosuke\\NightDragon\\GENERAL_MIMETYPE', [
+        "csv"   => "text/csv",
+        "dcm"   => "application/dicom",
+        "dvc"   => "application/dvcs",
+        "finf"  => "application/fastinfoset",
+        "stk"   => "application/hyperstudio",
+        "ipfix" => "application/ipfix",
+        "json"  => "application/json",
+        "mrc"   => "application/marc",
+        "nb"    => "application/mathematica",
+        "ma"    => "application/mathematica",
+        "mb"    => "application/mathematica",
+        "mbox"  => "application/mbox",
+        "m21"   => "application/mp21",
+        "mp21"  => "application/mp21",
+        "xls"   => "application/vnd.ms-excel",
+        "doc"   => "application/vnd.ms-word",
+        "mxf"   => "application/mxf",
+        "oda"   => "application/oda",
+        "ogx"   => "application/ogg",
+        "pdf"   => "application/pdf",
+        "p10"   => "application/pkcs10",
+        "ai"    => "application/postscript",
+        "eps"   => "application/postscript",
+        "ps"    => "application/postscript",
+        "rtf"   => "application/rtf",
+        "sdp"   => "application/sdp",
+        "siv"   => "application/sieve",
+        "sieve" => "application/sieve",
+        "smil"  => "application/smil",
+        "smi"   => "application/smil",
+        "sml"   => "application/smil",
+        "gram"  => "application/srgs",
+        "xml"   => "text/xml",
+        "zip"   => "application/x-zip-compressed",
+        "xlsx"  => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "docx"  => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        726     => "audio/32kadpcm",
+        "amr"   => "audio/AMR",
+        "at3"   => "audio/ATRAC3",
+        "aa3"   => "audio/ATRAC3",
+        "omg"   => "audio/ATRAC3",
+        "evc"   => "audio/EVRC",
+        "evb"   => "audio/EVRCB",
+        "evw"   => "audio/EVRCWB",
+        "l16"   => "audio/L16",
+        "smv"   => "audio/SMV",
+        "ac3"   => "audio/ac3",
+        "au"    => "audio/basic",
+        "snd"   => "audio/basic",
+        "dls"   => "audio/dls",
+        "lbc"   => "audio/iLBC",
+        "mid"   => "audio/midi",
+        "midi"  => "audio/midi",
+        "kar"   => "audio/midi",
+        "mpga"  => "audio/mpeg",
+        "mp1"   => "audio/mpeg",
+        "mp2"   => "audio/mpeg",
+        "mp3"   => "audio/mpeg",
+        "oga"   => "audio/ogg",
+        "ogg"   => "audio/ogg",
+        "spx"   => "audio/ogg",
+        "qcp"   => "audio/qcelp",
+        "bmp"   => "image/bmp",
+        "fits"  => "image/fits",
+        "fit"   => "image/fits",
+        "fts"   => "image/fits",
+        "gif"   => "image/gif",
+        "ief"   => "image/ief",
+        "jp2"   => "image/jp2",
+        "jpg2"  => "image/jp2",
+        "jpeg"  => "image/jpeg",
+        "jpg"   => "image/jpeg",
+        "jpe"   => "image/jpeg",
+        "jfif"  => "image/jpeg",
+        "jpm"   => "image/jpm",
+        "jpgm"  => "image/jpm",
+        "jpx"   => "image/jpx",
+        "jpf"   => "image/jpx",
+        "svg"   => "image/svg+xml",
+        "png"   => "image/png",
+        "t38"   => "image/t38",
+        "tiff"  => "image/tiff",
+        "tif"   => "image/tiff",
+        "u8msg" => "message/global",
+        "eml"   => "message/rfc822",
+        "mail"  => "message/rfc822",
+        "art"   => "message/rfc822",
+        "igs"   => "model/iges",
+        "iges"  => "model/iges",
+        "msh"   => "model/mesh",
+        "mesh"  => "model/mesh",
+        "silo"  => "model/mesh",
+        "wrl"   => "model/vrml",
+        "vrml"  => "model/vrml",
+        "ics"   => "text/calendar",
+        "ifb"   => "text/calendar",
+        "css"   => "text/css",
+        "soa"   => "text/dns",
+        "zone"  => "text/dns",
+        "html"  => "text/html",
+        "htm"   => "text/html",
+        "js"    => "text/javascript",
+        "asc"   => "text/plain",
+        "txt"   => "text/plain",
+        "text"  => "text/plain",
+        "pm"    => "text/plain",
+        "el"    => "text/plain",
+        "c"     => "text/plain",
+        "h"     => "text/plain",
+        "cc"    => "text/plain",
+        "hh"    => "text/plain",
+        "cxx"   => "text/plain",
+        "hxx"   => "text/plain",
+        "f90"   => "text/plain",
+        "rtx"   => "text/richtext",
+        "sgml"  => "text/sgml",
+        "sgm"   => "text/sgml",
+        "3gp"   => "video/3gpp",
+        "3gpp"  => "video/3gpp",
+        "3g2"   => "video/3gpp2",
+        "3gpp2" => "video/3gpp2",
+        "mj2"   => "video/mj2",
+        "mjp2"  => "video/mj2",
+        "mp4"   => "video/mp4",
+        "mpg4"  => "video/mp4",
+        "mpeg"  => "video/mpeg",
+        "mpg"   => "video/mpeg",
+        "mpe"   => "video/mpeg",
+        "ogv"   => "video/ogg",
+        "qt"    => "video/quicktime",
+        "mov"   => "video/quicktime",
+        "webm"  => "video/webm",
     ]);
 }
 
@@ -102,10 +273,6 @@ if (!defined('ryunosuke\\NightDragon\\JSON_TEMPLATE_LITERAL')) {
 
 if (!defined('ryunosuke\\NightDragon\\JSON_BARE_AS_STRING')) {
     define('ryunosuke\\NightDragon\\JSON_BARE_AS_STRING', -106);
-}
-
-if (!defined('ryunosuke\\NightDragon\\TOKEN_NAME')) {
-    define('ryunosuke\\NightDragon\\TOKEN_NAME', 2);
 }
 
 if (!defined('ryunosuke\\NightDragon\\SI_UNITS')) {
@@ -631,6 +798,10 @@ if (!function_exists('ryunosuke\\NightDragon\\is_hasharray')) {
      */
     function is_hasharray(array $array)
     {
+        if (function_exists('array_is_list')) {
+            return !array_is_list($array); // @codeCoverageIgnore
+        }
+
         $i = 0;
         foreach ($array as $k => $dummy) {
             if ($k !== $i++) {
@@ -641,8 +812,8 @@ if (!function_exists('ryunosuke\\NightDragon\\is_hasharray')) {
     }
 }
 
-assert(!function_exists('ryunosuke\\NightDragon\\get_object_properties') || (new \ReflectionFunction('ryunosuke\\NightDragon\\get_object_properties'))->isUserDefined());
-if (!function_exists('ryunosuke\\NightDragon\\get_object_properties')) {
+assert(!function_exists('ryunosuke\\NightDragon\\object_properties') || (new \ReflectionFunction('ryunosuke\\NightDragon\\object_properties'))->isUserDefined());
+if (!function_exists('ryunosuke\\NightDragon\\object_properties')) {
     /**
      * オブジェクトのプロパティを可視・不可視を問わず取得する
      *
@@ -661,14 +832,14 @@ if (!function_exists('ryunosuke\\NightDragon\\get_object_properties')) {
      * // var_dump((array) $object);
      *
      * // この関数を使えば不可視プロパティも取得できる
-     * that(get_object_properties($object))->subsetEquals([
+     * that(object_properties($object))->subsetEquals([
      *     'message' => 'something',
      *     'code'    => 42,
      *     'oreore'  => 'oreore',
      * ]);
      *
      * // クロージャは this と use 変数を返す
-     * that(get_object_properties(fn() => $object))->is([
+     * that(object_properties(fn() => $object))->is([
      *     'this'   => $this,
      *     'object' => $object,
      * ]);
@@ -680,7 +851,7 @@ if (!function_exists('ryunosuke\\NightDragon\\get_object_properties')) {
      * @param array $privates 継承ツリー上の private が格納される
      * @return array 全プロパティの配列
      */
-    function get_object_properties($object, &$privates = [])
+    function object_properties($object, &$privates = [])
     {
         if ($object instanceof \Closure) {
             $ref = new \ReflectionFunction($object);
@@ -772,7 +943,7 @@ if (!function_exists('ryunosuke\\NightDragon\\html_strip')) {
 
         if ($options['escape-phpcode']) {
             $mapping = [];
-            $html = strip_php($html, [
+            $html = php_strip($html, [
                 'replacer'       => $preserving,
                 'trailing_break' => false,
             ], $mapping);
@@ -876,29 +1047,29 @@ if (!function_exists('ryunosuke\\NightDragon\\file_rewrite_contents')) {
         /** @var resource $fp */
         try {
             // 開いて
-            $fp = fopen($filename, 'c+b') ?: throws(new \UnexpectedValueException('failed to fopen.'));
+            $fp = fopen($filename, 'c+b') ?: throw new \UnexpectedValueException('failed to fopen.');
             if ($operation) {
-                flock($fp, $operation) ?: throws(new \UnexpectedValueException('failed to flock.'));
+                flock($fp, $operation) ?: throw new \UnexpectedValueException('failed to flock.');
             }
 
             // 読み込んで
-            rewind($fp) ?: throws(new \UnexpectedValueException('failed to rewind.'));
-            $contents = false !== ($t = stream_get_contents($fp)) ? $t : throws(new \UnexpectedValueException('failed to stream_get_contents.'));
+            rewind($fp) ?: throw new \UnexpectedValueException('failed to rewind.');
+            $contents = false !== ($t = stream_get_contents($fp)) ? $t : throw new \UnexpectedValueException('failed to stream_get_contents.');
 
             // 変更して
-            rewind($fp) ?: throws(new \UnexpectedValueException('failed to rewind.'));
-            ftruncate($fp, 0) ?: throws(new \UnexpectedValueException('failed to ftruncate.'));
+            rewind($fp) ?: throw new \UnexpectedValueException('failed to rewind.');
+            ftruncate($fp, 0) ?: throw new \UnexpectedValueException('failed to ftruncate.');
             $contents = $callback($contents, $fp);
 
             // 書き込んで
-            $return = ($r = fwrite($fp, $contents)) !== false ? $r : throws(new \UnexpectedValueException('failed to fwrite.'));
-            fflush($fp) ?: throws(new \UnexpectedValueException('failed to fflush.'));
+            $return = ($r = fwrite($fp, $contents)) !== false ? $r : throw new \UnexpectedValueException('failed to fwrite.');
+            fflush($fp) ?: throw new \UnexpectedValueException('failed to fflush.');
 
             // 閉じて
             if ($operation) {
-                flock($fp, LOCK_UN) ?: throws(new \UnexpectedValueException('failed to flock.'));
+                flock($fp, LOCK_UN) ?: throw new \UnexpectedValueException('failed to flock.');
             }
-            fclose($fp) ?: throws(new \UnexpectedValueException('failed to fclose.'));
+            fclose($fp) ?: throw new \UnexpectedValueException('failed to fclose.');
 
             // 返す
             return $return;
@@ -933,7 +1104,7 @@ if (!function_exists('ryunosuke\\NightDragon\\file_set_contents')) {
      * @param string $filename 書き込むファイル名
      * @param string $data 書き込む内容
      * @param int $umask ディレクトリを掘る際の umask
-     * @return int 書き込まれたバイト数
+     * @return ?int 書き込まれたバイト数
      */
     function file_set_contents($filename, $data, $umask = 0002)
     {
@@ -954,16 +1125,16 @@ if (!function_exists('ryunosuke\\NightDragon\\file_set_contents')) {
         if (strpos(error_get_last()['message'] ?? '', "file created in the system's temporary directory") !== false) {
             $result = file_put_contents($filename, $data);
             @chmod($filename, 0666 & ~$umask);
-            return $result;
+            return $result === false ? null : $result;
         }
         if (($result = file_put_contents($tempnam, $data)) !== false) {
             if (rename($tempnam, $filename)) {
                 @chmod($filename, 0666 & ~$umask);
-                return $result;
+                return $result === false ? null : $result;
             }
             unlink($tempnam);
         }
-        return false;
+        return null;
     }
 }
 
@@ -1107,72 +1278,6 @@ if (!function_exists('ryunosuke\\NightDragon\\path_normalize')) {
     }
 }
 
-assert(!function_exists('ryunosuke\\NightDragon\\delegate') || (new \ReflectionFunction('ryunosuke\\NightDragon\\delegate'))->isUserDefined());
-if (!function_exists('ryunosuke\\NightDragon\\delegate')) {
-    /**
-     * 指定 callable を指定クロージャで実行するクロージャを返す
-     *
-     * ほぼ内部向けで外から呼ぶことはあまり想定していない。
-     *
-     * @package ryunosuke\Functions\Package\funchand
-     *
-     * @param \Closure $invoker クロージャを実行するためのクロージャ（実処理）
-     * @param callable $callable 最終的に実行したいクロージャ
-     * @param ?int $arity 引数の数
-     * @return callable $callable を実行するクロージャ
-     */
-    function delegate($invoker, $callable, $arity = null)
-    {
-        $arity ??= parameter_length($callable, true, true);
-
-        if (reflect_callable($callable)->isInternal()) {
-            static $cache = [];
-            $cache[(string) $arity] ??= evaluate('return new class()
-            {
-                private $invoker, $callable;
-
-                public function spawn($invoker, $callable)
-                {
-                    $that = clone($this);
-                    $that->invoker = $invoker;
-                    $that->callable = $callable;
-                    return $that;
-                }
-
-                public function __invoke(' . implode(',', is_infinite($arity)
-                    ? ['...$_']
-                    : array_map(fn($v) => '$_' . $v, array_keys(array_fill(1, $arity, null)))
-                ) . ')
-                {
-                    return ($this->invoker)($this->callable, func_get_args());
-                }
-            };');
-            return $cache[(string) $arity]->spawn($invoker, $callable);
-        }
-
-        switch (true) {
-            case $arity === 0:
-                return fn() => $invoker($callable, func_get_args());
-            case $arity === 1:
-                return fn($_1) => $invoker($callable, func_get_args());
-            case $arity === 2:
-                return fn($_1, $_2) => $invoker($callable, func_get_args());
-            case $arity === 3:
-                return fn($_1, $_2, $_3) => $invoker($callable, func_get_args());
-            case $arity === 4:
-                return fn($_1, $_2, $_3, $_4) => $invoker($callable, func_get_args());
-            case $arity === 5:
-                return fn($_1, $_2, $_3, $_4, $_5) => $invoker($callable, func_get_args());
-            case is_infinite($arity):
-                return fn(...$_) => $invoker($callable, func_get_args());
-            default:
-                $args = implode(',', array_map(fn($v) => '$_' . $v, array_keys(array_fill(1, $arity, null))));
-                $stmt = 'return function (' . $args . ') use ($invoker, $callable) { return $invoker($callable, func_get_args()); };';
-                return eval($stmt);
-        }
-    }
-}
-
 assert(!function_exists('ryunosuke\\NightDragon\\func_user_func_array') || (new \ReflectionFunction('ryunosuke\\NightDragon\\func_user_func_array'))->isUserDefined());
 if (!function_exists('ryunosuke\\NightDragon\\func_user_func_array')) {
     /**
@@ -1212,92 +1317,17 @@ if (!function_exists('ryunosuke\\NightDragon\\func_user_func_array')) {
 
         // 上記以外は「引数ぴったりで削ぎ落としてコールするクロージャ」を返す
         $plength = parameter_length($callback, true, true);
-        return delegate(function ($callback, $args) use ($plength) {
+        return function (...$args) use ($callback, $plength) {
             if (is_infinite($plength)) {
                 return $callback(...$args);
             }
             return $callback(...array_slice($args, 0, $plength));
-        }, $callback, $plength);
+        };
     }
 }
 
-assert(!function_exists('ryunosuke\\NightDragon\\evaluate') || (new \ReflectionFunction('ryunosuke\\NightDragon\\evaluate'))->isUserDefined());
-if (!function_exists('ryunosuke\\NightDragon\\evaluate')) {
-    /**
-     * eval のプロキシ関数
-     *
-     * 一度ファイルに吐いてから require した方が opcache が効くので抜群に速い。
-     * また、素の eval は ParseError が起こったときの表示がわかりにくすぎるので少し見やすくしてある。
-     *
-     * 関数化してる以上 eval におけるコンテキストの引き継ぎはできない。
-     * ただし、引数で変数配列を渡せるようにしてあるので get_defined_vars を併用すれば基本的には同じ（$this はどうしようもない）。
-     *
-     * 短いステートメントだと opcode が少ないのでファイルを経由せず直接 eval したほうが速いことに留意。
-     * 一応引数で指定できるようにはしてある。
-     *
-     * Example:
-     * ```php
-     * $a = 1;
-     * $b = 2;
-     * $phpcode = ';
-     * $c = $a + $b;
-     * return $c * 3;
-     * ';
-     * that(evaluate($phpcode, get_defined_vars()))->isSame(9);
-     * ```
-     *
-     * @package ryunosuke\Functions\Package\misc
-     *
-     * @param string $phpcode 実行する php コード
-     * @param array $contextvars コンテキスト変数配列
-     * @param int $cachesize キャッシュするサイズ
-     * @return mixed eval の return 値
-     */
-    function evaluate($phpcode, $contextvars = [], $cachesize = 256)
-    {
-        $cachefile = null;
-        if ($cachesize && strlen($phpcode) >= $cachesize) {
-            $cachefile = function_configure('cachedir') . '/' . rawurlencode(__FUNCTION__) . '-' . sha1($phpcode) . '.php';
-            if (!file_exists($cachefile)) {
-                file_put_contents($cachefile, "<?php $phpcode", LOCK_EX);
-            }
-        }
-
-        try {
-            if ($cachefile) {
-                /** @noinspection PhpMethodParametersCountMismatchInspection */
-                return (static function () {
-                    extract(func_get_arg(1));
-                    return require func_get_arg(0);
-                })($cachefile, $contextvars);
-            }
-            else {
-                /** @noinspection PhpMethodParametersCountMismatchInspection */
-                return (static function () {
-                    extract(func_get_arg(1));
-                    return eval(func_get_arg(0));
-                })($phpcode, $contextvars);
-            }
-        }
-        catch (\ParseError $ex) {
-            $errline = $ex->getLine();
-            $errline_1 = $errline - 1;
-            $codes = preg_split('#\\R#u', $phpcode);
-            $codes[$errline_1] = '>>> ' . $codes[$errline_1];
-
-            $N = 5; // 前後の行数
-            $message = $ex->getMessage();
-            $message .= "\n" . implode("\n", array_slice($codes, max(0, $errline_1 - $N), $N * 2 + 1));
-            if ($cachefile) {
-                $message .= "\n in " . realpath($cachefile) . " on line " . $errline . "\n";
-            }
-            throw new \ParseError($message, $ex->getCode(), $ex);
-        }
-    }
-}
-
-assert(!function_exists('ryunosuke\\NightDragon\\indent_php') || (new \ReflectionFunction('ryunosuke\\NightDragon\\indent_php'))->isUserDefined());
-if (!function_exists('ryunosuke\\NightDragon\\indent_php')) {
+assert(!function_exists('ryunosuke\\NightDragon\\php_indent') || (new \ReflectionFunction('ryunosuke\\NightDragon\\php_indent'))->isUserDefined());
+if (!function_exists('ryunosuke\\NightDragon\\php_indent')) {
     /**
      * php のコードのインデントを調整する
      *
@@ -1314,7 +1344,7 @@ if (!function_exists('ryunosuke\\NightDragon\\indent_php')) {
      *     }
      * ';
      * // 数値指定は空白換算
-     * that(indent_php($phpcode, 8))->isSame('
+     * that(php_indent($phpcode, 8))->isSame('
      *         echo 123;
      *
      *         if (true) {
@@ -1322,7 +1352,7 @@ if (!function_exists('ryunosuke\\NightDragon\\indent_php')) {
      *         }
      * ');
      * // 文字列を指定すればそれが使用される
-     * that(indent_php($phpcode, "  "))->isSame('
+     * that(php_indent($phpcode, "  "))->isSame('
      *   echo 123;
      *
      *   if (true) {
@@ -1330,7 +1360,7 @@ if (!function_exists('ryunosuke\\NightDragon\\indent_php')) {
      *   }
      * ');
      * // オプション指定
-     * that(indent_php($phpcode, [
+     * that(php_indent($phpcode, [
      *     'baseline'  => 1,    // 基準インデントの行番号（負数で下からの指定になる）
      *     'indent'    => 4,    // インデント指定（上記の数値・文字列指定はこれの糖衣構文）
      *     'trimempty' => true, // 空行を trim するか
@@ -1350,7 +1380,7 @@ if (!function_exists('ryunosuke\\NightDragon\\indent_php')) {
      * @param array|int|string $options オプション
      * @return string インデントされた php コード
      */
-    function indent_php($phpcode, $options = [])
+    function php_indent($phpcode, $options = [])
     {
         if (!is_array($options)) {
             $options = ['indent' => $options];
@@ -1373,133 +1403,115 @@ if (!function_exists('ryunosuke\\NightDragon\\indent_php')) {
         preg_match('@^[ \t]*@u', $lines[$baseline] ?? '', $matches);
         $indent = $matches[0] ?? '';
 
-        $tmp = token_get_all("<?php $phpcode");
+        $tmp = \PhpToken::tokenize("<?php $phpcode");
         array_shift($tmp);
 
         // トークンの正規化
         $tokens = [];
         for ($i = 0; $i < count($tmp); $i++) {
-            if (is_string($tmp[$i])) {
-                $tmp[$i] = [-1, $tmp[$i], null];
-            }
-
-            // 行コメントの分割（T_COMMENT には改行が含まれている）
-            if ($tmp[$i][0] === T_COMMENT && preg_match('@^(#|//).*?(\\R)@um', $tmp[$i][1], $matches)) {
-                $tmp[$i][1] = trim($tmp[$i][1]);
-                if (($tmp[$i + 1][0] ?? null) === T_WHITESPACE) {
-                    $tmp[$i + 1][1] = $matches[2] . $tmp[$i + 1][1];
-                }
-                else {
-                    array_splice($tmp, $i + 1, 0, [[T_WHITESPACE, $matches[2], null]]);
-                }
-            }
-
             if ($options['heredoc']) {
                 // 行コメントと同じ（T_START_HEREDOC には改行が含まれている）
-                if ($tmp[$i][0] === T_START_HEREDOC && preg_match('@^(<<<).*?(\\R)@um', $tmp[$i][1], $matches)) {
-                    $tmp[$i][1] = trim($tmp[$i][1]);
-                    if (($tmp[$i + 1][0] ?? null) === T_ENCAPSED_AND_WHITESPACE) {
-                        $tmp[$i + 1][1] = $matches[2] . $tmp[$i + 1][1];
+                if ($tmp[$i]->id === T_START_HEREDOC && preg_match('@^(<<<).*?(\\R)@um', $tmp[$i]->text, $matches)) {
+                    $tmp[$i]->text = trim($tmp[$i]->text);
+                    if (($tmp[$i + 1]->id ?? null) === T_ENCAPSED_AND_WHITESPACE) {
+                        $tmp[$i + 1]->text = $matches[2] . $tmp[$i + 1]->text;
                     }
                     else {
-                        array_splice($tmp, $i + 1, 0, [[T_ENCAPSED_AND_WHITESPACE, $matches[2], null]]);
+                        array_splice($tmp, $i + 1, 0, [new \PhpToken(T_ENCAPSED_AND_WHITESPACE, $matches[2])]);
                     }
                 }
                 // php 7.3 において T_END_HEREDOC は必ず単一行になる
-                if ($tmp[$i][0] === T_ENCAPSED_AND_WHITESPACE) {
-                    if (($tmp[$i + 1][0] ?? null) === T_END_HEREDOC && preg_match('@^(\\s+)(.*)@um', $tmp[$i + 1][1], $matches)) {
-                        $tmp[$i][1] = $tmp[$i][1] . $matches[1];
-                        $tmp[$i + 1][1] = $matches[2];
+                if ($tmp[$i]->id === T_ENCAPSED_AND_WHITESPACE) {
+                    if (($tmp[$i + 1]->id ?? null) === T_END_HEREDOC && preg_match('@^(\\s+)(.*)@um', $tmp[$i + 1]->text, $matches)) {
+                        $tmp[$i]->text = $tmp[$i]->text . $matches[1];
+                        $tmp[$i + 1]->text = $matches[2];
                     }
                 }
             }
 
-            $tokens[] = $tmp[$i] + [3 => token_name($tmp[$i][0])];
+            $tokens[] = $tmp[$i];
         }
 
         // 改行を置換してインデント
         $hereing = false;
         foreach ($tokens as $i => $token) {
             if ($options['heredoc']) {
-                if ($token[0] === T_START_HEREDOC) {
+                if ($token->id === T_START_HEREDOC) {
                     $hereing = true;
                 }
-                if ($token[0] === T_END_HEREDOC) {
+                if ($token->id === T_END_HEREDOC) {
                     $hereing = false;
                 }
             }
-            if (in_array($token[0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true) || ($hereing && $token[0] === T_ENCAPSED_AND_WHITESPACE)) {
-                $token[1] = preg_replace("@(\\R)$indent@um", '$1' . $options['indent'], $token[1]);
+            if (in_array($token->id, [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true) || ($hereing && $token->id === T_ENCAPSED_AND_WHITESPACE)) {
+                $token->text = preg_replace("@(\\R)$indent@um", '$1' . $options['indent'], $token->text);
             }
             if ($options['trimempty']) {
-                if ($token[0] === T_WHITESPACE) {
-                    $token[1] = preg_replace("@(\\R)[ \\t]+(\\R)@um", '$1$2', $token[1]);
+                if ($token->id === T_WHITESPACE) {
+                    $token->text = preg_replace("@(\\R)[ \\t]+(\\R)@um", '$1$2', $token->text);
                 }
             }
 
             $tokens[$i] = $token;
         }
-        return implode('', array_column($tokens, 1));
+        return implode('', array_column($tokens, 'text'));
     }
 }
 
-assert(!function_exists('ryunosuke\\NightDragon\\parse_php') || (new \ReflectionFunction('ryunosuke\\NightDragon\\parse_php'))->isUserDefined());
-if (!function_exists('ryunosuke\\NightDragon\\parse_php')) {
+assert(!function_exists('ryunosuke\\NightDragon\\php_parse') || (new \ReflectionFunction('ryunosuke\\NightDragon\\php_parse'))->isUserDefined());
+if (!function_exists('ryunosuke\\NightDragon\\php_parse')) {
     /**
      * php のコード断片をパースする
      *
-     * 結果配列は token_get_all したものだが、「字句の場合に文字列で返す」仕様は適用されずすべて配列で返す。
-     * つまり必ず `[TOKENID, TOKEN, LINE, POS]` で返す。
-     *
-     * @todo 現在の仕様では php タグが自動で付与されるが、標準と異なり直感的ではないのでその仕様は除去する
      * @todo そもそも何がしたいのかよくわからない関数になってきたので動作の洗い出しが必要
      *
      * Example:
      * ```php
-     * $phpcode = 'namespace Hogera;
+     * $phpcode = '<?php
+     * namespace Hogera;
      * class Example
      * {
      *     // something
      * }';
      *
      * // namespace ～ ; を取得
-     * $part = parse_php($phpcode, [
+     * $part = php_parse($phpcode, [
      *     'begin' => T_NAMESPACE,
      *     'end'   => ';',
      * ]);
-     * that(implode('', array_column($part, 1)))->isSame('namespace Hogera;');
+     * that(implode('', array_column($part, 'text')))->isSame('namespace Hogera;');
      *
      * // class ～ { を取得
-     * $part = parse_php($phpcode, [
+     * $part = php_parse($phpcode, [
      *     'begin' => T_CLASS,
      *     'end'   => '{',
      * ]);
-     * that(implode('', array_column($part, 1)))->isSame("class Example\n{");
+     * that(implode('', array_column($part, 'text')))->isSame("class Example\n{");
      * ```
      *
      * @package ryunosuke\Functions\Package\misc
      *
      * @param string $phpcode パースする php コード
      * @param array|int $option パースオプション
-     * @return array トークン配列
+     * @return \PhpToken[] トークン配列
      */
-    function parse_php($phpcode, $option = [])
+    function php_parse($phpcode, $option = [])
     {
         if (is_int($option)) {
             $option = ['flags' => $option];
         }
 
         $default = [
-            'phptag'         => true, // 初めに php タグを付けるか
             'short_open_tag' => null, // ショートオープンタグを扱うか（null だと余計なことはせず ini に従う）
             'line'           => [],   // 行の範囲（以上以下）
             'position'       => [],   // 文字位置の範囲（以上以下）
             'begin'          => [],   // 開始トークン
             'end'            => [],   // 終了トークン
             'offset'         => 0,    // 開始トークン位置
-            'flags'          => 0,    // token_get_all の $flags. TOKEN_PARSE を与えると ParseError が出ることがあるのでデフォルト 0
+            'flags'          => 0,    // PHPToken の $flags. TOKEN_PARSE を与えると ParseError が出ることがあるのでデフォルト 0
             'cache'          => true, // キャッシュするか否か
             'greedy'         => false,// end と nest か一致したときに処理を継続するか
+            'backtick'       => true, // `` もパースするか
             'nest_token'     => [
                 ')' => '(',
                 '}' => '{',
@@ -1508,73 +1520,111 @@ if (!function_exists('ryunosuke\\NightDragon\\parse_php')) {
         ];
         $option += $default;
 
-        $cachekey = var_hash($phpcode) . $option['flags'] . '-' . $option['phptag'] . '-' . var_export($option['short_open_tag'], true);
+        $cachekey = var_hash($phpcode) . $option['flags'] . '-' . $option['backtick'] . '-' . var_export($option['short_open_tag'], true);
         static $cache = [];
         if (!($option['cache'] && isset($cache[$cachekey]))) {
-            $phptag = $option['phptag'] ? '<?php ' : '';
-            $phpcode = $phptag . $phpcode;
-            $position = -strlen($phptag);
+            $position = 0;
+            $backtick = '';
+            $backticktoken = null;
+            $backticking = false;
 
             $tokens = [];
-            $tmp = token_get_all($phpcode, $option['flags']);
+            $tmp = \PhpToken::tokenize($phpcode, $option['flags']);
             for ($i = 0; $i < count($tmp); $i++) {
                 $token = $tmp[$i];
 
-                // token_get_all の結果は微妙に扱いづらいので少し調整する（string/array だったり、名前変換の必要があったり）
-                if (!is_array($token)) {
-                    $last = $tokens[count($tokens) - 1] ?? [null, 1, 0];
-                    $token = [ord($token), $token, $last[2] + preg_match_all('/(?:\r\n|\r|\n)/', $last[1])];
-                }
-
                 // @codeCoverageIgnoreStart
-                if ($option['short_open_tag'] === true && $token[0] === T_INLINE_HTML && ($p = strpos($token[1], '<?')) !== false) {
+                if ($option['short_open_tag'] === true && $token->id === T_INLINE_HTML && ($p = strpos($token->text, '<?')) !== false) {
                     $newtokens = [];
                     $nlcount = 0;
 
                     if ($p !== 0) {
-                        $html = substr($token[1], 0, $p);
+                        $html = substr($token->text, 0, $p);
                         $nlcount = preg_match_all('#\r\n|\r|\n#u', $html);
-                        $newtokens[] = [T_INLINE_HTML, $html, $token[2]];
+                        $newtokens[] = new \PhpToken(T_INLINE_HTML, $html, $token->line);
                     }
 
-                    $code = substr($token[1], $p + 2);
-                    $subtokens = token_get_all("<?php $code");
-                    $subtokens[0][1] = '<?';
+                    $code = substr($token->text, $p + 2);
+                    $subtokens = \PhpToken::tokenize("<?php $code");
+                    $subtokens[0]->text = '<?';
                     foreach ($subtokens as $subtoken) {
-                        if (is_array($subtoken)) {
-                            $subtoken[2] += $token[2] + $nlcount - 1;
-                        }
+                        $subtoken->line += $token->line + $nlcount - 1;
                         $newtokens[] = $subtoken;
                     }
 
                     array_splice($tmp, $i + 1, 0, $newtokens);
                     continue;
                 }
-                if ($option['short_open_tag'] === false && $token[0] === T_OPEN_TAG && $token[1] === '<?') {
+                if ($option['short_open_tag'] === false && $token->id === T_OPEN_TAG && $token->text === '<?') {
                     for ($j = $i + 1; $j < count($tmp); $j++) {
-                        if ($tmp[$j][0] === T_CLOSE_TAG) {
+                        if ($tmp[$j]->id === T_CLOSE_TAG) {
                             break;
                         }
                     }
-                    $html = implode('', array_map(fn($token) => is_array($token) ? $token[1] : $token, array_slice($tmp, $i, $j - $i + 1)));
-                    array_splice($tmp, $i + 1, $j - $i, [[T_INLINE_HTML, $html, $token[2]]]);
+                    $html = implode('', array_map(fn($token) => $token->text, array_slice($tmp, $i, $j - $i + 1)));
+                    array_splice($tmp, $i + 1, $j - $i, [new \PhpToken(T_INLINE_HTML, $html, $token->line)]);
                     continue;
                 }
                 // @codeCoverageIgnoreEnd
 
-                $token[] = $position;
-                if ($option['flags'] & TOKEN_NAME) {
-                    $token[] = token_name($token[0]);
+                if (!$option['backtick']) {
+                    if ($token->text === '`') {
+                        if ($backticking) {
+                            $token->text = $backtick . $token->text;
+                            $token->line = $backticktoken->line;
+                            $token->pos = $backticktoken->pos;
+                            $backtick = '';
+                        }
+                        else {
+                            $backticktoken = $token;
+                        }
+                        $backticking = !$backticking;
+                    }
+                    if ($backticking) {
+                        $backtick .= $token->text;
+                        continue;
+                    }
                 }
 
-                $position += strlen($token[1]);
+                $token->pos = $position;
+                $position += strlen($token->text);
+
+                /* PhpToken になりコピーオンライトが効かなくなったので時々書き換えをチェックした方が良い
+                $token = new class($token->id, $token->text, $token->line, $token->pos) extends \PhpToken {
+                    private array $backup = [];
+    
+                    public function backup()
+                    {
+                        $this->backup = [
+                            'id'   => $this->id,
+                            'text' => $this->text,
+                            'line' => $this->line,
+                            'pos'  => $this->pos,
+                        ];
+                    }
+    
+                    public function __clone(): void
+                    {
+                        $this->backup = [];
+                    }
+    
+                    public function __destruct()
+                    {
+                        foreach ($this->backup as $name => $value) {
+                            assert($this->$name === $value);
+                        }
+                    }
+                };
+                $token->backup();
+                 */
+
                 $tokens[] = $token;
             }
             // @codeCoverageIgnoreStart
             if ($option['short_open_tag'] === false) {
                 for ($i = 0; $i < count($tokens); $i++) {
-                    if ($tokens[$i][0] === T_INLINE_HTML && isset($tokens[$i + 1]) && $tokens[$i + 1][0] === T_INLINE_HTML) {
-                        $tokens[$i][1] .= $tokens[$i + 1][1];
+                    if ($tokens[$i]->id === T_INLINE_HTML && isset($tokens[$i + 1]) && $tokens[$i + 1]->id === T_INLINE_HTML) {
+                        $tokens[$i]->text .= $tokens[$i + 1]->text;
                         array_splice($tokens, $i + 1, 1, []);
                         $i--;
                     }
@@ -1601,21 +1651,21 @@ if (!function_exists('ryunosuke\\NightDragon\\parse_php')) {
         for ($i = $offset; $i < $endset; $i++) {
             $token = $tokens[$i];
 
-            if ($lines[0] > $token[2]) {
+            if ($lines[0] > $token->line) {
                 continue;
             }
-            if ($lines[1] < $token[2]) {
+            if ($lines[1] < $token->line) {
                 continue;
             }
-            if ($positions[0] > $token[3]) {
+            if ($positions[0] > $token->pos) {
                 continue;
             }
-            if ($positions[1] < $token[3]) {
+            if ($positions[1] < $token->pos) {
                 continue;
             }
 
             foreach ($begin_tokens as $t) {
-                if ($t === $token[0] || $t === $token[1]) {
+                if ($t === $token->id || $t === $token->text) {
                     $starting = true;
                     break;
                 }
@@ -1627,16 +1677,16 @@ if (!function_exists('ryunosuke\\NightDragon\\parse_php')) {
             $result[$i] = $token;
 
             foreach ($nest_tokens as $end_nest => $start_nest) {
-                if ($token[0] === $start_nest || $token[1] === $start_nest) {
+                if ($token->id === $start_nest || $token->text === $start_nest) {
                     $nesting++;
                 }
-                if ($token[0] === $end_nest || $token[1] === $end_nest) {
+                if ($token->id === $end_nest || $token->text === $end_nest) {
                     $nesting--;
                 }
             }
 
             foreach ($end_tokens as $t) {
-                if ($t === $token[0] || $t === $token[1]) {
+                if ($t === $token->id || $t === $token->text) {
                     if ($nesting <= 0 || ($nesting === 1 && in_array($t, $nest_tokens, true))) {
                         if ($nesting === 0 && $greedy && isset($nest_tokens[$t])) {
                             break;
@@ -1651,8 +1701,8 @@ if (!function_exists('ryunosuke\\NightDragon\\parse_php')) {
     }
 }
 
-assert(!function_exists('ryunosuke\\NightDragon\\strip_php') || (new \ReflectionFunction('ryunosuke\\NightDragon\\strip_php'))->isUserDefined());
-if (!function_exists('ryunosuke\\NightDragon\\strip_php')) {
+assert(!function_exists('ryunosuke\\NightDragon\\php_strip') || (new \ReflectionFunction('ryunosuke\\NightDragon\\php_strip'))->isUserDefined());
+if (!function_exists('ryunosuke\\NightDragon\\php_strip')) {
     /**
      * 文字列から php コードを取り除く
      *
@@ -1667,9 +1717,9 @@ if (!function_exists('ryunosuke\\NightDragon\\strip_php')) {
      * ```php
      * $phtml = 'begin php code <?php echo 123 ?> end';
      * // php コードが消えている
-     * that(strip_php($phtml))->is('begin php code  end');
+     * that(php_strip($phtml))->is('begin php code  end');
      * // $mapping を使用すると元の文字列に復元できる
-     * $html = strip_php($phtml, [], $mapping);
+     * $html = php_strip($phtml, [], $mapping);
      * that(strtr($html, $mapping))->is($phtml);
      * ```
      *
@@ -1680,17 +1730,13 @@ if (!function_exists('ryunosuke\\NightDragon\\strip_php')) {
      * @param array $mapping 変換表が格納される参照変数
      * @return string php コードが除かれた文字列
      */
-    function strip_php($phtml, $option = [], &$mapping = [])
+    function php_strip($phtml, $option = [], &$mapping = [])
     {
         $option = array_replace([
             'short_open_tag' => true,
             'trailing_break' => true,
             'replacer'       => func_num_args() === 3 ? null : '',
-        ], $option, [
-            //'flags'  => Syntax::TOKEN_NAME,
-            //'cache'  => false,
-            'phptag' => false,
-        ]);
+        ], $option);
 
         $replacer = $option['replacer'];
         if ($replacer === '') {
@@ -1700,7 +1746,7 @@ if (!function_exists('ryunosuke\\NightDragon\\strip_php')) {
             $replacer = unique_string($phtml, 64);
         }
 
-        $tmp = parse_php($phtml, $option);
+        $tmp = php_parse($phtml, $option);
 
         if ($option['trailing_break']) {
             $tokens = $tmp;
@@ -1710,24 +1756,24 @@ if (!function_exists('ryunosuke\\NightDragon\\strip_php')) {
             $echoopen = false;
             $taglength = strlen('?>');
             foreach ($tmp as $token) {
-                if ($token[0] === T_OPEN_TAG_WITH_ECHO) {
+                if ($token->id === T_OPEN_TAG_WITH_ECHO) {
                     $echoopen = true;
                 }
-                if ($echoopen && $token[0] === T_CLOSE_TAG && isset($token[1][$taglength])) {
+                if ($echoopen && $token->id === T_CLOSE_TAG && isset($token->text[$taglength])) {
                     $echoopen = false;
 
-                    $tokens[] = [
-                        $token[0],
-                        rtrim($token[1]),
-                        $token[2],
-                        $token[3],
-                    ];
-                    $tokens[] = [
+                    $tokens[] = new \PhpToken(
+                        $token->id,
+                        rtrim($token->text),
+                        $token->line,
+                        $token->pos,
+                    );
+                    $tokens[] = new \PhpToken(
                         T_INLINE_HTML,
-                        substr($token[1], $taglength),
-                        $token[2],
-                        $token[3] + $taglength,
-                    ];
+                        substr($token->text, $taglength),
+                        $token->line,
+                        $token->pos + $taglength,
+                    );
                 }
                 else {
                     $tokens[] = $token;
@@ -1737,12 +1783,12 @@ if (!function_exists('ryunosuke\\NightDragon\\strip_php')) {
 
         $offsets = [];
         foreach ($tokens as $token) {
-            if ($token[0] === T_OPEN_TAG || $token[0] === T_OPEN_TAG_WITH_ECHO) {
-                $offsets[] = [$token[3], null];
+            if ($token->id === T_OPEN_TAG || $token->id === T_OPEN_TAG_WITH_ECHO) {
+                $offsets[] = [$token->pos, null];
             }
-            elseif ($token[0] === T_CLOSE_TAG) {
+            elseif ($token->id === T_CLOSE_TAG) {
                 $lastkey = count($offsets) - 1;
-                $offsets[$lastkey][1] = $token[3] + strlen($token[1]) - $offsets[$lastkey][0];
+                $offsets[$lastkey][1] = $token->pos + strlen($token->text) - $offsets[$lastkey][0];
             }
         }
         if ($offsets) {
@@ -1985,7 +2031,7 @@ if (!function_exists('ryunosuke\\NightDragon\\reflect_types')) {
      * @package ryunosuke\Functions\Package\reflection
      *
      * @param \ReflectionFunctionAbstract|\ReflectionType|\ReflectionType[]|null $reflection_type getType 等で得られるインスタンス
-     * @return \ReflectionAnyType|object
+     * @return \ReflectTypes|object
      */
     function reflect_types($reflection_type = null)
     {
@@ -2005,6 +2051,12 @@ if (!function_exists('ryunosuke\\NightDragon\\reflect_types')) {
             }
         }
 
+        /**
+         * @mixin \ReflectionType
+         * @mixin \ReflectionNamedType
+         * @mixin \ReflectionUnionType
+         * @mixin \ReflectionIntersectionType
+         */
         return new class(...$reflection_type)
             extends \stdClass
             implements \IteratorAggregate, \ArrayAccess, \Countable, \JsonSerializable {
@@ -2035,7 +2087,6 @@ if (!function_exists('ryunosuke\\NightDragon\\reflect_types')) {
                         continue;
                     }
 
-                    /** @noinspection PhpElementIsNotAvailableInCurrentPhpVersionInspection */
                     $types = array_merge($types, $type instanceof \ReflectionUnionType ? $type->getTypes() : [$type]);
                 }
 
@@ -2045,7 +2096,7 @@ if (!function_exists('ryunosuke\\NightDragon\\reflect_types')) {
                 }
             }
 
-            public function __toString()
+            public function __toString(): string
             {
                 return implode('|', $this->toStrings(true, true));
             }
@@ -2061,9 +2112,7 @@ if (!function_exists('ryunosuke\\NightDragon\\reflect_types')) {
                 return isset($this->$offset);
             }
 
-            /** @noinspection PhpLanguageLevelInspection */
-            #[\ReturnTypeWillChange]
-            public function offsetGet($offset)
+            public function offsetGet($offset): mixed
             {
                 return $this->$offset;
             }
@@ -2116,7 +2165,7 @@ if (!function_exists('ryunosuke\\NightDragon\\reflect_types')) {
                 return $this->toStrings(true, true);
             }
 
-            public function getName()
+            public function getName(): string
             {
                 $types = array_flip($this->toStrings(true, true));
                 $nullable = false;
@@ -2132,12 +2181,12 @@ if (!function_exists('ryunosuke\\NightDragon\\reflect_types')) {
                 return ($nullable ? '?' : '') . implode('|', $result);
             }
 
-            public function getTypes()
+            public function getTypes(): array
             {
                 return (array) $this;
             }
 
-            public function allows($type, $strict = false)
+            public function allows($type, $strict = false): bool
             {
                 $types = array_flip($this->toStrings(false, false));
 
@@ -2172,7 +2221,7 @@ if (!function_exists('ryunosuke\\NightDragon\\reflect_types')) {
                 return false;
             }
 
-            private function toStrings($ignore_compatible = true, $sort = true)
+            private function toStrings($ignore_compatible = true, $sort = true): array
             {
                 $types = [];
                 foreach ($this->getTypes() as $type) {
@@ -2232,26 +2281,31 @@ if (!function_exists('ryunosuke\\NightDragon\\concat')) {
      * strcat の空文字回避版
      *
      * 基本は strcat と同じ。ただし、**引数の内1つでも空文字を含むなら空文字を返す**。
+     * さらに*引数の内1つでも null を含むなら null を返す**。
      *
      * 「プレフィックスやサフィックスを付けたいんだけど、空文字の場合はそのままで居て欲しい」という状況はまれによくあるはず。
      * コードで言えば `strlen($string) ? 'prefix-' . $string : '';` のようなもの。
-     * 可変引数なので 端的に言えば mysql の CONCAT みたいな動作になる（あっちは NULL だが）。
+     * 可変引数なので 端的に言えば mysql の CONCAT みたいな動作になる。
      *
      * ```php
      * that(concat('prefix-', 'middle', '-suffix'))->isSame('prefix-middle-suffix');
      * that(concat('prefix-', '', '-suffix'))->isSame('');
+     * that(concat('prefix-', null, '-suffix'))->isSame(null);
      * ```
      *
      * @package ryunosuke\Functions\Package\strings
      *
-     * @param mixed ...$variadic 結合する文字列（可変引数）
-     * @return string 結合した文字列
+     * @param ?string ...$variadic 結合する文字列（可変引数）
+     * @return ?string 結合した文字列
      */
     function concat(...$variadic)
     {
+        if (count(array_filter($variadic, 'is_null')) > 0) {
+            return null;
+        }
         $result = '';
         foreach ($variadic as $s) {
-            if (strlen($s = (string) $s) === 0) {
+            if (strlen($s) === 0) {
                 return '';
             }
             $result .= $s;
@@ -2316,34 +2370,6 @@ if (!function_exists('ryunosuke\\NightDragon\\str_lchop')) {
     function str_lchop($string, $prefix, $case_insensitivity = false)
     {
         return str_chop($string, $prefix, '', $case_insensitivity);
-    }
-}
-
-assert(!function_exists('ryunosuke\\NightDragon\\throws') || (new \ReflectionFunction('ryunosuke\\NightDragon\\throws'))->isUserDefined());
-if (!function_exists('ryunosuke\\NightDragon\\throws')) {
-    /**
-     * throw の関数版
-     *
-     * hoge() or throw などしたいことがまれによくあるはず。
-     *
-     * Example:
-     * ```php
-     * try {
-     *     throws(new \Exception('throws'));
-     * }
-     * catch (\Exception $ex) {
-     *     that($ex->getMessage())->isSame('throws');
-     * }
-     * ```
-     *
-     * @package ryunosuke\Functions\Package\syntax
-     *
-     * @param \Exception $ex 投げる例外
-     * @return mixed （`return hoge or throws` のようなコードで警告が出るので抑止用）
-     */
-    function throws($ex)
-    {
-        throw $ex;
     }
 }
 
@@ -2499,7 +2525,7 @@ if (!function_exists('ryunosuke\\NightDragon\\function_configure')) {
      *
      * @package ryunosuke\Functions\Package\utility
      *
-     * @param array|string $option 設定。文字列指定時はその値を返す
+     * @param array|?string $option 設定。文字列指定時はその値を返す
      * @return array|string 設定値
      */
     function function_configure($option)
@@ -2508,11 +2534,13 @@ if (!function_exists('ryunosuke\\NightDragon\\function_configure')) {
 
         // default
         $config['cachedir'] ??= sys_get_temp_dir() . DIRECTORY_SEPARATOR . strtr(__NAMESPACE__, ['\\' => '%']);
+        $config['storagedir'] ??= DIRECTORY_SEPARATOR === '/' ? '/var/tmp/rf' : (getenv('ALLUSERSPROFILE') ?: sys_get_temp_dir()) . '\\rf';
         $config['placeholder'] ??= '';
-        $config['var_stream'] ??= get_cfg_var('rfunc.var_stream') ?: 'VarStreamV010000';          // for compatible
-        $config['memory_stream'] ??= get_cfg_var('rfunc.memory_stream') ?: 'MemoryStreamV010000'; // for compatible
-        $config['chain.version'] ??= 1;
+        $config['var_stream'] ??= 'VarStreamV010000';
+        $config['memory_stream'] ??= 'MemoryStreamV010000';
+        $config['chain.version'] ??= 2;
         $config['chain.nullsafe'] ??= false;
+        $config['process.autoload'] ??= [];
 
         // setting
         if (is_array($option)) {
@@ -2523,6 +2551,7 @@ if (!function_exists('ryunosuke\\NightDragon\\function_configure')) {
                         $config[$name] = $entry;
                         break;
                     case 'cachedir':
+                    case 'storagedir':
                         $entry ??= $config[$name];
                         if (!file_exists($entry)) {
                             @mkdir($entry, 0777 & (~umask()), true);
@@ -2535,7 +2564,7 @@ if (!function_exists('ryunosuke\\NightDragon\\function_configure')) {
                             if (!defined($entry)) {
                                 define($entry, tmpfile() ?: [] ?: '' ?: 0.0 ?: null ?: false);
                             }
-                            if (!is_resource(constant($entry))) {
+                            if (!is_resourcable(constant($entry))) {
                                 // もしリソースじゃないと一意性が保てず致命的になるので例外を投げる
                                 throw new \RuntimeException('placeholder is not resource'); // @codeCoverageIgnore
                             }
@@ -2548,11 +2577,15 @@ if (!function_exists('ryunosuke\\NightDragon\\function_configure')) {
         }
 
         // getting
+        if ($option === null) {
+            return $config;
+        }
         if (is_string($option)) {
             switch ($option) {
                 default:
                     return $config[$option] ?? null;
                 case 'cachedir':
+                case 'storagedir':
                     $dirname = $config[$option];
                     if (!file_exists($dirname)) {
                         @mkdir($dirname, 0777 & (~umask()), true); // @codeCoverageIgnore
@@ -2584,7 +2617,7 @@ if (!function_exists('ryunosuke\\NightDragon\\arrayval')) {
      * that(arrayval([123]))->isSame([123]); // 配列は配列のまま
      *
      * // $recursive = false にしない限り再帰的に適用される
-     * $stdclass = stdclass(['key' => 'val']);
+     * $stdclass = (object) ['key' => 'val'];
      * that(arrayval([$stdclass], true))->isSame([['key' => 'val']]); // true なので中身も配列化される
      * that(arrayval([$stdclass], false))->isSame([$stdclass]);       // false なので中身は変わらない
      * ```
@@ -2740,7 +2773,44 @@ if (!function_exists('ryunosuke\\NightDragon\\is_primitive')) {
      */
     function is_primitive($var)
     {
-        return is_scalar($var) || is_null($var) || is_resource($var);
+        return is_scalar($var) || is_null($var) || is_resourcable($var);
+    }
+}
+
+assert(!function_exists('ryunosuke\\NightDragon\\is_resourcable') || (new \ReflectionFunction('ryunosuke\\NightDragon\\is_resourcable'))->isUserDefined());
+if (!function_exists('ryunosuke\\NightDragon\\is_resourcable')) {
+    /**
+     * 閉じたリソースでも true を返す is_resource
+     *
+     * マニュアル（ https://www.php.net/manual/ja/function.is-resource.php ）に記載の通り、 isresource は閉じたリソースで false を返す。
+     * リソースはリソースであり、それでは不便なこともあるので、閉じていようとリソースなら true を返す関数。
+     *
+     * Example:
+     * ```php
+     * // 閉じたリソースを用意
+     * $resource = tmpfile();
+     * fclose($resource);
+     * // is_resource は false を返すが・・・
+     * that(is_resource($resource))->isFalse();
+     * // is_resourcable は true を返す
+     * that(is_resourcable($resource))->isTrue();
+     * ```
+     *
+     * @package ryunosuke\Functions\Package\var
+     *
+     * @param mixed $var 調べる値
+     * @return bool リソースなら true
+     */
+    function is_resourcable($var)
+    {
+        if (is_resource($var)) {
+            return true;
+        }
+        // もっといい方法があるかもしれないが、簡単に調査したところ gettype するしか術がないような気がする
+        if (strpos(gettype($var), 'resource') === 0) {
+            return true;
+        }
+        return false;
     }
 }
 
@@ -2884,7 +2954,7 @@ if (!function_exists('ryunosuke\\NightDragon\\var_export2')) {
                 if ($classname === \stdClass::class) {
                     return '(object) ' . $export((array) $value, $nest, $parents);
                 }
-                return $classname . '::__set_state(' . $export(get_object_properties($value), $nest, $parents) . ')';
+                return $classname . '::__set_state(' . $export(object_properties($value), $nest, $parents) . ')';
             }
             // 文字列はダブルクオート
             elseif (is_string($value)) {
@@ -2958,23 +3028,26 @@ if (!function_exists('ryunosuke\\NightDragon\\var_hash')) {
 assert(!function_exists('ryunosuke\\NightDragon\\var_type') || (new \ReflectionFunction('ryunosuke\\NightDragon\\var_type'))->isUserDefined());
 if (!function_exists('ryunosuke\\NightDragon\\var_type')) {
     /**
-     * 値の型を取得する（gettype + get_class）
+     * 値の型を取得する
      *
-     * プリミティブ型（gettype で得られるやつ）はそのまま、オブジェクトのときのみクラス名を返す。
-     * ただし、オブジェクトの場合は先頭に '\\' が必ず付く。
-     * また、 $valid_name を true にするとタイプヒントとして正当な名前を返す（integer -> int, double -> float など）。
-     * 互換性のためデフォルト false になっているが、将来的にこの引数は削除されるかデフォルト true に変更される。
+     * get_debug_type を少しだけ特殊化したもの。
+     * 「デバッグ用の型」ではなく「コード化したときに埋め込みやすい型」が主目的。
+     *
+     * - object の場合は必ず \ が付く
+     * - resource の場合はカッコ書き無しで 'resource'
      *
      * 無名クラスの場合は extends, implements の優先順位でその名前を使う。
      * 継承も実装もされていない場合は標準の get_class の結果を返す。
      *
      * Example:
      * ```php
-     * // プリミティブ型は gettype と同義
-     * that(var_type(false))->isSame('boolean');
-     * that(var_type(123))->isSame('integer');
-     * that(var_type(3.14))->isSame('double');
+     * // プリミティブ型は get_debug_type と同義
+     * that(var_type(false))->isSame('bool');
+     * that(var_type(123))->isSame('int');
+     * that(var_type(3.14))->isSame('float');
      * that(var_type([1, 2, 3]))->isSame('array');
+     * // リソースはなんでも resource
+     * that(var_type(STDOUT))->isSame('resource');
      * // オブジェクトは型名を返す
      * that(var_type(new \stdClass))->isSame('\\stdClass');
      * that(var_type(new \Exception()))->isSame('\\Exception');
@@ -2988,10 +3061,9 @@ if (!function_exists('ryunosuke\\NightDragon\\var_type')) {
      * @package ryunosuke\Functions\Package\var
      *
      * @param mixed $var 型を取得する値
-     * @param bool $valid_name タイプヒントとして有効な名前を返すか
      * @return string 型名
      */
-    function var_type($var, $valid_name = false)
+    function var_type($var)
     {
         if (is_object($var)) {
             $ref = new \ReflectionObject($var);
@@ -3005,21 +3077,10 @@ if (!function_exists('ryunosuke\\NightDragon\\var_type')) {
             }
             return '\\' . get_class($var);
         }
-        $type = gettype($var);
-        if (!$valid_name) {
-            return $type;
+        if (is_resourcable($var)) {
+            return 'resource';
         }
-        switch ($type) {
-            default:
-                return $type;
-            case 'NULL':
-                return 'null';
-            case 'boolean':
-                return 'bool';
-            case 'integer':
-                return 'int';
-            case 'double':
-                return 'float';
-        }
+
+        return get_debug_type($var);
     }
 }
