@@ -21,11 +21,11 @@ class Renderer
 
     private bool $errorHandling;
 
-    private string $wrapperProtocol;
-
     private string $templateClass;
 
     private string $compileDir;
+
+    private Compiler $compiler;
 
     private array $gatherOptions;
 
@@ -100,7 +100,6 @@ class Renderer
             'typeMapping'        => [],
             'specialVariable'    => [],
             // インジェクション系
-            'wrapperProtocol'    => Renderer::DEFAULT_PROTOCOL,
             'templateClass'      => Template::class,
             // ディレクトリ系
             'compileDir'         => null,
@@ -125,7 +124,6 @@ class Renderer
 
         $this->debug = (bool) $options['debug'];
         $this->errorHandling = (bool) $options['errorHandling'];
-        $this->wrapperProtocol = (string) $options['wrapperProtocol'];
         $this->templateClass = '\\' . ltrim($options['templateClass'], '\\');
         $this->compileDir = (string) $options['compileDir'];
         $this->gatherOptions = [
@@ -150,9 +148,10 @@ class Renderer
             'varExpander'        => (string) $options['varExpander'],
             'nofilter'           => (string) $options['nofilter'],
         ];
+        $this->compiler = new Compiler($this->renderOptions);
 
         if (!strlen($this->compileDir)) {
-            $this->compileDir = sys_get_temp_dir() . '/' . $this->wrapperProtocol;
+            $this->compileDir = sys_get_temp_dir() . '/night-dragon';
         }
         @mkdir_p($this->compileDir);
         if (!(is_dir($this->compileDir) && is_writable($this->compileDir))) {
@@ -161,8 +160,6 @@ class Renderer
         // Windows では {C:\compile}\C;\path\to\file, Linux では {/compile}/path/to/file となり、DS の有無が異なる
         // （Windows だと DS も含めないとフルパスにならない、Linux だと DS を含めるとフルパスにならない）
         $this->compileDir = realpath($this->compileDir) . (DIRECTORY_SEPARATOR === '\\' ? '\\' : '');
-
-        RewriteWrapper::register($this->wrapperProtocol);
     }
 
     public function __destruct()
@@ -245,8 +242,7 @@ class Renderer
 
         $fileid = $this->compileDir . strtr($filename, [':' => ';']);
         if ($this->debug || !file_exists($fileid)) {
-            $path = "$this->wrapperProtocol://dummy/$filename?" . http_build_query($this->renderOptions);
-            file_set_contents($fileid, file_get_contents($path));
+            file_set_contents($fileid, $this->compiler->compile($filename));
         }
 
         return $this->stats[$filename] = $fileid;
@@ -607,7 +603,7 @@ class Renderer
 
         // 投げ元がテンプレート（パースエラーとか変数の undefined とか）なら自身のファイル名とメッセージを書き換える
         if ($innerfile = $refile($ex->getFile())) {
-            $innerline = RewriteWrapper::getLineMapping($innerfile, $ex->getLine());
+            $innerline = Compiler::getLineMapping($innerfile, $ex->getLine());
             $rewritten['file'] = $innerfile;
             $rewritten['line'] = first_value($innerline);
             $rewritten['message'] = $ex->getMessage() . $remessage($innerfile, $innerline);
@@ -617,7 +613,7 @@ class Renderer
         $rewritten['trace'] = array_map(function ($trace) use ($refile) {
             if (isset($trace['file'], $trace['line']) && $innerfile = $refile($trace['file'])) {
                 $trace['file'] = $innerfile ?? $trace['file'];
-                $trace['line'] = first_value(RewriteWrapper::getLineMapping($innerfile, $trace['line']));
+                $trace['line'] = first_value(Compiler::getLineMapping($innerfile, $trace['line']));
             }
             return $trace;
         }, $ex->getTrace());

@@ -4,12 +4,12 @@ namespace ryunosuke\Test\NightDragon;
 
 use ryunosuke\NightDragon\HtmlObject;
 use ryunosuke\NightDragon\Renderer;
-use ryunosuke\NightDragon\RewriteWrapper;
+use ryunosuke\NightDragon\Compiler;
 use ryunosuke\NightDragon\Source;
 use function ryunosuke\NightDragon\array_sprintf;
 use function ryunosuke\NightDragon\is_arrayable;
 
-class RewriteWrapperTest extends \ryunosuke\Test\AbstractTestCase
+class CompilerTest extends \ryunosuke\Test\AbstractTestCase
 {
     const defaultOption = [
         'customTagHandler'   => [''],
@@ -28,8 +28,8 @@ class RewriteWrapperTest extends \ryunosuke\Test\AbstractTestCase
 
     function test_getLineMapping()
     {
-        /** @see RewriteWrapper::rewrite() */
-        $rewrite = $this->publishMethod(new RewriteWrapper(), 'rewrite');
+        /** @see Compiler::rewrite() */
+        $rewrite = $this->publishMethod(new Compiler(), 'rewrite');
 
         $actual = '
 <?php "simple" ?>
@@ -93,50 +93,36 @@ z
                     'strip'  => '\\' . Renderer::class . '::strip',
                 ],
             ] + self::defaultOption));
-        $this->assertEquals([1], RewriteWrapper::getLineMapping("undefined", 1));
-        $this->assertEquals([2], RewriteWrapper::getLineMapping("undefined", 2));
-        $this->assertEquals([3, 4, 5], RewriteWrapper::getLineMapping("undefined", 3));
-        $this->assertEquals([6], RewriteWrapper::getLineMapping("undefined", 4));
-        $this->assertEquals([7], RewriteWrapper::getLineMapping("undefined", 5));
-        $this->assertEquals([8], RewriteWrapper::getLineMapping("undefined", 6));
-        $this->assertEquals([9], RewriteWrapper::getLineMapping("undefined", 7));
-        $this->assertEquals([10, 11, 12], RewriteWrapper::getLineMapping("undefined", 8));
-        $this->assertEquals([13], RewriteWrapper::getLineMapping("undefined", 9));
-        $this->assertEquals([14], RewriteWrapper::getLineMapping("undefined", 10));
-        $this->assertEquals([15], RewriteWrapper::getLineMapping("undefined", 11));
-        $this->assertEquals([16], RewriteWrapper::getLineMapping("undefined", 12));
-        $this->assertEquals([17], RewriteWrapper::getLineMapping("undefined", 13));
-        $this->assertEquals([18], RewriteWrapper::getLineMapping("undefined", 14));
-        $this->assertEquals([19], RewriteWrapper::getLineMapping("undefined", 15));
-        $this->assertEquals([20], RewriteWrapper::getLineMapping("undefined", 16));
-        $this->assertEquals([21], RewriteWrapper::getLineMapping("undefined", 17));
-        $this->assertEquals([22], RewriteWrapper::getLineMapping("undefined", 18));
-        $this->assertEquals([22], RewriteWrapper::getLineMapping("undefined", 19));
-        $this->assertEquals([22], RewriteWrapper::getLineMapping("undefined", 20));
-        $this->assertEquals([23, 24, 25], RewriteWrapper::getLineMapping("undefined", 21));
-        $this->assertEquals([26, 27, 28, 29], RewriteWrapper::getLineMapping("undefined", 22));
-        $this->assertEquals([30], RewriteWrapper::getLineMapping("undefined", 23));
-        $this->assertEquals([31], RewriteWrapper::getLineMapping("undefined", 24));
-    }
-
-    function test_stream()
-    {
-        RewriteWrapper::register('hogera');
-
-        $path = 'hogera://dummy/' . __FILE__;
-        $this->assertFileExists($path);
-        $this->assertEquals(filesize(__FILE__), filesize($path));
-        $this->assertStringEqualsFile(__FILE__, file_get_contents("$path?" . http_build_query(self::defaultOption)));
-
-        $this->assertException('file_get_contents', function () use ($path) {
-            return file_get_contents("$path/notfound");
-        });
+        $this->assertEquals([1], Compiler::getLineMapping("undefined", 1));
+        $this->assertEquals([2], Compiler::getLineMapping("undefined", 2));
+        $this->assertEquals([3, 4, 5], Compiler::getLineMapping("undefined", 3));
+        $this->assertEquals([6], Compiler::getLineMapping("undefined", 4));
+        $this->assertEquals([7], Compiler::getLineMapping("undefined", 5));
+        $this->assertEquals([8], Compiler::getLineMapping("undefined", 6));
+        $this->assertEquals([9], Compiler::getLineMapping("undefined", 7));
+        $this->assertEquals([10, 11, 12], Compiler::getLineMapping("undefined", 8));
+        $this->assertEquals([13], Compiler::getLineMapping("undefined", 9));
+        $this->assertEquals([14], Compiler::getLineMapping("undefined", 10));
+        $this->assertEquals([15], Compiler::getLineMapping("undefined", 11));
+        $this->assertEquals([16], Compiler::getLineMapping("undefined", 12));
+        $this->assertEquals([17], Compiler::getLineMapping("undefined", 13));
+        $this->assertEquals([18], Compiler::getLineMapping("undefined", 14));
+        $this->assertEquals([19], Compiler::getLineMapping("undefined", 15));
+        $this->assertEquals([20], Compiler::getLineMapping("undefined", 16));
+        $this->assertEquals([21], Compiler::getLineMapping("undefined", 17));
+        $this->assertEquals([22], Compiler::getLineMapping("undefined", 18));
+        $this->assertEquals([22], Compiler::getLineMapping("undefined", 19));
+        $this->assertEquals([22], Compiler::getLineMapping("undefined", 20));
+        $this->assertEquals([23, 24, 25], Compiler::getLineMapping("undefined", 21));
+        $this->assertEquals([26, 27, 28, 29], Compiler::getLineMapping("undefined", 22));
+        $this->assertEquals([30], Compiler::getLineMapping("undefined", 23));
+        $this->assertEquals([31], Compiler::getLineMapping("undefined", 24));
     }
 
     function test_rewrite()
     {
-        /** @see RewriteWrapper::rewrite() */
-        $rewrite = $this->publishMethod(new RewriteWrapper(), 'rewrite');
+        /** @see Compiler::rewrite() */
+        $rewrite = $this->publishMethod(new Compiler(), 'rewrite');
 
         $actual = "<?= ARRAYS.key1.key2 | f1 | f2 ?>\n";
         $expected = "<?=html(f2(f1(access(ARRAYS,[false,'key1'],[false,'key2'])))),\"\\n\"?>\n";
@@ -149,8 +135,8 @@ z
 
     function test_rewrite_mix()
     {
-        /** @see RewriteWrapper::rewrite() */
-        $rewrite = $this->publishMethod(new RewriteWrapper(), 'rewrite');
+        /** @see Compiler::rewrite() */
+        $rewrite = $this->publishMethod(new Compiler(), 'rewrite');
 
         $this->assertEquals(
             "<?=html(f2(f1(@access(\$array,[false,'key1'],[false,'key2'],[false,'3'],[false,'key']) ?? 123)))?>",
@@ -168,8 +154,8 @@ z
 
     function test_rewrite_eval()
     {
-        /** @see RewriteWrapper::rewrite() */
-        $rewrite = $this->publishMethod(new RewriteWrapper(), 'rewrite');
+        /** @see Compiler::rewrite() */
+        $rewrite = $this->publishMethod(new Compiler(), 'rewrite');
 
         /** @noinspection PhpUnusedLocalVariableInspection */
         {
@@ -210,8 +196,8 @@ z
 
     function test_rewriteCustomTag()
     {
-        /** @see RewriteWrapper::rewriteCustomTag() */
-        $rewriteCustomTag = $this->publishMethod(new RewriteWrapper(), 'rewriteCustomTag');
+        /** @see Compiler::rewriteCustomTag() */
+        $rewriteCustomTag = $this->publishMethod(new Compiler(), 'rewriteCustomTag');
 
         $actual = '
 <hoge>simple tag</hoge>
@@ -245,8 +231,8 @@ z
 
     function test_rewriteCustomTag_script()
     {
-        /** @see RewriteWrapper::rewriteCustomTag() */
-        $rewriteCustomTag = $this->publishMethod(new RewriteWrapper(), 'rewriteCustomTag');
+        /** @see Compiler::rewriteCustomTag() */
+        $rewriteCustomTag = $this->publishMethod(new Compiler(), 'rewriteCustomTag');
 
         $actual = '
 <script type="text/javascript" src="<?= $path ?>">alert(1);</script>
@@ -269,8 +255,8 @@ z
 
     function test_rewrite_compatible_shortTag()
     {
-        /** @see RewriteWrapper::rewrite() */
-        $rewrite = $this->publishMethod(new RewriteWrapper(), 'rewrite');
+        /** @see Compiler::rewrite() */
+        $rewrite = $this->publishMethod(new Compiler(), 'rewrite');
 
         // token_get_all は short_open_tag の影響を受けるので分岐が必要
         if (ini_get('short_open_tag')) {
@@ -296,8 +282,8 @@ z
 
     function test_rewrite_no_shortTag()
     {
-        /** @see RewriteWrapper::rewrite() */
-        $rewrite = $this->publishMethod(new RewriteWrapper(), 'rewrite');
+        /** @see Compiler::rewrite() */
+        $rewrite = $this->publishMethod(new Compiler(), 'rewrite');
 
         $actual = '
 <?php foreach($array.key1.key2 as $k => $v): ?>
@@ -334,8 +320,8 @@ z
 
     function test_rewrite_none()
     {
-        /** @see RewriteWrapper::rewrite() */
-        $rewrite = $this->publishMethod(new RewriteWrapper(), 'rewrite');
+        /** @see Compiler::rewrite() */
+        $rewrite = $this->publishMethod(new Compiler(), 'rewrite');
 
         $actual = "<?= ARRAYS.key1.key2 >> f1 >> f2 ?>\n";
         $expected = "<?=ARRAYS.key1.key2 >> f1 >> f2?>\n";
@@ -349,8 +335,8 @@ z
 
     function test_rewriteExpand()
     {
-        /** @see RewriteWrapper::rewriteExpand() */
-        $rewrite = $this->publishMethod(new RewriteWrapper(self::defaultOption), 'rewriteExpand');
+        /** @see Compiler::rewriteExpand() */
+        $rewrite = $this->publishMethod(new Compiler(self::defaultOption), 'rewriteExpand');
 
         $source = new Source('<?= `a-${$n + 1}{$x}-z` ?>');
         $rewrite($source, '`');
@@ -375,8 +361,8 @@ z
 
     function test_rewriteAccessKey()
     {
-        /** @see RewriteWrapper::rewriteAccessKey() */
-        $rewrite = $this->publishMethod(new RewriteWrapper(), 'rewriteAccessKey');
+        /** @see Compiler::rewriteAccessKey() */
+        $rewrite = $this->publishMethod(new Compiler(), 'rewriteAccessKey');
 
         $source = new Source('<?= $array.key1.key2.3.key + 3.14 ?>');
         $rewrite($source, '.', 'access');
@@ -405,8 +391,8 @@ z
 
     function test_rewriteAccessKey_nullsafe()
     {
-        /** @see RewriteWrapper::rewriteAccessKey() */
-        $rewrite = $this->publishMethod(new RewriteWrapper(), 'rewriteAccessKey');
+        /** @see Compiler::rewriteAccessKey() */
+        $rewrite = $this->publishMethod(new Compiler(), 'rewriteAccessKey');
 
         $source = new Source('<?= $array?->key1?->key2 + 3.14 ?>');
         $rewrite($source, '?->', 'access');
@@ -423,8 +409,8 @@ z
 
     function test_rewriteAccessKey_isset()
     {
-        /** @see RewriteWrapper::rewriteAccessKey() */
-        $rewrite = $this->publishMethod(new RewriteWrapper(), 'rewriteAccessKey');
+        /** @see Compiler::rewriteAccessKey() */
+        $rewrite = $this->publishMethod(new Compiler(), 'rewriteAccessKey');
 
         $source = new Source('<?= isset($array.key1.key2.3.key + 3.14) ?>');
         $rewrite($source, '.', 'access');
@@ -437,8 +423,8 @@ z
 
     function test_rewriteAccessKey_default()
     {
-        /** @see RewriteWrapper::rewriteAccessKey() */
-        $rewrite = $this->publishMethod(new RewriteWrapper(), 'rewriteAccessKey');
+        /** @see Compiler::rewriteAccessKey() */
+        $rewrite = $this->publishMethod(new Compiler(), 'rewriteAccessKey');
 
         $source = new Source('<?= $array.key1.key2.3.key ?? "default" ?>');
         $rewrite($source, '.', 'access');
@@ -447,8 +433,8 @@ z
 
     function test_rewriteModifier()
     {
-        /** @see RewriteWrapper::rewriteModifier() */
-        $rewrite = $this->publishMethod(new RewriteWrapper(), 'rewriteModifier');
+        /** @see Compiler::rewriteModifier() */
+        $rewrite = $this->publishMethod(new Compiler(), 'rewriteModifier');
 
         $source = new Source('<?= $a | trim | trim("X") | sprintf("z%sz", "$_") | sprintf("Z{$_}Z", "$_") ?>');
         $rewrite($source, '$_', ['|', '&'], [], []);
@@ -483,8 +469,8 @@ z
 
     function test_rewriteModifier_namespace()
     {
-        /** @see RewriteWrapper::rewriteModifier() */
-        $rewrite = $this->publishMethod(new RewriteWrapper(), 'rewriteModifier');
+        /** @see Compiler::rewriteModifier() */
+        $rewrite = $this->publishMethod(new Compiler(), 'rewriteModifier');
 
         $source = new Source('<?= $value | \\globaled | spaced | \\fully\\qualified ?>');
         $rewrite($source, '$_', ['|', '&'], [], []);
@@ -505,8 +491,8 @@ z
 
     function test_rewriteModifier_class()
     {
-        /** @see RewriteWrapper::rewriteModifier() */
-        $rewrite = $this->publishMethod(new RewriteWrapper(), 'rewriteModifier');
+        /** @see Compiler::rewriteModifier() */
+        $rewrite = $this->publishMethod(new Compiler(), 'rewriteModifier');
 
         $source = new Source('<?= $value | method ?>');
         $rewrite($source, '$_', ['|', '&'], [], []);
@@ -523,8 +509,8 @@ z
 
     function test_rewriteModifier_default()
     {
-        /** @see RewriteWrapper::rewriteModifier() */
-        $rewrite = $this->publishMethod(new RewriteWrapper(), 'rewriteModifier');
+        /** @see Compiler::rewriteModifier() */
+        $rewrite = $this->publishMethod(new Compiler(), 'rewriteModifier');
 
         $source = new Source('<?= $value | funcA(1) ?>');
         $rewrite($source, '$_', ['|', '&'], [], []);
@@ -541,8 +527,8 @@ z
 
     function test_rewriteFilter()
     {
-        /** @see RewriteWrapper::rewriteFilter() */
-        $rewrite = $this->publishMethod(new RewriteWrapper(), 'rewriteFilter');
+        /** @see Compiler::rewriteFilter() */
+        $rewrite = $this->publishMethod(new Compiler(), 'rewriteFilter');
 
         $source = new Source("<?= 'a' ?><?= 'b' ?> <?= 'c' ?>\n");
         $rewrite($source, 'html', "\n");

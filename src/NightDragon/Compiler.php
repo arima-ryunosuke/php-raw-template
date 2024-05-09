@@ -2,15 +2,12 @@
 
 namespace ryunosuke\NightDragon;
 
-class RewriteWrapper
+class Compiler
 {
     private static $lineMapping = [];
 
-    private $path;
-    private $pos;
-    private $stat;
-    private $data;
-    private $options;
+    private array  $options;
+    private string $filename;
 
     public static function getLineMapping(string $file, int $line): array
     {
@@ -32,60 +29,20 @@ class RewriteWrapper
         return [$line];
     }
 
-    public static function register(string $scheme)
-    {
-        if (!in_array($scheme, stream_get_wrappers(), true)) {
-            stream_wrapper_register($scheme, __CLASS__);
-        }
-    }
-
     public function __construct(array $options = [])
     {
         $this->options = $options;
     }
 
-    public function stream_open(string $path): bool
+    public function compile(string $filename): Source
     {
-        // include/require でも使用したいので $context が渡せない。のでクエリパラメータでオプションを受け取る
-        $parts = parse_url($path);
-        parse_str($parts['query'] ?? '', $this->options);
-
-        $this->path = realpath(substr($parts['path'], 1));
-        if ($this->path === false || ($data = file_get_contents($this->path)) === false) {
-            return false;
-        }
-
-        $this->pos = 0;
-        $this->stat = stat($this->path);
-        $this->data = (string) $this->rewrite($data, $this->options);
-        return true;
-    }
-
-    public function stream_stat(): array
-    {
-        return $this->stat;
-    }
-
-    public function url_stat(string $path): array
-    {
-        return stat(substr(parse_url($path, PHP_URL_PATH), 1));
-    }
-
-    public function stream_read(int $count): string
-    {
-        $ret = substr($this->data, $this->pos, $count);
-        $this->pos += strlen($ret);
-        return $ret;
-    }
-
-    public function stream_eof(): bool
-    {
-        return $this->pos >= strlen($this->data);
+        $this->filename = realpath($filename);
+        return $this->rewrite(file_get_contents($filename), $this->options);
     }
 
     private function rewrite(string $source, array $options): Source
     {
-        $source = $this->rewriteCustomTag($source, $options['customTagHandler'] ?? [], self::$lineMapping[$this->path]);
+        $source = $this->rewriteCustomTag($source, $options['customTagHandler'] ?? [], self::$lineMapping[$this->filename ?? '']);
         $source = new Source($source, $options['compatibleShortTag'] ? Source::SHORT_TAG_REWRITE : Source::SHORT_TAG_NOTHING);
 
         $options['defaultNamespace'][] = $source->namespace();
