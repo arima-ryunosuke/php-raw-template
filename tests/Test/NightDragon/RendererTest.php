@@ -550,8 +550,31 @@ EXPECTED
         $this->assertEquals(trim('
 ex-var1
 ex-var2
-var1
-var2
+
+not inner1
+not inner2
+not inner3
+
+ex-inner1
+not inner2
+not inner3
+
+not inner1
+not inner2
+not inner3
+
+
+not inner1
+not inner2
+not inner3
+
+not inner1
+ex-inner2
+not inner3
+
+not inner1
+not inner2
+not inner3
 '), trim($content));
 
         // テンプレートのものがマージされているし、優先もされている
@@ -563,9 +586,8 @@ var2
             'appendix' => 'APPENDIX',
             'var1'     => 'ex-var1',
             'var2'     => 'ex-var2',
-            'inner1'   => 'inner1',
-            'inner2'   => 'inner2',
-            'inner3'   => 'ex-inner3',
+            'inner1'   => 'ex-inner1',
+            'inner2'   => 'ex-inner2',
         ], $renderer->getAssignedVars());
 
         // テンプレート毎に返す
@@ -579,22 +601,14 @@ var2
             realpath(self::TEMPLATE_DIR . '/vars.phtml')        => [
                 'int'  => 123,
                 'piyo' => 'PIYO',
+            ],
+            realpath(self::TEMPLATE_DIR . '/vars-parent.phtml') => [
                 'var1' => 'ex-var1',
                 'var2' => 'ex-var2',
             ],
-            realpath(self::TEMPLATE_DIR . '/vars-parent.phtml') => [
-                'int'    => 123,
-                'piyo'   => 'PIYO',
-                'var1'   => 'var1',
-                'var2'   => 'var2',
-                'inner1' => 'inner1',
-                'inner2' => 'inner2',
-                'inner3' => 'ex-inner3',
-            ],
-            realpath(self::TEMPLATE_DIR . '/vars-inner.phtml')  => [
+            realpath(self::TEMPLATE_DIR . '/vars-inner.phtml') => [
                 'inner1' => 'ex-inner1',
                 'inner2' => 'ex-inner2',
-                'inner3' => 'ex-inner3',
             ],
         ], $renderer->getAssignedVars(true));
     }

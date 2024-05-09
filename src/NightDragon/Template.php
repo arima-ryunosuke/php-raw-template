@@ -8,8 +8,7 @@ class Template
 
     private string $filename;
 
-    private array $vars       = [];
-    private array $parentVars = [];
+    private array $vars = [];
 
     private self $original;
 
@@ -26,36 +25,9 @@ class Template
         $this->original = $this;
     }
 
-    public function __get(string $name)
-    {
-        return $this->vars[$name];
-    }
-
     public function getFilename(): string
     {
         return $this->renderer->resolvePath($this->filename);
-    }
-
-    /**
-     * テンプレートに変数をアサインする
-     *
-     * ここでアサインした変数は単純なローカル変数とは違い、エンジンが「アサインした」と認識する。
-     * そのため親テンプレート、 include/import などに渡ることになる。
-     *
-     * ただし注意点として、assign した変数はローカルコンテキストに生えない。
-     * アクセスには $this->>varname を使用する必要がある。
-     * （ローカルコンテキストに生えている varname は親や子から渡ってきた変数である）。
-     */
-    public function assign(string|array $name, mixed $value = null): array
-    {
-        if (!is_array($name)) {
-            $name = [$name => $value];
-        }
-        foreach ($name as $k => $v) {
-            $this->vars[$k] = $v;
-        }
-        $this->renderer->setAssignedVar($this->filename, $name);
-        return $name;
     }
 
     /**
@@ -63,14 +35,13 @@ class Template
      */
     public function render(array $vars = [], array $parentVars = []): string
     {
-        $this->vars = $vars;
-        $this->parentVars = $parentVars;
-
-        $contents = $this->fetch($this->renderer->compile($this->filename, $this->vars, $this->parentVars));
+        $this->vars = $vars + $parentVars;
+        $compiled = $this->renderer->compile($this->filename, $vars, $parentVars);
+        $contents = $this->fetch($compiled, $this->vars);
 
         if (isset($this->parent)) {
             assert(strlen(trim($contents)) === 0, "child template can't have content outside blocks [$contents]");
-            return $this->parent->render($this->vars, $this->parentVars);
+            return $this->parent->render($this->parent->vars, $this->vars);
         }
 
         return $contents;
@@ -79,12 +50,13 @@ class Template
     /**
      * テンプレートの継承を宣言する
      */
-    public function extend(string $filename): static
+    public function extend(string $filename, array $vars = []): static
     {
         assert(!isset($this->parent), "this template is already extended.");
 
         $this->parent = new static($this->renderer, $this->resolvePath($filename));
         $this->parent->original = $this->original;
+        $this->parent->vars = $vars;
         unset($this->original);
         return $this->parent;
     }
@@ -181,7 +153,7 @@ class Template
     public function import(string $filename, array $vars = []): void
     {
         $template = new static($this->renderer, $this->resolvePath($filename));
-        echo $template->render($vars, $this->vars + $this->parentVars);
+        echo $template->render($vars, $this->vars);
     }
 
     /**
@@ -193,7 +165,8 @@ class Template
      */
     public function include(string $filename, array $vars = []): void
     {
-        echo $this->fetch($this->renderer->compile($this->resolvePath($filename), $vars, $this->vars + $this->parentVars), $vars);
+        $compiled = $this->renderer->compile($this->resolvePath($filename), $vars, $this->vars);
+        echo $this->fetch($compiled, $vars + $this->vars);
     }
 
     /**
@@ -266,7 +239,7 @@ class Template
             extract(func_get_arg(1));
             require func_get_arg(0);
             return ob_get_clean();
-        })($filename, $vars + $this->vars + $this->parentVars);
+        })($filename, $vars);
     }
 
     /**
