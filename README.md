@@ -12,7 +12,7 @@ php の素材の味を生かしたシンプルなテンプレートエンジン�
 - `<?= $string ?>` の最後の改行が除去されません
 - `<?= $string | strtoupper ?>` で `strtoupper($string)` に変換されます（ネスト可能）
 - `<?= $string & strtoupper ?>` で $string が非 null の場合に `strtoupper($string)` に変換されます（ネスト可能）
-- `<?= $array.key ?>` で `$array['key']` に変換されます（ネスト可能。オブジェクトの場合は `->`）
+- `<?= $array->key ?>` で `$array['key']` に変換されます（ネスト可能）
 - アサインされた変数の型情報に基づいて自動で `/** @var \Hoge $hoge */` を埋め込みます
 - テンプレート継承ができます
 
@@ -25,7 +25,7 @@ php の素材の味を生かしたシンプルなテンプレートエンジン�
 - 拡張子指定（常に拡張子も含めて指定）
     - raw であれば拡張子を固定にするメリットは特にありません（phtml, php などで好みが分かれるし）
 - ファイル以外のデータソース
-    - opcache を最大限に活かすためファイル限定です
+    - php には強力なストリームラッパーがあるため個別対応は不要でしょう
 - プラグイン機構
     - 大抵はヘルパー関数を設ければそれで十分だし、アサインすれば `<?= $plugin->func() ?>` で呼べるので不要でしょう
 
@@ -52,10 +52,8 @@ php の素材の味を生かしたシンプルなテンプレートエンジン�
     <title><?= $title ?> - <?= $SiteName ?></title>
 </head>
 <body>
-<?php $this->assign('parentvar', 'ParentVar') ?>
 <?php $this->begin('main') ?>
-これは親コンテンツです。
-これは子テンプレートで宣言された変数です：<?= $childvar ?>
+これは子テンプレートから渡された変数です：<?= $childvar ?>
 <?php $this->end() ?>
 </body>
 </html>
@@ -67,15 +65,15 @@ php の素材の味を生かしたシンプルなテンプレートエンジン�
 <summary>action.phtml</summary>
 
 ```php
-<?php $this->extend(__DIR__ . '/layout.phtml') ?>
-
-<?php $this->assign('title', 'PageTitle') ?>
-<?php $this->assign('childvar', 'ChildVar') ?>
+<?php $this->extend(__DIR__ . '/layout.phtml', [
+    'title'    => 'PageTitle',
+    'childvar' => 'ChildVar',
+]) ?>
 
 <?php $this->begin('main') ?>
 <section>
     <h2>親・子コンテンツの関係</h2>
-    親テンプレートで宣言された変数は使えません：<?= $parentvar ?? 'not defined' ?>
+    親テンプレートに渡した変数は使えません：<?= $childvar ?? 'not defined' ?>
     parent メソッドを使用して親コンテンツを表示します。
     <?php $this->parent() ?>
 
@@ -106,17 +104,18 @@ php の素材の味を生かしたシンプルなテンプレートエンジン�
 
 <section>
     <h2>配列・オブジェクトアクセス</h2>
-    これは配列のアクセスです（"." で配列アクセスできます）：<?= $array . hoge ?>
-    配列アクセスはネストできます：<?= $array . fuga . 0 ?>
-    オブジェクトもアクセスできます：<?= $object . hoge ?>
-    配列とオブジェクトは混在して OK です：<?= $object . fuga . 0 ?>
-    埋め込み構文も使えます1：<?= "prefix-{$object . fuga . 0}-suffix" ?>
-    埋め込み構文も使えます2：<?= "prefix-{$closure(strtolower($object . fuga . 0))}-suffix" ?>
-    このように ?? 演算子とも併用できます：<?= $array . undefined ?? 'default' ?>
-    オブジェクトも可能できます。共にネストも出来ます：<?= $object . undefined1 . undefined2 ?? 'default' | strtoupper ?>
+    これは配列のアクセスです（"->" で配列アクセスできます）：<?= $array->hoge ?>
+    配列アクセスはネストできます：<?= $array->fuga->x ?>
+    "?->" で nullsafe アクセスができます：<?= $array?->undefined1?->undefined2 ?? 'default' ?>
+    オブジェクトもアクセスできます：<?= $object->hoge ?>
+    配列とオブジェクトは混在して OK です：<?= $object->fuga->x ?>
+    埋め込み構文も使えます1：<?= "prefix-{$object->fuga->x}-suffix" ?>
+    埋め込み構文も使えます2：<?= "prefix-{$closure(strtolower($object->fuga->x))}-suffix" ?>
+    このように ?? 演算子とも併用できます：<?= $array->undefined ?? 'default' ?>
+    オブジェクトも可能できます。共にネストも出来ます：<?= $object->undefined1->undefined2 ?? 'default' | strtoupper ?>
 
-    上記2つの機能は「配列アクセス -> 修飾子」のときのみ組み合わせ可能です：<?= $array . fuga | implode(',', $_) ?>
-    右記のような順番の組み合わせはできません：<?= @"<?=" ?> $string | str_split . 3 <?= @"?>" ?>
+    上記2つの機能は「配列アクセス -> 修飾子」のときのみ組み合わせ可能です：<?= $array->fuga | implode(',', $_) ?>
+    右記のような順番の組み合わせはできません：<?= @"<?=" ?> $string | str_split->z <?= @"?>" ?>
 </section>
 
 <section>
@@ -168,12 +167,12 @@ php の素材の味を生かしたシンプルなテンプレートエンジン�
     これらの機能は compatibleShortTag を true にすると php 本体で short_open_tag が無効にされていても使用できます（詳細は README にて）。
 
     foreach でアクセス子が使える
-    <? foreach ($array . fuga as $key => $value): ?>
+    <? foreach ($array->fuga as $key => $value): ?>
         <?= $value ?>
     <? endforeach ?>
 
     if で アクセス子が使える
-    <? if (empty($array . undefined)): ?>
+    <? if (empty($array->undefined)): ?>
         $object.undefined is undefined
     <? endif ?>
 </section>
@@ -204,10 +203,8 @@ php の素材の味を生かしたシンプルなテンプレートエンジン�
     <title><?=\ryunosuke\NightDragon\Renderer::html($title)?> - <?=\ryunosuke\NightDragon\Renderer::html($SiteName)?></title>
 </head>
 <body>
-<?php $this->assign('parentvar', 'ParentVar') ?>
 <?php $this->begin('main') ?>
-これは親コンテンツです。
-これは子テンプレートで宣言された変数です：<?=\ryunosuke\NightDragon\Renderer::html($childvar),"\n"?>
+これは子テンプレートから渡された変数です：<?=\ryunosuke\NightDragon\Renderer::html($childvar),"\n"?>
 <?php $this->end() ?>
 </body>
 </html>
@@ -219,15 +216,15 @@ php の素材の味を生かしたシンプルなテンプレートエンジン�
 <summary>action.phtml</summary>
 
 ```php
-<?php $this->extend(__DIR__ . '/layout.phtml') ?>
-
-<?php $this->assign('title', 'PageTitle') ?>
-<?php $this->assign('childvar', 'ChildVar') ?>
+<?php $this->extend(__DIR__ . '/layout.phtml', [
+    'title'    => 'PageTitle',
+    'childvar' => 'ChildVar',
+]) ?>
 
 <?php $this->begin('main') ?>
 <section>
     <h2>親・子コンテンツの関係</h2>
-    親テンプレートで宣言された変数は使えません：<?=\ryunosuke\NightDragon\Renderer::html($parentvar ?? 'not defined'),"\n"?>
+    親テンプレートに渡した変数は使えません：<?=\ryunosuke\NightDragon\Renderer::html($childvar ?? 'not defined'),"\n"?>
     parent メソッドを使用して親コンテンツを表示します。
     <?php $this->parent() ?>
 
@@ -258,17 +255,18 @@ php の素材の味を生かしたシンプルなテンプレートエンジン�
 
 <section>
     <h2>配列・オブジェクトアクセス</h2>
-    これは配列のアクセスです（"." で配列アクセスできます）：<?=\ryunosuke\NightDragon\Renderer::html(\ryunosuke\NightDragon\Renderer::access($array,'hoge')),"\n"?>
-    配列アクセスはネストできます：<?=\ryunosuke\NightDragon\Renderer::html(\ryunosuke\NightDragon\Renderer::access($array,'fuga','0')),"\n"?>
-    オブジェクトもアクセスできます：<?=\ryunosuke\NightDragon\Renderer::html(\ryunosuke\NightDragon\Renderer::access($object,'hoge')),"\n"?>
-    配列とオブジェクトは混在して OK です：<?=\ryunosuke\NightDragon\Renderer::html(\ryunosuke\NightDragon\Renderer::access($object,'fuga','0')),"\n"?>
-    埋め込み構文も使えます1：<?=\ryunosuke\NightDragon\Renderer::html("prefix-".\ryunosuke\NightDragon\Renderer::access($object,'fuga','0')."-suffix"),"\n"?>
-    埋め込み構文も使えます2：<?=\ryunosuke\NightDragon\Renderer::html("prefix-{$closure(strtolower(\ryunosuke\NightDragon\Renderer::access($object,'fuga','0')))}-suffix"),"\n"?>
-    このように ?? 演算子とも併用できます：<?=\ryunosuke\NightDragon\Renderer::html(@\ryunosuke\NightDragon\Renderer::access($array,'undefined') ?? 'default'),"\n"?>
-    オブジェクトも可能できます。共にネストも出来ます：<?=\ryunosuke\NightDragon\Renderer::html(strtoupper(@\ryunosuke\NightDragon\Renderer::access($object,'undefined1','undefined2') ?? 'default')),"\n"?>
+    これは配列のアクセスです（"->" で配列アクセスできます）：<?=\ryunosuke\NightDragon\Renderer::html(\ryunosuke\NightDragon\Renderer::access($array,[false,'hoge'])),"\n"?>
+    配列アクセスはネストできます：<?=\ryunosuke\NightDragon\Renderer::html(\ryunosuke\NightDragon\Renderer::access($array,[false,'fuga'],[false,'x'])),"\n"?>
+    "?->" で nullsafe アクセスができます：<?=\ryunosuke\NightDragon\Renderer::html(@\ryunosuke\NightDragon\Renderer::access($array,[true,'undefined1'],[true,'undefined2']) ?? 'default'),"\n"?>
+    オブジェクトもアクセスできます：<?=\ryunosuke\NightDragon\Renderer::html(\ryunosuke\NightDragon\Renderer::access($object,[false,'hoge'])),"\n"?>
+    配列とオブジェクトは混在して OK です：<?=\ryunosuke\NightDragon\Renderer::html(\ryunosuke\NightDragon\Renderer::access($object,[false,'fuga'],[false,'x'])),"\n"?>
+    埋め込み構文も使えます1：<?=\ryunosuke\NightDragon\Renderer::html("prefix-".\ryunosuke\NightDragon\Renderer::access($object,[false,'fuga'],[false,'x'])."-suffix"),"\n"?>
+    埋め込み構文も使えます2：<?=\ryunosuke\NightDragon\Renderer::html("prefix-{$closure(strtolower(\ryunosuke\NightDragon\Renderer::access($object,[false,'fuga'],[false,'x'])))}-suffix"),"\n"?>
+    このように ?? 演算子とも併用できます：<?=\ryunosuke\NightDragon\Renderer::html(@\ryunosuke\NightDragon\Renderer::access($array,[false,'undefined']) ?? 'default'),"\n"?>
+    オブジェクトも可能できます。共にネストも出来ます：<?=\ryunosuke\NightDragon\Renderer::html(strtoupper(@\ryunosuke\NightDragon\Renderer::access($object,[false,'undefined1'],[false,'undefined2']) ?? 'default')),"\n"?>
 
-    上記2つの機能は「配列アクセス -> 修飾子」のときのみ組み合わせ可能です：<?=\ryunosuke\NightDragon\Renderer::html(implode(',',\ryunosuke\NightDragon\Renderer::access($array,'fuga'))),"\n"?>
-    右記のような順番の組み合わせはできません：<?="<?="?> $string | str_split . 3 <?="?>","\n"?>
+    上記2つの機能は「配列アクセス -> 修飾子」のときのみ組み合わせ可能です：<?=\ryunosuke\NightDragon\Renderer::html(implode(',',\ryunosuke\NightDragon\Renderer::access($array,[false,'fuga']))),"\n"?>
+    右記のような順番の組み合わせはできません：<?="<?="?> $string | str_split->z <?="?>","\n"?>
 </section>
 
 <section>
@@ -312,12 +310,12 @@ php の素材の味を生かしたシンプルなテンプレートエンジン�
     これらの機能は compatibleShortTag を true にすると php 本体で short_open_tag が無効にされていても使用できます（詳細は README にて）。
 
     foreach でアクセス子が使える
-    <?php foreach (\ryunosuke\NightDragon\Renderer::access($array,'fuga') as $key => $value): ?>
+    <?php foreach (\ryunosuke\NightDragon\Renderer::access($array,[false,'fuga']) as $key => $value): ?>
         <?=\ryunosuke\NightDragon\Renderer::html($value),"\n"?>
     <?php endforeach ?>
 
     if で アクセス子が使える
-    <?php if (!@boolval(\ryunosuke\NightDragon\Renderer::access($array,'undefined'))): ?>
+    <?php if (!@boolval(\ryunosuke\NightDragon\Renderer::access($array,[false,'undefined']))): ?>
         $object.undefined is undefined
     <?php endif ?>
 </section>
@@ -352,10 +350,9 @@ php の素材の味を生かしたシンプルなテンプレートエンジン�
 <body>
 <section>
     <h2>親・子コンテンツの関係</h2>
-    親テンプレートで宣言された変数は使えません：not defined
+    親テンプレートに渡した変数は使えません：not defined
     parent メソッドを使用して親コンテンツを表示します。
-    これは親コンテンツです。
-これは子テンプレートで宣言された変数です：ChildVar
+    これは子テンプレートから渡された変数です：ChildVar
 
     これは子供コンテンツです。
     色々変数を表示しています。
@@ -383,8 +380,9 @@ php の素材の味を生かしたシンプルなテンプレートエンジン�
 
 <section>
     <h2>配列・オブジェクトアクセス</h2>
-    これは配列のアクセスです（"." で配列アクセスできます）：HOGE
+    これは配列のアクセスです（"->" で配列アクセスできます）：HOGE
     配列アクセスはネストできます：X
+    "?->" で nullsafe アクセスができます：default
     オブジェクトもアクセスできます：HOGE
     配列とオブジェクトは混在して OK です：X
     埋め込み構文も使えます1：prefix-X-suffix
@@ -393,7 +391,7 @@ php の素材の味を生かしたシンプルなテンプレートエンジン�
     オブジェクトも可能できます。共にネストも出来ます：DEFAULT
 
     上記2つの機能は「配列アクセス -> 修飾子」のときのみ組み合わせ可能です：X,Y,Z
-    右記のような順番の組み合わせはできません：<?= $string | str_split . 3 ?>
+    右記のような順番の組み合わせはできません：<?= $string | str_split->z ?>
 </section>
 
 <section>
@@ -424,7 +422,7 @@ php の素材の味を生かしたシンプルなテンプレートエンジン�
     <h2>カスタムタグ</h2>
     タグのコールバックを登録すると特定タグに対してコールバックが実行されます。
     例えばデフォルトでは strip タグが登録されていて、空白を除去できます（Smarty の {strip} に相当） 。
-    このタグ内の空白はすべて除去されます。ただし、変数の中身には関与しません。<div id="stripping" class="hoge fuga piyo">line1
+    このタグ内の空白はすべて除去されます。ただし、変数の中身には関与しません。 <div id="stripping" class="hoge fuga piyo">line1
 line2
 line3</div>
 </section>
@@ -451,12 +449,6 @@ line3</div>
 
 </details>
 
-単純に言えば全貌は下記です。
-
-- テンプレートファイルをストリームラッパーを利用して書き換え
-- （その際、必要があればテンプレートファイル自体も書き換え）
-- 書き換えられたファイルを include してレンダリング
-
 ### Feature
 
 原則として `<?= ?>` を対象に書き換えます。
@@ -464,7 +456,7 @@ line3</div>
 
 `<?php ?>` を書き換えることはありません。
 
-`<? ?>` は具体的には `<? foreach ($array.member as $key => $value): ?>` や `<? if ($array.flag): ?>` が記述できるようになります。
+`<? ?>` は具体的には `<? foreach ($array->member as $key => $value): ?>` や `<? if ($array->flag): ?>` が記述できるようになります。
 ただし、実験的な機能であり、今のところこのような配列アクセス機能だけが有効です（修飾子は使えない）。
 
 さらに `<? ?>` は非推奨の機能でもあります。
@@ -475,7 +467,7 @@ line3</div>
 
 #### access key
 
-`<?= $array.key >` という形式で配列やオブジェクトにアクセスできます。
+`<?= $array->key >` という形式で配列やオブジェクトにアクセスできます。
 これはネスト可能で、配列・オブジェクトの混在もできます。
 
 `key` 部分に使用できるのはリテラル文字列、リテラル数値、単一変数だけです。式や通常の `[]` によるアクセスは混在できません。
@@ -484,15 +476,15 @@ line3</div>
 ただし後述の `defaultGetter` を指定している場合は関数ベースでのアクセスとなるため、 `@` によるエラー抑制にフォールバックされます（関数ベースで構文レベルの `??` を模倣するのが不可能だからです。動作自体は変わりません）。
 
 - OK
-    - `<?= $array.key1.key2 ?>` (単純なネスト)
-    - `<?= $array.3 ?>` (リテラル数値)
-    - `<?= $array.$key ?>` (単一変数)
-    - `<?= "prefix-{$array.key1.key2}-suffix" ?>` (埋め込み構文)
-    - `<?= $array.undefined ?? 'default' ?>` (`??` 演算子との併用)
+    - `<?= $array->key1->key2 ?>` (単純なネスト)
+    - `<?= $array->3 ?>` (リテラル数値)
+    - `<?= $array->$key ?>` (単一変数)
+    - `<?= "prefix-{$array->key1->key2}-suffix" ?>` (埋め込み構文)
+    - `<?= $array?->undefined ?? 'default' ?>` (`?->`, `??` 演算子との併用)
 - NG
-    - `<?= $array.PATHINFO_EXTENSION ?>` (定数)
-    - `<?= $array['key1'].key2 ?>` (`[]` 混在)
-    - `<?= $array.strtoupper($key) ?>` (式)
+    - `<?= $array->PATHINFO_EXTENSION ?>` (定数)
+    - `<?= $array['key1']->key2 ?>` (`[]` 混在)
+    - `<?= $array->strtoupper($key) ?>` (式)
 
 #### modifier
 
@@ -542,7 +534,7 @@ line3</div>
 - エスケープされる
     - `<?= $string ?>` (通常のタグ)
     - `<?= ucfirst($string) ?>` (式)
-    - `<?= $item.children | implode(',', $_) ?>` (キーアクセスや修飾子と併用)
+    - `<?= $item->children | implode(',', $_) ?>` (キーアクセスや修飾子と併用)
 - エスケープされない
     - `<?php echo $string ?>` (`<?php` タグ)
     - `<?= @$string ?>` (`nofilter` による抑止)
@@ -567,7 +559,7 @@ php の変数展開はかなりいろいろなことができるんですが、�
 - 変数代入や引数での使用
     - ``<? $tmp = `this is n + 1: ${$n + 1}` ?>`` (変数代入)
     - ``<?= ucfirst(`this is n + 1: ${$n + 1}`) ?>`` (関数の引数)
-    
+
 なお、この機能はショートエコータグだけではなく `<? ?>` も書き換え対象になります。
 テンプレートファイル内でバッククオート（シェル呼び出し）を使うような状況は限りなくゼロに近く、「バッククオートがあったら式展開構文」という前提がほぼ成り立つためです。
 
@@ -580,7 +572,7 @@ $renderer = new \ryunosuke\NightDragon\Renderer([
     // デバッグ系
     'debug'              => $debug,
     'errorHandling'      => $debug,
-    'gatherVariable'     => $debug,
+    'gatherVariable'     => $debug ? self::DECLARED | self::FIXED | self::GLOBAL | self::ASSIGNED | self::USING : 0,
     'gatherModifier'     => $debug,
     'gatherAccessor'     => $debug,
     'constFilename'      => null,
@@ -590,22 +582,22 @@ $renderer = new \ryunosuke\NightDragon\Renderer([
     'wrapperProtocol'    => Renderer::DEFAULT_PROTOCOL,
     'templateClass'      => Template::class,
     // ディレクトリ系
-    'compileDir'      => null,
+    'compileDir'         => null,
     // コンパイルオプション系
     'customTagHandler'   => [
-        'strip' => '\\' . Renderer::class . '::strip',
+        'strip' => Renderer::class . '::strip',
     ],
     'compatibleShortTag' => false,
     'defaultNamespace'   => '\\',
     'defaultClass'       => '',
-    'defaultFilter'      => '\\' . Renderer::class . '::html',
-    'defaultGetter'      => '\\' . Renderer::class . '::access',
+    'defaultFilter'      => Renderer::class . '::html',
+    'defaultGetter'      => Renderer::class . '::access',
     'defaultCloser'      => "\n",
-    'nofilter'           => '',
-    'varModifier'        => '|',
+    'nofilter'           => '@',
+    'varModifier'        => ['|', '&'],
     'varReceiver'        => '$_',
-    'varAccessor'        => '.',
-    'varExpander'        => '',
+    'varAccessor'        => '->',
+    'varExpander'        => '`',
 ]);
 
 $renderer->assign([
@@ -615,10 +607,13 @@ $renderer->assign([
 
 echo $renderer->render(__DIR__ . '/action.phtml', [
     // テンプレートにアサインする変数
-    'string'    => "this's title",
+    'null'      => null,
+    'float'     => 12345.6789,
+    'string'    => "This's Title",
     'multiline' => "line1\nline2\nline3",
-    'array'     => ['hoge' => 'HOGE', 'fuga' => ['X', 'Y', 'Z']],
-    'object'    => (object) ['hoge' => 'HOGE', 'fuga' => ['X', 'Y', 'Z']],
+    'array'     => ['hoge' => 'HOGE', 'fuga' => ['x' => 'X', 'y' => 'Y', 'z' => 'Z']],
+    'object'    => (object) ['hoge' => 'HOGE', 'fuga' => ['x' => 'X', 'y' => 'Y', 'z' => 'Z']],
+    'closure'   => function ($arg) { return 'closure' . $arg; },
 ]);
 ```
 
@@ -684,7 +679,7 @@ gatherModifier を true にすると `<?= $string | strtoupper ?>` の `strtoupp
 これは phpstorm の警告を抑止と定義ジャンプのためです（実際に呼び出しているシンタックスなのでジャンプできます）。
 定義すること自体に具体的な意味はありません。
 
-gatherAccessor を true にすると `<?= $array.key ?>` の `key` が定数宣言されます。
+gatherAccessor を true にすると `<?= $array->key ?>` の `key` が定数宣言されます。
 これは phpstorm の警告を抑止するためです。
 定義すること自体に具体的な意味はありません。
 
@@ -734,7 +729,7 @@ php ソース書き換え用のカスタムストリームラッパー名を指�
 
 html ソース書き換えのオプションです。
 
-`[タグ名 => 文字列callable]` のような配列を指定しておくと、文字列的にそのタグ（配列のキー）に出くわしたときにコールバックが実行されます。
+`[タグ名 => callable]` のような配列を指定しておくと、文字列的にそのタグ（配列のキー）に出くわしたときにコールバックが実行されます。
 コールバックは `(タグコンテンツ, タグ属性オブジェクト)` が引数として渡ってきます。
 
 デフォルトで `strip` が登録されています。
@@ -748,7 +743,7 @@ FAQ やガイドなど、静的な部分が多くなるページでかなり有�
 ソース書き換えのオプションです。
 
 このキーを true に設定すると ini の short_open_tag の設定に関わらず `<? ?>` タグが有効になります。
-ini の変更ができなかったり、 php 8.0 で short_open_tag が廃止されたりした状況を想定してますが、気休め程度のオプションなので原則的に false にしてください。
+ini の変更ができなかったり、 short_open_tag が廃止されたりした状況を想定してますが、気休め程度のオプションなので原則的に false にしてください。
 
 #### defaultNamespace, defaultClass
 
@@ -772,8 +767,8 @@ defaultClass が指定されてかつそのクラスに `hoge` 静的メソッ�
 defaultFilter は `<?= $string ?>` で変換されるデフォルトフィルタを指定します。
 可変引数を取る callable でかつ文字列である必要があります（クロージャは不可）。
 
-defaultGetter は `<?= $array.key ?>` されたときにキーを引く変換関数名を指定します。
-第1引数に array or object, 第2引数以降にキー文字列を受け取る文字列 callable である必要があります。
+defaultGetter は `<?= $array->key ?>` されたときにキーを引く変換関数名を指定します。
+第1引数に array or object, 第2引数以降に [nullsafe-flag, キー文字列] を受け取る文字列 callable である必要があります。
 
 defaultCloser は `<?= $string ?>` 時に挿入される改行文字を指定します。
 あまり指定することはないでしょうが、改行差し込みを無効にしたい場合は空文字を指定するといいでしょう。
@@ -797,8 +792,8 @@ varReceiver は `<?= $array | implode(',', $_) ?>` における `$_` を指定�
 例えば `$__var` を指定するとこれを `<?= $array | implode(',', $__var) ?>` と記述できるようになります。
 変数名として有効な文字列である必要があります。
 
-varAccessor は `<?= $array.key ?>` における `.` を指定します。
-例えば `/` を指定するとこれを `<?= $array/key ?>` と記述できるようになります。
+varAccessor は `<?= $array->key ?>` における `->` を指定します。
+例えば `.` を指定するとこれを `<?= $array.key ?>` と記述できるようになります。
 空文字にするとキーアクセス機能が無効になり、変換自体が行われなくなります。
 
 varExpander は ``<?= `${expression}` ?>`` における `` ` `` を指定します。
@@ -817,15 +812,7 @@ varExpander は ``<?= `${expression}` ?>`` における `` ` `` を指定しま�
 
 下記の記述はかなり簡易なものであり、具体的には実際に見たほうが分かりやすいと思うので、冒頭の layout.phtml, action.phtml を参照してください。
 
-#### $this->assign(string|array $name, $value = null)
-
-変数をアサインします。
-ここでアサインした変数は extend, include, import などに渡ります。
-
-このメソッドを使うと「親テンプレートで子テンプレートの変数を使う」が可能になります。
-block 機能が仰々しい場合は変数の方が持ち回しがしやすく便利です。
-
-#### $this->extend(string $filename)
+#### $this->extend(string $filename[, array $vars])
 
 親を指定してテンプレート継承を宣言します。
 親は1つだけであり、同じテンプレートで継承を複数行うことはできません。
@@ -890,8 +877,8 @@ block 機能が仰々しい場合は変数の方が持ち回しがしやすく�
     - バージョンアップで頻繁に変更されます。あくまでこのパッケージ専用の関数群です
 - `|` 修飾子の関数名は `use function hoge as fuga` でエイリアスした関数は呼べません
     - パースの都合です
--  `.`, `|` などはショートタグ内で使用できません
-    - パースの都合です。 `|` はともかく、 `.` は結構困るので、関数化（`function hoge(...$v){return implode('', $v);}`）するか埋め込み構文（`"this is $hoge"`）を使ってください
+- `|` の本来の用法（OR 演算子）はショートタグ内で使用できません
+    - パースの都合です
 
 ## Q&A
 
@@ -915,7 +902,7 @@ block 機能が仰々しい場合は変数の方が持ち回しがしやすく�
 具体的には
 
 - ASP タグが消えた（まぁ使ってないけど…）
-- ショートオープンタグが消える（7.4 非推奨。これは非常に痛い）
+- ショートオープンタグが消える？（結局却下されたけどたびたび槍玉に挙がる）
 - デフォルトエスケープ RFC が却下された（却下されたやつはシンタックスがキモいけど、似たような機能はあってもいいと思ってる）
 
 などです。
