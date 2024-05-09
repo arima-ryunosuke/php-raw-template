@@ -186,7 +186,7 @@ class RewriteWrapper
 
     private function rewriteAccessKey(Source $tokens, string $accessor, string $getter): void
     {
-        // "." の場合は $array.123 のような記述が T_DNUMBER として得られてしまうので特別扱いで対応（"." はデフォルトオプションなので面倒見る）
+        // "." の場合は $array.123 のような記述が T_DNUMBER として得られてしまうので特別扱いで対応（"." はしばしばアクセス子として選ばれる）
         if ($accessor === '.') {
             $tokens->replace([T_DNUMBER], function (Source $tokens) {
                 [$int, $float] = explode('.', $tokens[0]->text);
@@ -196,6 +196,10 @@ class RewriteWrapper
                 }
                 return ['.', [T_LNUMBER, $float]];
             });
+        }
+        // "->" の場合もコンビである "?->" を使いたいことがあるので特別扱い
+        if ($accessor === '->') {
+            $accessor = ['->', '?->'];
         }
 
         // isset/empry は言語構造であり、関数ベースで置換することはできない。しかしそれぞれ
@@ -247,23 +251,33 @@ class RewriteWrapper
                 $key = var_export("$key", true);
             }
             if (strlen($getter)) {
-                $id = $var->id === -101 ? -101 : -100;
-                return [[$id, $var], [-101, $key]];
+                $id = in_array($var->id, [-101, -102], true) ? $var->id : -100;
+                return [[$id, $var], [-101, "$tokens"], [-102, $key]];
             }
             return "{$var}[$key]";
         }, 0);
 
         if (strlen($getter)) {
-            $nullsafe = !!$tokens->match([-101, T_COALESCE]);
+            $coalesce = !!$tokens->match([-102, T_COALESCE]);
             $tokens->replace([
                 -100,
                 -101,
+                -102,
                 Source::MATCH_MANY,
-                [Source::MATCH_NOCAPTURE => true, Source::MATCH_NOT => true, -101],
-            ], function (Source $tokens) use ($getter, $nullsafe) {
+                [Source::MATCH_NOCAPTURE => true, Source::MATCH_NOT => true, -101, -102],
+            ], function (Source $tokens) use ($getter, $coalesce) {
                 $var = $tokens->shift();
-                $args = implode(',', iterator_to_array($tokens));
-                $atmark = $nullsafe ? '@' : '';
+                $args = [];
+                foreach ($tokens as $n => $token) {
+                    if ($n % 2 === 0) {
+                        $args[] = [var_export($token->text === '?->', true)];
+                    }
+                    else {
+                        $args[array_key_last($args)][] = $token->text;
+                    }
+                }
+                $args = implode(',', array_map(fn($arg) => '[' . implode(',', $arg) . ']', $args));
+                $atmark = $coalesce ? '@' : '';
                 return [-100, "$atmark$getter($var,$args)"];
             });
         }

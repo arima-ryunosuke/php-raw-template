@@ -139,11 +139,11 @@ z
         $rewrite = $this->publishMethod(new RewriteWrapper(), 'rewrite');
 
         $actual = "<?= ARRAYS.key1.key2 | f1 | f2 ?>\n";
-        $expected = "<?=html(f2(f1(access(ARRAYS,'key1','key2')))),\"\\n\"?>\n";
+        $expected = "<?=html(f2(f1(access(ARRAYS,[false,'key1'],[false,'key2'])))),\"\\n\"?>\n";
         $this->assertEquals($expected, $rewrite($actual, self::defaultOption));
 
         $actual = "<?= @ARRAYS.key1.key2 | f1 | f2 ?>\n";
-        $expected = "<?=f2(f1(access(ARRAYS,'key1','key2'))),\"\\n\"?>\n";
+        $expected = "<?=f2(f1(access(ARRAYS,[false,'key1'],[false,'key2']))),\"\\n\"?>\n";
         $this->assertEquals($expected, $rewrite($actual, ['nofilter' => '@'] + self::defaultOption));
     }
 
@@ -153,15 +153,15 @@ z
         $rewrite = $this->publishMethod(new RewriteWrapper(), 'rewrite');
 
         $this->assertEquals(
-            "<?=html(f2(f1(@access(\$array,'key1','key2','3','key') ?? 123)))?>",
+            "<?=html(f2(f1(@access(\$array,[false,'key1'],[false,'key2'],[false,'3'],[false,'key']) ?? 123)))?>",
             (string) $rewrite('<?= $array.key1.key2.3.key ?? 123 | f1 | f2 ?>', self::defaultOption)
         );
         $this->assertEquals(
-            "<?=html(f2(f1(access(\$array,'key1','key2','3','key'))) ?? 456)?>",
+            "<?=html(f2(f1(access(\$array,[false,'key1'],[false,'key2'],[false,'3'],[false,'key']))) ?? 456)?>",
             (string) $rewrite('<?= $array.key1.key2.3.key | f1 | f2 ?? 456 ?>', self::defaultOption)
         );
         $this->assertEquals(
-            "<?=html(f2(f1(@access(\$array,'key1','key2','3','key') ?? 123)) ?? 456)?>",
+            "<?=html(f2(f1(@access(\$array,[false,'key1'],[false,'key2'],[false,'3'],[false,'key']) ?? 123)) ?? 456)?>",
             (string) $rewrite('<?= $array.key1.key2.3.key ?? 123 | f1 | f2 ?? 456 ?>', self::defaultOption)
         );
     }
@@ -186,6 +186,7 @@ z
             $filter = function ($v) { return str_replace(' ', '(space)', $v); };
             $getter = function ($p, ...$k) {
                 foreach ($k as $key) {
+                    [, $key] = $key;
                     $p = is_arrayable($p) ? $p[$key] : $p->$key;
                 }
                 return $p;
@@ -280,7 +281,7 @@ z
 <? foreach($array.key1.key2 as $k => $v): ?>
 <? endforeach ?>';
         $expected = "
-<?php foreach(access(\$array,'key1','key2') as \$k => \$v): ?>
+<?php foreach(access(\$array,[false,'key1'],[false,'key2']) as \$k => \$v): ?>
 <?php endforeach ?>";
         $this->assertEquals($expected, $rewrite($actual, ['compatibleShortTag' => true] + self::defaultOption));
 
@@ -318,7 +319,7 @@ z
 <? foreach($array.key1.key2 as $k => $v): ?>
 <? endforeach ?>';
         $expected = "
-<?php foreach(access(\$array,'key1','key2') as \$k => \$v): ?>
+<?php foreach(access(\$array,[false,'key1'],[false,'key2']) as \$k => \$v): ?>
 <?php endforeach ?>";
         $this->assertEquals($expected, $rewrite($actual, self::defaultOption));
 
@@ -379,19 +380,19 @@ z
 
         $source = new Source('<?= $array.key1.key2.3.key + 3.14 ?>');
         $rewrite($source, '.', 'access');
-        $this->assertEquals("<?= access(\$array,'key1','key2','3','key') + 3.14 ?>", (string) $source);
+        $this->assertEquals("<?= access(\$array,[false,'key1'],[false,'key2'],[false,'3'],[false,'key']) + 3.14 ?>", (string) $source);
 
         $source = new Source('<?= $object->field ?><?= $object->method() ?><?= $object->method($object->field) ?>');
         $rewrite($source, '->', 'access');
-        $this->assertEquals("<?= access(\$object,'field') ?><?= \$object->method() ?><?= \$object->method(access(\$object,'field')) ?>", (string) $source);
+        $this->assertEquals("<?= access(\$object,[false,'field']) ?><?= \$object->method() ?><?= \$object->method(access(\$object,[false,'field'])) ?>", (string) $source);
 
         $source = new Source('<?= "A-{$array.key1.key2.3.key}-Z" ?>');
         $rewrite($source, '.', 'access');
-        $this->assertEquals("<?= \"A-\".access(\$array,'key1','key2','3','key').\"-Z\" ?>", (string) $source);
+        $this->assertEquals("<?= \"A-\".access(\$array,[false,'key1'],[false,'key2'],[false,'3'],[false,'key']).\"-Z\" ?>", (string) $source);
 
         $source = new Source('<?= "A-{$array->key1->key2->3->key}-Z" ?>');
         $rewrite($source, '->', 'access');
-        $this->assertEquals("<?= \"A-\".access(\$array,'key1','key2','3','key').\"-Z\" ?>", (string) $source);
+        $this->assertEquals("<?= \"A-\".access(\$array,[false,'key1'],[false,'key2'],[false,'3'],[false,'key']).\"-Z\" ?>", (string) $source);
 
         $source = new Source('<?= $array.key1.key2.3 + 3.14 ?>');
         $rewrite($source, '.', '');
@@ -402,6 +403,24 @@ z
         $this->assertEquals("<?= \$array['key']['3'] + .14 ?>", (string) $source);
     }
 
+    function test_rewriteAccessKey_nullsafe()
+    {
+        /** @see RewriteWrapper::rewriteAccessKey() */
+        $rewrite = $this->publishMethod(new RewriteWrapper(), 'rewriteAccessKey');
+
+        $source = new Source('<?= $array?->key1?->key2 + 3.14 ?>');
+        $rewrite($source, '?->', 'access');
+        $this->assertEquals("<?= access(\$array,[true,'key1'],[true,'key2']) + 3.14 ?>", (string) $source);
+
+        $source = new Source('<?= ($array?->key1?->key2 ?? 100) + 3.14 ?>');
+        $rewrite($source, '?->', 'access');
+        $this->assertEquals("<?= (@access(\$array,[true,'key1'],[true,'key2']) ?? 100) + 3.14 ?>", (string) $source);
+
+        $source = new Source('<?= $object?->field ?><?= $object?->method() ?><?= $object?->method($object?->field) ?>');
+        $rewrite($source, '?->', 'access');
+        $this->assertEquals("<?= access(\$object,[true,'field']) ?><?= \$object?->method() ?><?= \$object?->method(access(\$object,[true,'field'])) ?>", (string) $source);
+    }
+
     function test_rewriteAccessKey_isset()
     {
         /** @see RewriteWrapper::rewriteAccessKey() */
@@ -409,11 +428,11 @@ z
 
         $source = new Source('<?= isset($array.key1.key2.3.key + 3.14) ?>');
         $rewrite($source, '.', 'access');
-        $this->assertEquals("<?= !@is_null(access(\$array,'key1','key2','3','key') + 3.14) ?>", (string) $source);
+        $this->assertEquals("<?= !@is_null(access(\$array,[false,'key1'],[false,'key2'],[false,'3'],[false,'key']) + 3.14) ?>", (string) $source);
 
         $source = new Source('<?= empty($array.key1.key2.3.key + 3.14) ?>');
         $rewrite($source, '.', 'access');
-        $this->assertEquals("<?= !@boolval(access(\$array,'key1','key2','3','key') + 3.14) ?>", (string) $source);
+        $this->assertEquals("<?= !@boolval(access(\$array,[false,'key1'],[false,'key2'],[false,'3'],[false,'key']) + 3.14) ?>", (string) $source);
     }
 
     function test_rewriteAccessKey_default()
@@ -423,7 +442,7 @@ z
 
         $source = new Source('<?= $array.key1.key2.3.key ?? "default" ?>');
         $rewrite($source, '.', 'access');
-        $this->assertEquals("<?= @access(\$array,'key1','key2','3','key') ?? \"default\" ?>", (string) $source);
+        $this->assertEquals("<?= @access(\$array,[false,'key1'],[false,'key2'],[false,'3'],[false,'key']) ?? \"default\" ?>", (string) $source);
     }
 
     function test_rewriteModifier()

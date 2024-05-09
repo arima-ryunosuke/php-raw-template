@@ -17,13 +17,17 @@ class RendererTest extends \ryunosuke\Test\AbstractTestCase
 
     function test_access()
     {
-        $this->assertEquals('X', Renderer::access(['x' => 'X'], 'x'));
-        $this->assertEquals('X', Renderer::access((object) ['x' => 'X'], 'x'));
-        $this->assertEquals('X', Renderer::access(new \ArrayObject(['x' => 'X']), 'x'));
+        $this->assertEquals('X', Renderer::access(['x' => 'X'], [false, 'x']));
+        $this->assertEquals('X', Renderer::access((object) ['x' => 'X'], [false, 'x']));
+        $this->assertEquals('X', Renderer::access(new \ArrayObject(['x' => 'X']), [false, 'x']));
+        $this->assertEquals(null, Renderer::access(null, [true, 'x']));
+        $this->assertEquals(null, Renderer::access(new \ArrayObject(['x' => null]), [false, 'x'], [true, 'y']));
 
-        $this->assertEquals(['y' => ['z' => 999]], Renderer::access(['x' => ['y' => ['z' => 999]]], 'x'));
-        $this->assertEquals(['z' => 999], Renderer::access(['x' => ['y' => ['z' => 999]]], 'x', 'y'));
-        $this->assertEquals('999', Renderer::access(['x' => ['y' => ['z' => 999]]], 'x', 'y', 'z'));
+        $this->assertEquals(['y' => ['z' => 999]], Renderer::access(['x' => ['y' => ['z' => 999]]], [false, 'x']));
+        $this->assertEquals(['z' => 999], Renderer::access(['x' => ['y' => ['z' => 999]]], [false, 'x'], [false, 'y']));
+        $this->assertEquals('999', Renderer::access(['x' => ['y' => ['z' => 999]]], [false, 'x'], [false, 'y'], [false, 'z']));
+        $this->assertEquals(null, Renderer::access(null, [true, 'x']));
+        $this->assertEquals(null, Renderer::access(['x' => null], [false, 'x'], [true, 'y']));
     }
 
     function test_strip()
@@ -159,6 +163,7 @@ line3
             'debug'           => true,
             'compileDir'      => self::COMPILE_DIR,
             'defaultClass'    => \template\T::class,
+            'varAccessor'     => '.',
             'specialVariable' => [
                 '$undef' => 'int',
             ],

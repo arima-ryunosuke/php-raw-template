@@ -63,9 +63,13 @@ class Renderer
      *
      * ArrayAccess なオブジェクトは [$key] を優先する。
      */
-    public static function access(mixed $value, string ...$keys): mixed
+    public static function access(mixed $value, array ...$keys): mixed
     {
         foreach ($keys as $key) {
+            [$nullsafe, $key] = $key;
+            if ($nullsafe === true && $value === null) {
+                return null;
+            }
             $value = is_arrayable($value) ? $value[$key] : $value->$key;
         }
         return $value;
@@ -113,7 +117,7 @@ class Renderer
             'nofilter'           => '@',
             'varModifier'        => ['|', '&'],
             'varReceiver'        => '$_',
-            'varAccessor'        => '.',
+            'varAccessor'        => '->',
             'varExpander'        => '`',
         ];
 
@@ -428,6 +432,11 @@ class Renderer
 
     private function gatherAccessor(Source $source, string $accessor): array
     {
+        // -> は式 vs 式ではないのでかき集める必要がない
+        if ($accessor === '->') {
+            return [];
+        }
+
         $result = [];
         foreach ($source->match([$accessor, T_STRING]) as $tokens) {
             $code = (string) $tokens->pop();

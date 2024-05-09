@@ -22,7 +22,8 @@ class TemplateTest extends \ryunosuke\Test\AbstractTestCase
     function test_render()
     {
         $renderer = new Renderer([
-            'debug'      => true,
+            'debug'       => true,
+            'varAccessor' => '.',
             'compileDir' => self::COMPILE_DIR,
         ]);
         $template = new Template($renderer, self::TEMPLATE_DIR . '/simple.phtml');
