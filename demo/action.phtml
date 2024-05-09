@@ -14,15 +14,15 @@
 /** @var \Closure $closure */
 // @formatter:on
 ?>
-<?php $this->extend(__DIR__ . '/layout.phtml') ?>
-
-<?php $this->assign('title', 'PageTitle') ?>
-<?php $this->assign('childvar', 'ChildVar') ?>
+<?php $this->extend(__DIR__ . '/layout.phtml', [
+    'title'    => 'PageTitle',
+    'childvar' => 'ChildVar',
+]) ?>
 
 <?php $this->begin('main') ?>
 <section>
     <h2>親・子コンテンツの関係</h2>
-    親テンプレートで宣言された変数は使えません：<?= $parentvar ?? 'not defined' ?>
+    親テンプレートに渡した変数は使えません：<?= $childvar ?? 'not defined' ?>
     parent メソッドを使用して親コンテンツを表示します。
     <?php $this->parent() ?>
 
@@ -53,17 +53,18 @@
 
 <section>
     <h2>配列・オブジェクトアクセス</h2>
-    これは配列のアクセスです（"." で配列アクセスできます）：<?= $array . hoge ?>
-    配列アクセスはネストできます：<?= $array . fuga . 0 ?>
-    オブジェクトもアクセスできます：<?= $object . hoge ?>
-    配列とオブジェクトは混在して OK です：<?= $object . fuga . 0 ?>
-    埋め込み構文も使えます1：<?= "prefix-{$object . fuga . 0}-suffix" ?>
-    埋め込み構文も使えます2：<?= "prefix-{$closure(strtolower($object . fuga . 0))}-suffix" ?>
-    このように ?? 演算子とも併用できます：<?= $array . undefined ?? 'default' ?>
-    オブジェクトも可能できます。共にネストも出来ます：<?= $object . undefined1 . undefined2 ?? 'default' | strtoupper ?>
+    これは配列のアクセスです（"->" で配列アクセスできます）：<?= $array->hoge ?>
+    配列アクセスはネストできます：<?= $array->fuga->x ?>
+    "?->" で nullsafe アクセスができます：<?= $array?->undefined1?->undefined2 ?? 'default' ?>
+    オブジェクトもアクセスできます：<?= $object->hoge ?>
+    配列とオブジェクトは混在して OK です：<?= $object->fuga->x ?>
+    埋め込み構文も使えます1：<?= "prefix-{$object->fuga->x}-suffix" ?>
+    埋め込み構文も使えます2：<?= "prefix-{$closure(strtolower($object->fuga->x))}-suffix" ?>
+    このように ?? 演算子とも併用できます：<?= $array->undefined ?? 'default' ?>
+    オブジェクトも可能できます。共にネストも出来ます：<?= $object->undefined1->undefined2 ?? 'default' | strtoupper ?>
 
-    上記2つの機能は「配列アクセス -> 修飾子」のときのみ組み合わせ可能です：<?= $array . fuga | implode(',', $_) ?>
-    右記のような順番の組み合わせはできません：<?= @"<?=" ?> $string | str_split . 3 <?= @"?>" ?>
+    上記2つの機能は「配列アクセス -> 修飾子」のときのみ組み合わせ可能です：<?= $array->fuga | implode(',', $_) ?>
+    右記のような順番の組み合わせはできません：<?= @"<?=" ?> $string | str_split->z <?= @"?>" ?>
 </section>
 
 <section>
@@ -115,12 +116,12 @@
     これらの機能は compatibleShortTag を true にすると php 本体で short_open_tag が無効にされていても使用できます（詳細は README にて）。
 
     foreach でアクセス子が使える
-    <? foreach ($array . fuga as $key => $value): ?>
+    <? foreach ($array->fuga as $key => $value): ?>
         <?= $value ?>
     <? endforeach ?>
 
     if で アクセス子が使える
-    <? if (empty($array . undefined)): ?>
+    <? if (empty($array->undefined)): ?>
         $object.undefined is undefined
     <? endif ?>
 </section>

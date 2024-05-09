@@ -26,14 +26,11 @@ class Modifier
 }
 
 $renderer = new \ryunosuke\NightDragon\Renderer([
-    'debug'              => defined('DEBUG') ? DEBUG : false,
+    'debug'              => defined('DEBUG') && DEBUG,
     'constFilename'      => __DIR__ . '/compiles/constant.php',
     'compileDir'         => __DIR__ . '/compiles',
     'defaultClass'       => Modifier::class,
-    'nofilter'           => '@',
     'compatibleShortTag' => true,
-    'varModifier'        => ['|', '&'],
-    'varExpander'        => '`',
 ]);
 
 $renderer->assign([
@@ -47,7 +44,7 @@ echo $renderer->render(__DIR__ . '/action.phtml', [
     'float'     => 12345.6789,
     'string'    => "This's Title",
     'multiline' => "line1\nline2\nline3",
-    'array'     => ['hoge' => 'HOGE', 'fuga' => ['X', 'Y', 'Z']],
-    'object'    => (object) ['hoge' => 'HOGE', 'fuga' => ['X', 'Y', 'Z']],
-    'closure'   => function ($arg) { return 'closure' . $arg; }
+    'array'     => ['hoge' => 'HOGE', 'fuga' => ['x' => 'X', 'y' => 'Y', 'z' => 'Z']],
+    'object'    => (object) ['hoge' => 'HOGE', 'fuga' => ['x' => 'X', 'y' => 'Y', 'z' => 'Z']],
+    'closure'   => function ($arg) { return 'closure' . $arg; },
 ]);
