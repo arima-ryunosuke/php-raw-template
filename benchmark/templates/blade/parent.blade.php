@@ -4,6 +4,7 @@
 </head>
 <body>
 @section('main')
-This is parent body.@show
+This is parent body.
+@show
 </body>
 </html>

@@ -85,7 +85,7 @@ foreach ($targets as $target) {
             break;
         case 'smarty':
             $smarty = (function () use ($templates, $compiles) {
-                $smarty = new \Smarty();
+                $smarty = new \Smarty\Smarty();
                 $smarty->escape_html = true;
                 $smarty->setCompileDir($compiles);
                 $smarty->setTemplateDir("$templates/smarty");
