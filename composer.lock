@@ -1815,16 +1815,16 @@
         },
         {
             "name": "ryunosuke/functions",
-            "version": "v2.0.1",
+            "version": "v2.0.10",
             "source": {
                 "type": "git",
                 "url": "https://github.com/arima-ryunosuke/php-functions.git",
-                "reference": "54c92f63e8e5a2f3d577d620431edb3bed5cb298"
+                "reference": "aefdee827c2a76e33f5ef0a2d2f7465b9ba6291b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/arima-ryunosuke/php-functions/zipball/54c92f63e8e5a2f3d577d620431edb3bed5cb298",
-                "reference": "54c92f63e8e5a2f3d577d620431edb3bed5cb298",
+                "url": "https://api.github.com/repos/arima-ryunosuke/php-functions/zipball/aefdee827c2a76e33f5ef0a2d2f7465b9ba6291b",
+                "reference": "aefdee827c2a76e33f5ef0a2d2f7465b9ba6291b",
                 "shasum": ""
             },
             "require": {
@@ -1860,9 +1860,9 @@
             "description": "Utility functions for PHP",
             "support": {
                 "issues": "https://github.com/arima-ryunosuke/php-functions/issues",
-                "source": "https://github.com/arima-ryunosuke/php-functions/tree/v2.0.1"
+                "source": "https://github.com/arima-ryunosuke/php-functions/tree/v2.0.10"
             },
-            "time": "2024-05-02T12:39:52+00:00"
+            "time": "2024-07-14T06:54:55+00:00"
         },
         {
             "name": "sebastian/cli-parser",
