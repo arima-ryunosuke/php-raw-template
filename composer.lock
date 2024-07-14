@@ -1652,25 +1652,28 @@
         },
         {
             "name": "ryunosuke/functions",
-            "version": "v1.6.5",
+            "version": "v1.6.20",
             "source": {
                 "type": "git",
                 "url": "https://github.com/arima-ryunosuke/php-functions.git",
-                "reference": "463e4d873dfd1074a09796e4884a37f674dd3797"
+                "reference": "fbe95791074710a07520b3610c63369e0ad31e7d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/arima-ryunosuke/php-functions/zipball/463e4d873dfd1074a09796e4884a37f674dd3797",
-                "reference": "463e4d873dfd1074a09796e4884a37f674dd3797",
+                "url": "https://api.github.com/repos/arima-ryunosuke/php-functions/zipball/fbe95791074710a07520b3610c63369e0ad31e7d",
+                "reference": "fbe95791074710a07520b3610c63369e0ad31e7d",
                 "shasum": ""
             },
             "require": {
                 "php": ">=7.4"
             },
             "require-dev": {
+                "benmorel/weakmap-polyfill": "*",
                 "phpunit/phpunit": "9.*",
-                "psr/simple-cache": "1.*",
-                "ryunosuke/phpunit-extension": "3.*"
+                "psr/log": "*",
+                "psr/simple-cache": "*",
+                "ryunosuke/phpunit-extension": "3.*",
+                "ryunosuke/polyfill-enum": "*"
             },
             "bin": [
                 "bin/export-function",
@@ -1695,9 +1698,9 @@
             "description": "Utility functions for PHP",
             "support": {
                 "issues": "https://github.com/arima-ryunosuke/php-functions/issues",
-                "source": "https://github.com/arima-ryunosuke/php-functions/tree/v1.6.5"
+                "source": "https://github.com/arima-ryunosuke/php-functions/tree/v1.6.20"
             },
-            "time": "2023-08-03T07:26:37+00:00"
+            "time": "2024-07-14T06:45:20+00:00"
         },
         {
             "name": "sebastian/code-unit-reverse-lookup",
@@ -3255,5 +3258,5 @@
     "platform-overrides": {
         "php": "7.4"
     },
-    "plugin-api-version": "2.3.0"
+    "plugin-api-version": "2.6.0"
 }
