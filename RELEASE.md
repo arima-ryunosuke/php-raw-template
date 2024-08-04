@@ -22,6 +22,10 @@
   - microsoft/tolerant-php-parser を試す
 - パス周りがメチャクチャなので正規化して realpath したい
 
+## 2.0.2
+
+- [feature] php8.2 のエラーを修正
+
 ## 2.0.1
 
 - [composer] update
