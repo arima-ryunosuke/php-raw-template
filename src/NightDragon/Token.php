@@ -9,8 +9,7 @@ class Token extends \PhpToken
         assert(count($arguments) > 0);
 
         if (is_array($arguments[0])) {
-            $arguments[0][0] ??= ord($arguments[0][1]);
-            return new Token(...$arguments[0]);
+            return new Token($arguments[0][0] ?? ord($arguments[0][1]), $arguments[0][1], $arguments[0][2] ?? -1, $arguments[0][3] ?? -1);
         }
         if (is_string($arguments[0])) {
             return new Token(ord($arguments[0]), $arguments[0]);
