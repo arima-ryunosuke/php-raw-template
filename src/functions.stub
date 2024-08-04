@@ -275,10 +275,6 @@ if (!defined('ryunosuke\\NightDragon\\JSON_BARE_AS_STRING')) {
     define('ryunosuke\\NightDragon\\JSON_BARE_AS_STRING', -106);
 }
 
-if (!defined('ryunosuke\\NightDragon\\TOKEN_NAME')) {
-    define('ryunosuke\\NightDragon\\TOKEN_NAME', 2);
-}
-
 if (!defined('ryunosuke\\NightDragon\\SI_UNITS')) {
     define('ryunosuke\\NightDragon\\SI_UNITS', [
         -8 => ["y"],
@@ -3053,6 +3049,7 @@ if (!function_exists('ryunosuke\\NightDragon\\function_configure')) {
         $config['placeholder'] ??= '';
         $config['var_stream'] ??= 'VarStreamV010000';
         $config['memory_stream'] ??= 'MemoryStreamV010000';
+        $config['array.variant'] ??= false;
         $config['chain.version'] ??= 2;
         $config['chain.nullsafe'] ??= false;
         $config['process.autoload'] ??= [];

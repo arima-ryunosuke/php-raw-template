@@ -275,10 +275,6 @@ if (!defined('ryunosuke\\NightDragon\\JSON_BARE_AS_STRING')) {
     define('ryunosuke\\NightDragon\\JSON_BARE_AS_STRING', -106);
 }
 
-if (!defined('ryunosuke\\NightDragon\\TOKEN_NAME')) {
-    define('ryunosuke\\NightDragon\\TOKEN_NAME', 2);
-}
-
 if (!defined('ryunosuke\\NightDragon\\SI_UNITS')) {
     define('ryunosuke\\NightDragon\\SI_UNITS', [
         -8 => ["y"],
@@ -1703,19 +1699,127 @@ if (!function_exists('ryunosuke\\NightDragon\\array_filter_map')) {
      *
      * @param iterable $array 対象配列
      * @param callable $callback 評価クロージャ
-     * @return array $callback が !false を返し map された配列
+     * @return iterable $callback が !false を返し map された配列
      */
     function array_filter_map($array, $callback)
     {
+        // Iterator だが ArrayAccess ではないオブジェクト（Generator とか）は unset できないので配列として扱わざるを得ない
+        if (!(function_configure('array.variant') && is_arrayable($array))) {
+            $array = arrayval($array, false);
+        }
+
         $callback = func_user_func_array($callback);
-        $result = [];
         $n = 0;
-        foreach ($array as $k => &$v) {
-            if ($callback($v, $k, $n++) !== false) {
-                $result[$k] = $v;
+        foreach (arrayval($array, false) as $k => $v) {
+            $map = $callback($v, $k, $n++);
+            if ($map === false) {
+                unset($array[$k]);
+            }
+            else {
+                $array[$k] = $v;
             }
         }
-        return $result;
+        return $array;
+    }
+}
+
+assert(!function_exists('ryunosuke\\NightDragon\\array_filter_recursive') || (new \ReflectionFunction('ryunosuke\\NightDragon\\array_filter_recursive'))->isUserDefined());
+if (!function_exists('ryunosuke\\NightDragon\\array_filter_recursive')) {
+    /**
+     * 再帰的に array_filter する
+     *
+     * 要素が配列だった場合に再帰する点とコールバックの引数以外は array_filter とほとんど変わらない。
+     * $callback が要求するならキーも渡ってくる。
+     *
+     * $unset_empty:true だと再帰で伏せられた結果が空になった場合、そのキーも伏せられる。
+     *
+     * Example:
+     * ```php
+     * $array = [
+     *     'a'  => 'A', // 生き残る
+     *     'e'  => '',  // 生き残らない
+     *     'a1' => [    // A がいるため $unset_empty は無関係に a1 自体も生き残る
+     *         'A', // 生き残る
+     *         '',  // 生き残らない
+     *     ],
+     *     'a2' => [    // 生き残りが居ないため $unset_empty:true だと a2 自体も生き残らない
+     *         '',  // 生き残らない
+     *         '',  // 生き残らない
+     *     ],
+     *     'b1' => [    // a1 のネスト版
+     *         'a' => [
+     *             'a' => 'A',
+     *             'e' => '',
+     *         ],
+     *     ],
+     *     'b2' => [    // a2 のネスト版
+     *         'a' => [
+     *             'a' => '',
+     *             'e' => '',
+     *         ],
+     *     ],
+     * ];
+     * // 親を伏せない版
+     * that(array_filter_recursive($array, fn($v) => strlen($v), false))->isSame([
+     *     "a"  => "A",
+     *     "a1" => ["A"],
+     *     "a2" => [],
+     *     "b1" => [
+     *         "a" => [
+     *             "a" => "A",
+     *         ],
+     *     ],
+     *     "b2" => [
+     *         "a" => [],
+     *     ],
+     * ]);
+     * // 親を伏せる版
+     * that(array_filter_recursive($array, fn($v) => strlen($v), true))->isSame([
+     *     "a"  => "A",
+     *     "a1" => ["A"],
+     *     "b1" => [
+     *         "a" => [
+     *             "a" => "A",
+     *         ],
+     *     ],
+     * ]);
+     * ```
+     *
+     * @package ryunosuke\Functions\Package\array
+     *
+     * @template T as iterable&\ArrayAccess
+     */
+    function array_filter_recursive(
+        /** @var T 対象配列 */ iterable $array,
+        /** 評価クロージャ（値, キー, 親キー配列） */ callable $callback,
+        /** 再帰の際に空になった要素も伏せるか */ bool $unset_empty = true,
+    ): /** フィルタされた配列 */ iterable
+    {
+        $callback = func_user_func_array($callback);
+
+        $main = function ($array, $parents) use (&$main, $callback, $unset_empty) {
+            // オブジェクトによっては活きたイテレータなのでループ内で unset することはできず、あらかじめ集めておく必要がある（ArrayObject 等）
+            $keys = [];
+            foreach ($array as $k => $v) {
+                $keys[] = $k;
+            }
+
+            foreach ($keys as $k) {
+                if (is_iterable($array[$k]) && is_arrayable($array[$k])) {
+                    $array[$k] = $main($array[$k], array_merge($parents, [$k]));
+                    if ($unset_empty && is_empty($array[$k])) {
+                        unset($array[$k]);
+                    }
+                }
+                else {
+                    if (!$callback($array[$k], $k, $parents)) {
+                        unset($array[$k]);
+                    }
+                }
+            }
+            return $array;
+        };
+        return $main($array, []);
     }
 }
 
@@ -1751,7 +1855,11 @@ if (!function_exists('ryunosuke\\NightDragon\\array_filters')) {
      */
     function array_filters($array, ...$callbacks)
     {
-        $array = arrayval($array, false);
+        // Iterator だが ArrayAccess ではないオブジェクト（Generator とか）は unset できないので配列として扱わざるを得ない
+        if (!(function_configure('array.variant') && is_arrayable($array))) {
+            $array = arrayval($array, false);
+        }
+
         foreach ($callbacks as $callback) {
             if (is_string($callback) && $callback[0] === '@') {
                 $margs = [];
@@ -1774,7 +1882,7 @@ if (!function_exists('ryunosuke\\NightDragon\\array_filters')) {
                 $callback = func_user_func_array($callback);
             }
             $n = 0;
-            foreach ($array as $k => $v) {
+            foreach (arrayval($array, false) as $k => $v) {
                 if (isset($margs)) {
                     $flag = ([$v, $callback])(...$margs);
                 }
@@ -2746,20 +2854,27 @@ if (!function_exists('ryunosuke\\NightDragon\\array_map_filter')) {
      * @param iterable $array 対象配列
      * @param callable $callback 評価クロージャ
      * @param bool $strict 厳密比較フラグ。 true だと null のみが偽とみなされる
-     * @return array $callback が真を返した新しい配列
+     * @return iterable $callback が真を返した新しい配列
      */
     function array_map_filter($array, $callback, $strict = false)
     {
+        // Iterator だが ArrayAccess ではないオブジェクト（Generator とか）は unset できないので配列として扱わざるを得ない
+        if (!(function_configure('array.variant') && is_arrayable($array))) {
+            $array = arrayval($array, false);
+        }
+
         $callback = func_user_func_array($callback);
-        $result = [];
         $n = 0;
-        foreach ($array as $k => $v) {
+        foreach (arrayval($array, false) as $k => $v) {
             $vv = $callback($v, $k, $n++);
             if (($strict && $vv !== null) || (!$strict && $vv)) {
-                $result[$k] = $vv;
+                $array[$k] = $vv;
+            }
+            else {
+                unset($array[$k]);
             }
         }
-        return $result;
+        return $array;
     }
 }
 
@@ -2921,11 +3036,15 @@ if (!function_exists('ryunosuke\\NightDragon\\array_maps')) {
      *
      * @param iterable $array 対象配列
      * @param callable ...$callbacks 評価クロージャ配列
-     * @return array 評価クロージャを通した新しい配列
+     * @return iterable 評価クロージャを通した新しい配列
      */
     function array_maps($array, ...$callbacks)
     {
-        $result = arrayval($array, false);
+        // Iterator だが ArrayAccess ではないオブジェクト（Generator とか）は unset できないので配列として扱わざるを得ない
+        if (!(function_configure('array.variant') && is_arrayable($array))) {
+            $array = arrayval($array, false);
+        }
+
         foreach ($callbacks as $callback) {
             if (is_string($callback) && $callback[0] === '@') {
                 $margs = [];
@@ -2948,19 +3067,19 @@ if (!function_exists('ryunosuke\\NightDragon\\array_maps')) {
                 $callback = func_user_func_array($callback);
             }
             $n = 0;
-            foreach ($result as $k => $v) {
+            foreach (arrayval($array, false) as $k => $v) {
                 if (isset($margs)) {
-                    $result[$k] = ([$v, $callback])(...$margs);
+                    $array[$k] = ([$v, $callback])(...$margs);
                 }
                 elseif ($vargs) {
-                    $result[$k] = $callback(...$v);
+                    $array[$k] = $callback(...$v);
                 }
                 else {
-                    $result[$k] = $callback($v, $k, $n++);
+                    $array[$k] = $callback($v, $k, $n++);
                 }
             }
         }
-        return $result;
+        return $array;
     }
 }
 
@@ -5553,27 +5672,27 @@ if (!function_exists('ryunosuke\\NightDragon\\kvsort')) {
 
         // 一時配列の準備
         $n = 0;
-        $tmp = [];
+        $virtuals = [];
+        $result = [];
         foreach ($array as $k => $v) {
-            $virtuals = [];
             if ($is_array) {
                 foreach ($schwartzians as $s => $schwartzian) {
-                    $virtuals[$s] = $schwartzian($v, $k, $n);
+                    $virtuals[$k][$s] = $schwartzian($v, $k, $n);
                 }
             }
             else {
-                $virtuals = $schwartzians[0]($v, $k, $n);
+                $virtuals[$k] = $schwartzians[0]($v, $k, $n);
             }
-            $tmp[] = [$n++, $k, $v, $virtuals];
+            $result[$k] = $v;
         }
+        uksort($result, function ($keyA, $keyB) use ($result, $comparator, $virtuals) {
+            $a = $result[$keyA];
+            $b = $result[$keyB];
 
-        // ソートしてから元の配列の体裁で返す
-        usort($tmp, function ($a, $b) use ($comparator, $schwartzians) {
-            $virtuals = $schwartzians ? [$a[3], $b[3]] : [];
-            $com = $comparator(...$virtuals, ...[$a[2], $b[2], $a[1], $b[1]]);
-            return $com !== 0 ? $com : ($a[0] - $b[0]);
+            $virtual = $virtuals ? [$virtuals[$keyA], $virtuals[$keyB]] : [];
+            return $comparator(...$virtual, ...[$a, $b, $keyA, $keyB]);
         });
-        return array_column($tmp, 2, 1);
+        return $result;
     }
 }
 
@@ -12060,7 +12179,9 @@ if (!function_exists('ryunosuke\\NightDragon\\set_all_error_handler')) {
      * あらゆるエラーをハンドルする
      *
      * 実質的には set_error_handler+set_exception_handler+register_shutdown_function してるだけ。
-     * ハンドラの引数は Throwable 固定（エラーの場合は ErrorException に変換されてコールされる）。
+     * あと小細工して初動エラーも拾うがあまり気にしなくてよい。
+     *
+     * ハンドラの引数は Throwable 固定（エラーの場合は Error に変換されてコールされる）。
      * ハンドラが true/null を返すと設定前（ない場合は標準）のハンドラがコールされる。
      * 実用上は「ログるかログらないか」くらいの差でしかない。
      *
@@ -12073,7 +12194,7 @@ if (!function_exists('ryunosuke\\NightDragon\\set_all_error_handler')) {
         /** fatal 用に予約するサイズ */ int $reserved_byte = 0,
     ): /** キャンセルする callable */ callable
     {
-        return new class($handler, $atmark_error, $reserved_byte) {
+        $result = new class($handler, $atmark_error, $reserved_byte) {
             private static array  $instances         = [];
             private static string $reservedMemory    = '';
             private static bool   $regsteredShutdown = false;
@@ -12096,7 +12217,7 @@ if (!function_exists('ryunosuke\\NightDragon\\set_all_error_handler')) {
                         return false;
                     }
 
-                    $default = ($this->handler)(new \ErrorException($errstr, 0, $errno, $errfile, $errline)) ?? true;
+                    $default = ($this->handler)($this->newError($errstr, 0, $errno, $errfile, $errline)) ?? true;
                     if ($default) {
                         return ($this->error_handler)($errno, $errstr, $errfile, $errline);
                     }
@@ -12122,11 +12243,11 @@ if (!function_exists('ryunosuke\\NightDragon\\set_all_error_handler')) {
                             // が存在するので個別にハンドリングしないと呼ばれる機会が失われる
                             if (($error = error_get_last()) !== null) {
                                 if (false
-                                    || in_array($error['type'], [E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)
+                                    || in_array($error['type'], [E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_CORE_WARNING, E_COMPILE_WARNING], true)
                                     || strpos($error['message'], 'Allowed memory size') === 0
                                     || strpos($error['message'], 'Maximum execution time') === 0
                                 ) {
-                                    ($instance->handler)(new \ErrorException($error['message'], 1, $error['type'], $error['file'], $error['line']));
+                                    ($instance->handler)($instance->newError($error['message'], 1, $error['type'], $error['file'], $error['line']));
                                 }
                             }
                         }
@@ -12140,7 +12261,41 @@ if (!function_exists('ryunosuke\\NightDragon\\set_all_error_handler')) {
                 restore_exception_handler();
                 unset(self::$instances[spl_object_id($this)]);
             }
+
+            public function newError($message, $code, $errno, $errfile, $errline, $previous = null)
+            {
+                return new class($message, $code, $errno, $errfile, $errline, $previous) extends \Error {
+                    private int $severity;
+
+                    public function __construct($message, $code, $errno, $errfile, $errline, $previous)
+                    {
+                        parent::__construct($message, $code, $previous);
+
+                        $this->file = $errfile;
+                        $this->line = $errline;
+
+                        $this->severity = $errno;
+                    }
+
+                    public function getSeverity(): int
+                    {
+                        return $this->severity;
+                    }
+                };
+            }
         };
+
+        // 初動エラーが error_get_last() で取得できることがある
+        if (($error = error_get_last()) !== null) {
+            // 初動エラーはスクリプト無関係なので line:0 で発生される
+            if ($error['line'] === 0) {
+                $handler($result->newError($error['message'], -1, $error['type'], $error['file'], $error['line']));
+                // 以後一度もエラーがないと shutdown で引っかかってしまう
+                error_clear_last();
+            }
+        }
+
+        return $result;
     }
 }
 
@@ -20546,6 +20701,7 @@ if (!function_exists('ryunosuke\\NightDragon\\ip_info')) {
             'cachedir' => function_configure('storagedir') . '/' . rawurlencode(__FUNCTION__),
             'ttl'      => 60 * 60 * 24 + 120, // 120 は1日1回バッチで叩くことを前提としたバッファ
             'rir'      => [],
+            'throw'    => true, // テスト用で原則 true（例外が飛ばないと情報が膨大過ぎるので失敗しても気付けない）
         ];
         $options['rir'] += [
             'afrinic' => 'https://ftp.afrinic.net/pub/stats/afrinic/delegated-afrinic-latest',
@@ -20589,9 +20745,12 @@ if (!function_exists('ryunosuke\\NightDragon\\ip_info')) {
 
         http_requests($urls, [
             'cachedir' => $options['cachedir'],
-            'callback' => function ($rir, $body) use ($files) {
+            'callback' => function ($rir, $body, $header, $info) use ($files, $options) {
+                if ($options['throw'] && ($body === null || $info['http_code'] >= 400)) {
+                    throw new \UnexpectedValueException("request {$info['url']} failed. caused by {$info['http_code']}(error {$info['errno']})");
+                }
                 $tmpfile = tmpfile();
-                fwrite($tmpfile, $body);
+                fwrite($tmpfile, $body ?? '');
                 rewind($tmpfile);
 
                 $cidrs = [];
@@ -20616,10 +20775,23 @@ if (!function_exists('ryunosuke\\NightDragon\\ip_info')) {
             },
         ]);
 
+        // サイズがでかいので static 等にはしない（opcache に完全に任せる）
         $all = [];
         foreach ($files as $file) {
-            // サイズがでかいので static 等にはしない（opcache に完全に任せる）
-            $rir = is_array($file) ? $file : include $file;
+            if (is_array($file)) {
+                $rir = $file;
+            }
+            elseif (file_exists($file)) {
+                $rir = include $file;
+            }
+            else {
+                // @codeCoverageIgnoreStart http が失敗したときなので基本的に到達しない（http が失敗したときは既に例外投げられている）
+                $rir = [];
+                if ($options['throw']) {
+                    throw new \UnexpectedValueException("failed to load $file");
+                }
+                // @codeCoverageIgnoreEnd
+            }
 
             if ($ipaddr === null) {
                 $all += $rir;
@@ -25167,13 +25339,15 @@ if (!function_exists('ryunosuke\\NightDragon\\str_anyof')) {
      *
      * @package ryunosuke\Functions\Package\strings
      *
-     * @param string $needle 調べる文字列
+     * @param ?string $needle 調べる文字列
      * @param iterable $haystack 候補配列
      * @param bool $case_insensitivity 大文字小文字を無視するか
      * @return bool 候補の中にあるならそのキー。無いなら null
      */
     function str_anyof(?string $needle, $haystack, $case_insensitivity = false)
     {
+        $needle ??= '';
+
         foreach ($haystack as $k => $v) {
             if (!$case_insensitivity && strcmp($needle, $v) === 0) {
                 return $k;
@@ -29195,8 +29369,7 @@ if (!function_exists('ryunosuke\\NightDragon\\cacheobject')) {
      * - キャッシュはファイルシステムに保存される
      * - キャッシュキーの . はディレクトリ区切りとして使用される
      * - TTL を指定しなかったときのデフォルト値は約100年（実質無期限だろう）
-     * - clear するとディレクトリ自体を吹き飛ばすのでそのディレクトリはキャッシュ以外の用途に使用してはならない
-     * - psr-16 にはない getOrSet が生えている（利便性が非常に高く使用頻度が多いため）
+     * - psr-16 にはない getOrSet(fetch) が生えている（利便性が非常に高く使用頻度が多いため）
      *
      * 性質上、参照されない期限切れキャッシュが溜まり続けるが $clean_probability を渡すと一定確率で削除される。
      * $clean_probability は 1 が 100%（必ず削除）、 0 が 0%（削除しない）である。
@@ -29209,13 +29382,16 @@ if (!function_exists('ryunosuke\\NightDragon\\cacheobject')) {
      *
      * @package ryunosuke\Functions\Package\utility
      *
-     * @param string $directory キャッシュ保存ディレクトリ
+     * @param ?string $directory キャッシュ保存ディレクトリ
      * @param float $clean_probability 不要キャッシュの削除確率
      * @return \Cacheobject psr-16 実装オブジェクト
      */
-    function cacheobject($directory, $clean_probability = 0)
+    function cacheobject($directory = null, $clean_probability = 0)
     {
-        $cacheobject = new class($directory) {
+        static $cacheobjects = [];
+
+        $directory ??= function_configure('cachedir');
+        $cacheobject = $cacheobjects[$directory] ??= new class($directory) {
             private $directory;
             private $entries = [];
 
@@ -29271,14 +29447,22 @@ if (!function_exists('ryunosuke\\NightDragon\\cacheobject')) {
 
             private function _getFilename(string $key): string
             {
-                return $this->directory . DIRECTORY_SEPARATOR . strtr(rawurlencode($key), ['.' => DIRECTORY_SEPARATOR]) . ".php";
+                return $this->directory . DIRECTORY_SEPARATOR . strtr(rawurlencode($key), ['.' => DIRECTORY_SEPARATOR]) . ".php-cache";
+            }
+
+            private function _getCacheFilenames(): array
+            {
+                return file_list($this->directory, [
+                    '!type'     => ['dir', 'link'],
+                    'extension' => ['php-cache'],
+                ]) ?? [];
             }
 
             private function _getMetadata(string $filename): ?array
             {
-                $fp = fopen($filename, "r");
+                $fp = @fopen($filename, "r");
                 if ($fp === false) {
-                    return null; // @codeCoverageIgnore
+                    return null;
                 }
                 try {
                     $first = fgets($fp);
@@ -29292,9 +29476,7 @@ if (!function_exists('ryunosuke\\NightDragon\\cacheobject')) {
 
             public function keys(?string $pattern = null)
             {
-                $files = file_list($this->directory, [
-                    '!type' => ['dir', 'link'],
-                ]);
+                $files = $this->_getCacheFilenames();
 
                 $now = time();
                 $result = [];
@@ -29376,8 +29558,16 @@ if (!function_exists('ryunosuke\\NightDragon\\cacheobject')) {
                 $expire = time() + $ttl;
                 $this->entries[$key] = [$expire, $value];
                 $meta = json_encode(['key' => $key, 'expire' => $expire]);
-                $code = var_export3($this->entries[$key], ['outmode' => 'eval']);
-                return !!file_set_contents($this->_getFilename($key), "<?php # $meta\n$code\n");
+                // var_export3 はあらゆる出力を可能にしているので **読み込み時** のオーバーヘッドがでかく、もし var_export が使えるならその方が格段に速い
+                // しかし要素を再帰的に全舐め（is_exportable）しないと「var_export できるか？」は分からないというジレンマがある
+                // このコンテキストは「キャッシュ」なので書き込み時のオーバーヘッドよりも読み込み時のオーバーヘッドを優先して判定を行っている
+                if (is_exportable($this->entries[$key])) {
+                    $code = var_export($this->entries[$key], true);
+                }
+                else {
+                    $code = var_export3($this->entries[$key], true);
+                }
+                return !!file_set_contents($this->_getFilename($key), "<?php # $meta\nreturn $code;\n");
             }
 
             public function delete($key)
@@ -29388,10 +29578,30 @@ if (!function_exists('ryunosuke\\NightDragon\\cacheobject')) {
                 return @unlink($this->_getFilename($key));
             }
 
+            public function provide($provider, ...$args)
+            {
+                $provider_hash = (string) new \ReflectionFunction($provider);
+                $cacheid = "autoprovide." . hash('fnv164', $provider_hash);
+                $key = $provider_hash . '@' . serialize($args);
+
+                $cache = $this->get($cacheid) ?? [];
+                if (!array_key_exists($key, $cache)) {
+                    $result = $provider(...$args);
+                    if ($result === null) {
+                        return null;
+                    }
+                    $cache[$key] = $result;
+                    $this->set($cacheid, $cache);
+                }
+                return $cache[$key];
+            }
+
             public function clear()
             {
                 $this->entries = [];
-                return rm_rf($this->directory, false);
+
+                $files = $this->_getCacheFilenames();
+                return count($files) === count(array_filter(array_map('unlink', $files)));
             }
 
             public function getMultiple($keys, $default = null)
@@ -29446,6 +29656,7 @@ if (!function_exists('ryunosuke\\NightDragon\\cacheobject')) {
             public function get($key, $default = null): mixed                { return $this->cacheobject->{__FUNCTION__}(...func_get_args()); }
             public function set($key, $value, $ttl = null): bool             { return $this->cacheobject->{__FUNCTION__}(...func_get_args()); }
             public function delete($key): bool                               { return $this->cacheobject->{__FUNCTION__}(...func_get_args()); }
+            public function provide($provider, ...$args): mixed              { return $this->cacheobject->{__FUNCTION__}(...func_get_args()); }
             public function clear(): bool                                    { return $this->cacheobject->{__FUNCTION__}(...func_get_args()); }
             public function getMultiple($keys, $default = null): iterable    { return $this->cacheobject->{__FUNCTION__}(...func_get_args()); }
             public function setMultiple($values, $ttl = null): bool          { return $this->cacheobject->{__FUNCTION__}(...func_get_args()); }
@@ -29478,6 +29689,7 @@ if (!function_exists('ryunosuke\\NightDragon\\function_configure')) {
         $config['placeholder'] ??= '';
         $config['var_stream'] ??= 'VarStreamV010000';
         $config['memory_stream'] ??= 'MemoryStreamV010000';
+        $config['array.variant'] ??= false;
         $config['chain.version'] ??= 2;
         $config['chain.nullsafe'] ??= false;
         $config['process.autoload'] ??= [];
@@ -30429,6 +30641,84 @@ if (!function_exists('ryunosuke\\NightDragon\\is_empty')) {
     }
 }
 
+assert(!function_exists('ryunosuke\\NightDragon\\is_exportable') || (new \ReflectionFunction('ryunosuke\\NightDragon\\is_exportable'))->isUserDefined());
+if (!function_exists('ryunosuke\\NightDragon\\is_exportable')) {
+    /**
+     * 値が var_export で出力可能か検査する
+     *
+     * 「出力可能」とは「意味のある出力」を意味する。
+     * 例えば set_state のないオブジェクトはエラーなく set_state コール形式で出力されるが意味のある出力ではない。
+     * リソース型はエラーなく NULL で出力されるが意味のある出力ではない。
+     * 循環参照は出力できるものの warning が出てかつ循環は切れるため意味のある出力ではない。
+     *
+     * Example:
+     * ```php
+     * that(is_primitive(null))->isTrue();
+     * that(is_primitive(false))->isTrue();
+     * that(is_primitive(123))->isTrue();
+     * that(is_primitive(STDIN))->isTrue();
+     * that(is_primitive(new \stdClass))->isFalse();
+     * that(is_primitive(['array']))->isFalse();
+     * ```
+     *
+     * @package ryunosuke\Functions\Package\var
+     *
+     * @param mixed $var 調べる値
+     * @return bool 出力可能なら true
+     */
+    function is_exportable($var): bool
+    {
+        // スカラー/NULL は OK
+        if (is_scalar($var) || is_null($var)) {
+            return true;
+        }
+
+        // リソース型の変数は、この関数ではエクスポートする事ができません
+        if (is_resourcable($var)) {
+            return false;
+        }
+
+        // var_export() では循環参照を扱うことができません
+        if (is_recursive($var)) {
+            return false;
+        }
+
+        // 配列に制限はない。それゆえに全要素を再帰的に見なければならない
+        if (is_array($var)) {
+            foreach ($var as $v) {
+                if (!is_exportable($v)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        if (is_object($var)) {
+            // 無名クラスは非常に特殊で、出力は class@anonymous{filename}:123$456::__set_state(...) のようになる
+            // set_state さえ実装してれば復元可能に思えるが php コードとして不正なのでそのまま実行するとシンタックスエラーになる
+            // 'class@anonymous{filename}:123$456'::__set_state(...) のようにクオートすれば実行可能になるが、それは標準 var_export の動作ではない
+            // 復元する側がクオートして読み込み…とすれば復元可能だが、そもそもクラスがロードされている保証もない
+            // これらのことを考慮するなら「意味のある出力」ではないとみなした方が手っ取り早い
+            if ((new \ReflectionClass($var))->isAnonymous()) {
+                return false;
+            }
+            // var_export() が生成する PHP を評価できるようにするためには、処理対象のすべてのオブジェクトがマジックメソッド __set_state を実装している必要があります
+            if (method_exists($var, '__set_state')) {
+                return true;
+            }
+            // これの唯一の例外は stdClass です。 stdClass は、配列をオブジェクトにキャストした形でエクスポートされます
+            if (get_class($var) === \stdClass::class) {
+                return true;
+            }
+            // マニュアルに記載はないが enum は export できる
+            if ($var instanceof \UnitEnum) {
+                return true;
+            }
+            return false;
+        }
+    }
+}
+
 assert(!function_exists('ryunosuke\\NightDragon\\is_primitive') || (new \ReflectionFunction('ryunosuke\\NightDragon\\is_primitive'))->isUserDefined());
 if (!function_exists('ryunosuke\\NightDragon\\is_primitive')) {
     /**
@@ -30624,6 +30914,8 @@ if (!function_exists('ryunosuke\\NightDragon\\is_typeof')) {
      */
     function is_typeof($var, string $typestring, $context = null)
     {
+        $context ??= '';
+
         $match = function ($type) use ($var, $context) {
             $type = trim($type);
             // ?type は 7.4 を最後に姿を消したが $typestring はただの文字列なので与えられる可能性がなくはない
@@ -31374,9 +31666,17 @@ if (!function_exists('ryunosuke\\NightDragon\\var_export3')) {
                     }
                     elseif ($next->text === '(') {
                         $text = namespace_resolve($text, $ref->getFileName(), 'function') ?? $text;
+                        // 関数・定数は use しなくてもグローバルにフォールバックされる（=グローバルと名前空間の区別がつかない）
+                        if (!function_exists($text) && function_exists($nstext = '\\' . $ref->getNamespaceName() . '\\' . $text)) {
+                            $text = $nstext;
+                        }
                     }
                     else {
                         $text = namespace_resolve($text, $ref->getFileName(), 'const') ?? $text;
+                        // 関数・定数は use しなくてもグローバルにフォールバックされる（=グローバルと名前空間の区別がつかない）
+                        if (!const_exists($text) && const_exists($nstext = '\\' . $ref->getNamespaceName() . '\\' . $text)) {
+                            $text = $nstext;
+                        }
                     }
                 }
 
@@ -31673,11 +31973,16 @@ if (!function_exists('ryunosuke\\NightDragon\\var_export3')) {
             if (is_resourcable($value)) {
                 // スタンダードなリソースなら復元できないこともない
                 $meta = stream_get_meta_data($value);
-                if (!in_array(strtolower($meta['stream_type']), ['stdio', 'output'], true)) {
+                $stream_type = strtolower($meta['stream_type']);
+                if (!in_array($stream_type, ['stdio', 'output', 'temp', 'memory'], true)) {
                     throw new \DomainException('resource is supported stream resource only.');
                 }
                 $meta['position'] = @ftell($value);
                 $meta['context'] = stream_context_get_options($value);
+                $meta['buffer'] = null;
+                if (in_array($stream_type, ['temp', 'memory'], true)) {
+                    $meta['buffer'] = stream_get_contents($value, null, 0);
+                }
                 return "\$this->$vid = \$this->open({$export($meta, $nest + 1)})";
             }
 
@@ -31747,6 +32052,9 @@ if (!function_exists('ryunosuke\\NightDragon\\var_export3')) {
                     $resource = fopen($metadata['uri'], $metadata['mode'], false, stream_context_create($metadata['context']));
                     if ($resource === false) {
                         return null;
+                    }
+                    if ($metadata['seekable'] && is_string($metadata['buffer'])) {
+                        fwrite($resource, $metadata['buffer']);
                     }
                     if ($metadata['seekable'] && is_int($metadata['position'])) {
                         fseek($resource, $metadata['position']);
