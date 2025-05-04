@@ -37,7 +37,7 @@ class Renderer
 
     private array $assignedVars = [];
 
-    private array $consts = ['modifier' => [], 'accessor' => []];
+    private array $consts = ['variable' => [], 'modifier' => [], 'accessor' => []];
 
     /**
      * ENT_QUOTES で htmlspecialchars するだけのラッパー関数
@@ -200,9 +200,14 @@ class Renderer
             $meta = [];
             if ($this->gatherOptions['gatherVariable']) {
                 $variables = $this->gatherVariable($source, $ropt['varReceiver'], $vars, $parentVars);
+                if ($this->gatherOptions['constFilename']) {
+                    $this->consts['variable'] += $variables;
+                }
+                else {
                     $meta[] = self::VARIABLE_COMMENT;
                     $meta[] = array_sprintf($variables, '/** @var %s %s */', "\n");
                 }
+            }
             if ($this->gatherOptions['gatherModifier']) {
                 $modifiers = $this->gatherModifier($source, $ropt['varModifier'], $ropt['defaultNamespace'], $ropt['defaultClass']);
                 if ($this->gatherOptions['constFilename']) {
@@ -388,7 +393,7 @@ class Renderer
 
     private function outputConstFile(string $filename, array $consts): ?int
     {
-        if (!$consts['modifier'] && !$consts['accessor']) {
+        if (!$consts['variable'] && !$consts['modifier'] && !$consts['accessor']) {
             return null;
         }
 
@@ -400,19 +405,29 @@ class Renderer
                 $current = [];
             }
 
+            $consts['variable'] = array_replace_callback(fn($types) => implode('|', array_unique(explode('|', implode('|', $types)))), $current['variable'] ?? [], $consts['variable']);
+            $consts['variable'] += $current['variable'] ?? [];
             $consts['modifier'] += $current['modifier'] ?? [];
             $consts['accessor'] += $current['accessor'] ?? [];
 
+            unset($consts['variable']['$this']);
+
+            ksort($consts['variable']);
             ksort($consts['modifier']);
             ksort($consts['accessor']);
 
             $E = fn($v) => var_export($v, true);
             $V = fn($v) => $v;
+            $vs = array_sprintf($consts['variable'], fn($v, $k) => "/** @var $v $k */\n$k = $k ?? null;", "\n");
             $ms = array_sprintf($consts['modifier'], fn($v, $k) => "function $k(...\$args){define({$E($k)}, $v(...[]));return $v(...\$args);}", "\n");
             $as = array_sprintf($consts['accessor'], fn($v, $k) => "define({$E($v)}, {$E($v)});", "\n");
 
+            // 変数系は if (null) で包むと補完が効かなくなる
+            // 定義系はコンパイル時点でエラーになるので if (null) で包む
             return <<<PHP
                 <?php
+                {$V(self::VARIABLE_COMMENT)}
+                {$V($vs)}
                 if (null) {
                     {$V(self::MODIFIER_FUNCTION_COMMENT)}
                     {$V(php_indent($ms, 4))}

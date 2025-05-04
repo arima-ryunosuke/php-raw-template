@@ -380,11 +380,16 @@ PHP
         $outputConstFile = $this->publishMethod($renderer, 'outputConstFile');
 
         $this->assertNull($outputConstFile($FILENAME, [
+            'variable' => [],
             'accessor' => [],
             'modifier' => [],
         ]));
 
         $outputConstFile($FILENAME, [
+            'variable' => [
+                '$this' => 'string',
+                '$hoge' => 'string',
+            ],
             'accessor' => [
                 'hoge1' => 'hoge1',
             ],
@@ -394,6 +399,9 @@ PHP
         ]);
         $this->assertStringEqualsFile($FILENAME, <<<'EXPECTED'
 <?php
+// using variables:
+/** @var string $hoge */
+$hoge = $hoge ?? null;
 if (null) {
     // using modifier functions:
     function fuga1(...$args){define('fuga1', fuga1(...[]));return fuga1(...$args);}
@@ -401,6 +409,9 @@ if (null) {
     define('hoge1', 'hoge1');
 }
 return [
+    "variable" => [
+        "\$hoge" => "string",
+    ],
     "accessor" => [
         "hoge1" => "hoge1",
     ],
@@ -413,6 +424,10 @@ EXPECTED
         );
 
         $outputConstFile($FILENAME, [
+            'variable' => [
+                '$hoge' => 'int',
+                '$fuga' => 'string',
+            ],
             'accessor' => [
                 'ns\\hoge2' => 'ns\\hoge2',
                 'over'      => 'over',
@@ -424,6 +439,11 @@ EXPECTED
         ]);
         $this->assertStringEqualsFile($FILENAME, <<<'EXPECTED'
 <?php
+// using variables:
+/** @var string $fuga */
+$fuga = $fuga ?? null;
+/** @var string|int $hoge */
+$hoge = $hoge ?? null;
 if (null) {
     // using modifier functions:
     function \ns\fuga2(...$args){define('\\ns\\fuga2', ns\fuga2(...[]));return ns\fuga2(...$args);}
@@ -435,6 +455,10 @@ if (null) {
     define('over', 'over');
 }
 return [
+    "variable" => [
+        "\$fuga" => "string",
+        "\$hoge" => "string|int",
+    ],
     "accessor" => [
         "hoge1"     => "hoge1",
         "ns\\hoge2" => "ns\\hoge2",
@@ -452,6 +476,9 @@ EXPECTED
 
         file_put_contents($FILENAME, '<?php syntax error.');
         $outputConstFile($FILENAME, [
+            'variable' => [
+                '$hoge' => 'bool',
+            ],
             'accessor' => [
                 'hoge1' => 'hoge1',
             ],
@@ -461,6 +488,9 @@ EXPECTED
         ]);
         $this->assertStringEqualsFile($FILENAME, <<<'EXPECTED'
 <?php
+// using variables:
+/** @var bool $hoge */
+$hoge = $hoge ?? null;
 if (null) {
     // using modifier functions:
     function fuga1(...$args){define('fuga1', fuga1(...[]));return fuga1(...$args);}
@@ -468,6 +498,9 @@ if (null) {
     define('hoge1', 'hoge1');
 }
 return [
+    "variable" => [
+        "\$hoge" => "bool",
+    ],
     "accessor" => [
         "hoge1" => "hoge1",
     ],
