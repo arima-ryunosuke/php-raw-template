@@ -99,6 +99,7 @@ class Renderer
             'constFilename'      => null,
             'typeMapping'        => [],
             'specialVariable'    => [],
+            'ignoreVariable'     => [],
             // インジェクション系
             'templateClass'      => Template::class,
             // ディレクトリ系
@@ -133,6 +134,7 @@ class Renderer
             'constFilename'   => (string) $options['constFilename'],
             'typeMapping'     => $explodes((array) $options['typeMapping']),
             'specialVariable' => $explodes((array) $options['specialVariable']),
+            'ignoreVariable'  => (array) $options['ignoreVariable'],
         ];
         $this->renderOptions = [
             'customTagHandler'   => (array) $options['customTagHandler'],
@@ -313,6 +315,7 @@ class Renderer
                 }
             }
         }
+        $result = array_diff_key($result, $this->gatherOptions['ignoreVariable']);
 
         static $orders = null;
         $orders = $orders ?? array_flip(['mixed', 'object', 'callable', 'iterable', 'array', 'string', 'int', 'float', 'bool', 'null']);

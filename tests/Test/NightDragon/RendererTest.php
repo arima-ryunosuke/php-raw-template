@@ -301,7 +301,11 @@ PHP
                 '$multiple' => ['array', 'stdClass'],
                 '$mixed'    => ['mixed', 'array', 'resource'],
             ],
+            'ignoreVariable'  => [
+                '$unset' => null,
+            ],
         ]);
+        $renderer->assign('unset', 'UNSET');
         $renderer->assign('fixed', new \DateTime());
         $renderer->assign('multiple', new \RuntimeException());
 
