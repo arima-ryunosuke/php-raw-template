@@ -594,7 +594,7 @@ not inner3
                 'var1' => 'ex-var1',
                 'var2' => 'ex-var2',
             ],
-            realpath(self::TEMPLATE_DIR . '/vars-inner.phtml') => [
+            realpath(self::TEMPLATE_DIR . '/vars-inner.phtml')  => [
                 'inner1' => 'ex-inner1',
                 'inner2' => 'ex-inner2',
             ],
@@ -646,7 +646,6 @@ not inner3
             $this->assertEquals(realpath(self::TEMPLATE_DIR . '/notice.phtml'), $e->getFile());
             $this->assertStringContainsString('Undefined variable', $e->getMessage());
             $this->assertStringContainsString('*a<?= $undefined ?>z', $e->getMessage());
-            $this->assertStringNotContainsString(' ' . Renderer::DEFAULT_PROTOCOL, $e->getTraceAsString());
             return;
         }
         $this->fail();
@@ -673,7 +672,6 @@ near:
  dummy line 8
  dummy line 9
 ', $e->getMessage());
-            $this->assertStringNotContainsString(' ' . Renderer::DEFAULT_PROTOCOL, $e->getTraceAsString());
             return;
         }
         $this->fail();
@@ -695,7 +693,6 @@ near:
             $this->assertEquals(0, $e->getCode());
             $this->assertEquals(__FILE__, $e->getFile());
             $this->assertEquals('msg', $e->getMessage());
-            $this->assertStringNotContainsString(' ' . Renderer::DEFAULT_PROTOCOL, $e->getTraceAsString());
             return;
         }
         $this->fail();
@@ -766,13 +763,11 @@ near:
             $this->assertEquals(2, $e->getCode());
             $this->assertEquals(__FILE__, $e->getFile());
             $this->assertEquals('msg2', $e->getMessage());
-            $this->assertStringNotContainsString(' ' . Renderer::DEFAULT_PROTOCOL, $e->getTraceAsString());
 
             $e = $e->getPrevious();
             $this->assertEquals(1, $e->getCode());
             $this->assertEquals(__FILE__, $e->getFile());
             $this->assertEquals('msg1', $e->getMessage());
-            $this->assertStringNotContainsString(' ' . Renderer::DEFAULT_PROTOCOL, $e->getTraceAsString());
 
             return;
         }
@@ -792,7 +787,6 @@ near:
             $this->assertEquals(realpath(self::TEMPLATE_DIR . '/syntax.html'), $e->getFile());
             $this->assertStringContainsString('syntax error, unexpected', $e->getMessage());
             $this->assertStringContainsString('*<?php this is syntax error ?>', $e->getMessage());
-            $this->assertStringNotContainsString(' ' . Renderer::DEFAULT_PROTOCOL, $e->getTraceAsString());
             return;
         }
         $this->fail();

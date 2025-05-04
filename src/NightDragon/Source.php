@@ -6,12 +6,10 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
 {
     const SHORT_OPEN_TAG = '<?pHP ';
 
-    /// ショートタグ互換モード定数
     const SHORT_TAG_NOTHING = 0; // <? に関して何もしない
     const SHORT_TAG_REPLACE = 1; // <? を <?php に読み替えるがパース時のみで書き下しには影響しない
     const SHORT_TAG_REWRITE = 2; // <? を <?php に読み替えてパース時だけでなく書き下しにも影響する
 
-    /// matcher 定数
     const MATCH_ANY       = true; // 任意のトークンにマッチ
     const MATCH_MANY      = -1;   // 指定トークンに量的マッチ
     const MATCH_NOT       = -98;  // 否定フラグ
@@ -173,7 +171,7 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
      * トークン先頭・末尾から1つ取り出す
      *
      * 取り出したトークンは失われる。
-
+     *
      * @return Token[] トークン配列（[前, 後]）
      */
     public function shrink(mixed $type = T_WHITESPACE): array

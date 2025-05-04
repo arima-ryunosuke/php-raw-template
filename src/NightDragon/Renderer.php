@@ -15,8 +15,6 @@ class Renderer
     const USING    = 1 << 3; // 使用されている変数
     const DECLARED = 1 << 4; // 既存の @var 変数
 
-    const DEFAULT_PROTOCOL = 'RewriteWrapper';
-
     private bool $debug;
 
     private bool $errorHandling;

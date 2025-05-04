@@ -2,9 +2,9 @@
 
 namespace ryunosuke\Test\NightDragon;
 
+use ryunosuke\NightDragon\Compiler;
 use ryunosuke\NightDragon\HtmlObject;
 use ryunosuke\NightDragon\Renderer;
-use ryunosuke\NightDragon\Compiler;
 use ryunosuke\NightDragon\Source;
 use function ryunosuke\NightDragon\array_sprintf;
 use function ryunosuke\NightDragon\is_arrayable;
