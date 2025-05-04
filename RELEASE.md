@@ -22,6 +22,12 @@
   - microsoft/tolerant-php-parser を試す
 - パス周りがメチャクチャなので正規化して realpath したい
 
+## 2.0.3
+
+- [feature] ignoreVariable オプションを追加
+- [change] constFilename 内に変数宣言も追加
+- [change] 型宣言を array-shapes 記法に変更
+
 ## 2.0.2
 
 - [feature] php8.2 のエラーを修正

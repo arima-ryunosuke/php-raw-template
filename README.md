@@ -578,8 +578,8 @@ $renderer = new \ryunosuke\NightDragon\Renderer([
     'constFilename'      => null,
     'typeMapping'        => [],
     'specialVariable'    => [],
+    'ignoreVariable'     => [],
     // インジェクション系
-    'wrapperProtocol'    => Renderer::DEFAULT_PROTOCOL,
     'templateClass'      => Template::class,
     // ディレクトリ系
     'compileDir'         => null,
@@ -685,7 +685,7 @@ gatherAccessor を true にすると `<?= $array->key ?>` の `key` が定数宣
 
 #### constFilename
 
-ここにファイル名を指定すると gatherModifier, gatherAccessor で吐き出されるような定数宣言が指定したファイルに書き出されます。
+ここにファイル名を指定すると gatherVariable, gatherModifier, gatherAccessor で吐き出されるような定数宣言が指定したファイルに書き出されます。
 前述の通り、定数宣言は phpstorm の警告を抑止するためのものであり、同一ファイルである必要はありませんし `true or ` といえど活きたコードとして埋め込むのは気持ち悪いです。
 このオプションを使用するとすべての定数定義を一つのファイルにまとめることができます。
 
@@ -695,6 +695,15 @@ gatherAccessor を true にすると `<?= $array->key ?>` の `key` が定数宣
 
 用途は主にデバッグ用です。
 プロジェクトメンバー間で差異が生まれやすいファイルなので、プロジェクト内のどこかに配置して gitignore で無視すると良いかもしれません。
+
+このオプションで別ファイルに逃がすか元テンプレートに埋め込むかは状況によります。
+今のところ下記が確認できています（全て phpstorm 前提です）。
+
+- include/extract を使用すると未定義警告を無くせる
+- array-shapes の対応が未完全
+- $this はどうしようもない
+
+埋め込んでしまった方が全体的な利便性は高いんですが、基本的には余計なことをしない別ファイルに逃がす方を推奨します。
 
 #### typeMapping
 
@@ -706,10 +715,14 @@ gatherAccessor を true にすると `<?= $array->key ?>` の `key` が定数宣
 ここで `[$varname => typename]` という配列を指定すると、 テンプレートにアサインされた型に関わらず強制的にその変数名は指定した型として出力されます。
 共通的なテンプレートでアサインされる型が場合によって異なる、といった状況で型を固定することができます。
 
-#### wrapperProtocol
+#### ignoreVariable
 
-php ソース書き換え用のカスタムストリームラッパー名を指定します。
-デフォルトは `RewriteWrapper` です。基本的に指定する必要はありません（被ったときとかに指定してください）。
+ここで `[$varname => null]` という配列を指定すると、その変数は gatherVariable の対象外になります。
+型が複雑で巨大とか array-shapes 記法でエラーになってしまうとか特殊な状況で使います。
+
+値は現在の仕様だとなんでも受け入れます。
+これは将来的に bool でフラグ化したり、クロージャで条件判定したりする想定があるためです。
+今のところは null を指定しておくのが無難です。
 
 #### templateClass
 
