@@ -289,62 +289,6 @@ PHP
         $this->assertFileExists(self::COMPILE_DIR);
     }
 
-    function test_detectType()
-    {
-        $renderer = new Renderer([
-            'debug'       => true,
-            'typeMapping' => [
-                '\\DateTime' => [\DateTime::class, \DateTimeImmutable::class],
-            ],
-        ]);
-
-        /** @see Renderer::detectType() */
-        $detectType = $this->publishMethod($renderer, 'detectType');
-
-        // シンプルな奴ら
-        $this->assertEquals(['int'], $detectType(123));
-        $this->assertEquals(['float'], $detectType(3.14));
-        $this->assertEquals(['bool'], $detectType(false));
-        $this->assertEquals(['string'], $detectType('string'));
-        $this->assertEquals(['resource'], $detectType(STDOUT));
-        $this->assertEquals(['array'], $detectType([]));
-        $this->assertEquals(['\\Exception'], $detectType(new \Exception()));
-        $this->assertEquals(['DateTime', 'DateTimeImmutable'], $detectType(new \DateTime()));
-
-        // 素の匿名クラスは object
-        $this->assertEquals(['object'], $detectType(new class {
-        }));
-        // 継承していばそいつ
-        $this->assertEquals(['\\stdClass'], $detectType(new class extends \stdClass {
-        }));
-        // 実装していばそいつ
-        $this->assertEquals(['\\Countable'], $detectType(new class implements \Countable {
-            public function count(): int { }
-        }));
-        // 継承も実装もしてれば両方
-        $this->assertEquals(['\\stdClass', '\\Countable'], $detectType(new class extends \stdClass implements \Countable {
-            public function count(): int { }
-        }));
-        // ただし継承元に実装メソッドが含まれている場合は含まれない
-        $this->assertEquals(['\\ArrayObject', '\\JsonSerializable'], $detectType(new class extends \ArrayObject implements \Countable, \JsonSerializable {
-            #[\ReturnTypeWillChange]
-            public function jsonSerialize() { }
-        }));
-
-        // 配列系のシンプルな奴ら
-        $this->assertEquals(['int[]'], $detectType([1, 2, 3]));
-        $this->assertEquals(['array'], $detectType([1, 'a', null]));
-        $this->assertEquals(['DateTime[]', 'DateTimeImmutable[]'], $detectType([new \DateTime(), new \DateTime()]));
-        $this->assertEquals(['DateTime[][]', 'DateTimeImmutable[][]'], $detectType([[new \DateTime()], [new \DateTime()]]));
-        // 配列の配列系
-        $this->assertEquals(['string[]'], $detectType(["a", "b", "c"]));
-        $this->assertEquals(['string[][]'], $detectType([["a"], ["b"], ["c"]]));
-        // オブジェクト配列反変
-        $this->assertEquals(['\\Exception[]'], $detectType([new \Exception(), new \RuntimeException()]));
-        $this->assertEquals(['\\Exception[]'], $detectType([new \RuntimeException(), new \Exception()]));
-        $this->assertEquals(['\\Exception[][]'], $detectType([[new \Exception()], [new \Exception()]]));
-    }
-
     function test_gatherVariable()
     {
         $renderer = new Renderer([
@@ -358,6 +302,7 @@ PHP
                 '$mixed'    => ['mixed', 'array', 'resource'],
             ],
         ]);
+        $renderer->assign('fixed', new \DateTime());
         $renderer->assign('multiple', new \RuntimeException());
 
         /** @see Renderer::gatherVariable() */
@@ -379,7 +324,7 @@ PHP
         $vars = $gatherVariable(new Source(""), '$_', [], [
             'var' => ['a', 'b'],
         ]);
-        $this->assertEqualsCanonicalizing(['string[]', 'int', 'float'], explode('|', $vars['$var']));
+        $this->assertEqualsCanonicalizing(['array', 'array<string>', 'float', 'int'], explode('|', $vars['$var']));
 
         // 継承関係は末端が優先される
         $vars = $gatherVariable(new Source(""), '$_', [], [
@@ -416,6 +361,7 @@ PHP
             '$e'        => 'string',
             '$this'     => '\\ryunosuke\\NightDragon\\Template',
             '$_'        => 'mixed',
+            '$fixed'    => 'DateTime|DateTimeImmutable',
             '$multiple' => 'array|\\RuntimeException|stdClass',
             '$x'        => 'string',
         ], $vars);

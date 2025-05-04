@@ -200,9 +200,9 @@ class Renderer
             $meta = [];
             if ($this->gatherOptions['gatherVariable']) {
                 $variables = $this->gatherVariable($source, $ropt['varReceiver'], $vars, $parentVars);
-                $meta[] = self::VARIABLE_COMMENT;
-                $meta[] = array_sprintf($variables, '/** @var %s %s */', "\n");
-            }
+                    $meta[] = self::VARIABLE_COMMENT;
+                    $meta[] = array_sprintf($variables, '/** @var %s %s */', "\n");
+                }
             if ($this->gatherOptions['gatherModifier']) {
                 $modifiers = $this->gatherModifier($source, $ropt['varModifier'], $ropt['defaultNamespace'], $ropt['defaultClass']);
                 if ($this->gatherOptions['constFilename']) {
@@ -250,66 +250,17 @@ class Renderer
 
     private function detectType(mixed $var): array
     {
-        $map = function ($type) use (&$map) {
-            if (is_array($type)) {
-                return array_flatten(array_map($map, $type));
-            }
-            if (isset($this->gatherOptions['typeMapping'][$type])) {
-                return $this->gatherOptions['typeMapping'][$type];
-            }
-            return [$type];
-        };
-
-        // 配列は array じゃなくて Type[] にできる可能性がある
-        $is_subclass_of = function ($v, $types) {
-            foreach ($types as $type) {
-                if (is_subclass_of($v, $type)) {
-                    return true;
-                }
-            }
-            return false;
-        };
-        if (is_array($var) && count($var) > 0) {
-            $first = array_shift($var);
-            $type = $this->detectType($first);
-            // 型がバラバラでも抽象型の可能性があるので反変を取る
-            foreach ($var as $v) {
-                $next = $this->detectType($v);
-                if ($next === $type || $is_subclass_of($v, $type)) {
-                    continue;
-                }
-                elseif ($is_subclass_of($first, $next)) {
-                    $type = $next;
-                    continue;
-                }
-                else {
-                    $type = null;
-                    break;
-                }
-            }
-            if ($type) {
-                return array_sprintf($type, '%s[]');
-            }
+        $type = var_type($var);
+        if (isset($this->gatherOptions['typeMapping'][$type])) {
+            return $this->gatherOptions['typeMapping'][$type];
         }
 
-        // 無名クラスはファイル名なども含まれて一意じゃないので親クラス・実装インターフェースで名前引き
-        if (is_object($var)) {
-            $ref = new \ReflectionClass($var);
-            if ($ref->isAnonymous()) {
-                if ($pc = $ref->getParentClass()) {
-                    $is = array_diff($ref->getInterfaceNames(), $pc->getInterfaceNames());
-                    return array_sprintf(array_merge([$pc->name], $map($is)), '\\%s');
-                }
-                if ($is = $ref->getInterfaceNames()) {
-                    return array_sprintf($map($is), '\\%s');
-                }
-                // 本当に匿名ならどうしようもないので object
-                return $map('object');
-            }
-            return $map('\\' . get_class($var));
-        }
-
-        return $map(var_type($var));
+        return [
+            var_type($var, [
+                'phpdoc' => true,
+                'format' => 0,
+            ]),
+        ];
     }
 
     private function gatherVariable(Source $source, string $receiver, array $vars, array $parentVars): array
@@ -345,7 +296,7 @@ class Renderer
             Source::MATCH_MANY,
             T_CLOSE_TAG,
         ]) as $tokens) {
-            preg_match_all('#/\*\* @var\s+([^\s]+?)\s+([^\s]+).*?\*/#msu', (string) $tokens, $matches, PREG_SET_ORDER);
+            preg_match_all('#/\*\* @var\s+([^\s]+?)\s+(\$[^\s]+).*?\*/#msu', (string) $tokens, $matches, PREG_SET_ORDER);
             $results[self::DECLARED] = array_map(fn($v) => explode('|', $v), array_column($matches, 1, 2));
         }
 
@@ -367,13 +318,6 @@ class Renderer
             }
             foreach ($types as $type1 => $dummy1) {
                 foreach ($types as $type2 => $dummy2) {
-                    // 明示的な配列型が来ている場合 array は不要
-                    if (preg_match('#\[]$#', $type1) && $type2 === 'array') {
-                        unset($types[$type2]);
-                    }
-                    if (preg_match('#\[]$#', $type2) && $type1 === 'array') {
-                        unset($types[$type1]);
-                    }
                     // 継承関係は末端を優先
                     if (is_subclass_of($type1, $type2)) {
                         unset($types[$type2]);
@@ -388,6 +332,7 @@ class Renderer
             $result[$varname] = implode('|', array_keys($types));
         }
 
+        $result = array_map(fn($types) => implode('|', array_unique(explode('|', $types))), $result);
         $result = array_filter($result);
         $result = array_shrink_key($results[self::DECLARED] ?? [], $result) + $result;
 
