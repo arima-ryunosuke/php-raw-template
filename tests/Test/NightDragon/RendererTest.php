@@ -112,6 +112,17 @@ line3
 
     function test___construct()
     {
+        set_error_handler(function ($errno, $errstr, $errfile, $errline) {
+            throw new \ErrorException($errstr, 0, $errno, $errfile, $errline);
+        });
+
+        $this->assertException('specified unknown options', function () {
+            return new Renderer([
+                'debug'   => true,
+                'unknown' => true,
+            ]);
+        });
+
         $this->assertException('is not writable directory', function () {
             return new Renderer([
                 'compileDir' => DIRECTORY_SEPARATOR === '/' ? '/dev/null' : 'nul',

@@ -88,7 +88,7 @@ class Renderer
     {
         // オプションを弄ったら README も書き換えること
         $debug = $options['debug'] ?? false;
-        $options += [
+        $defaults = [
             // デバッグ系
             'debug'              => $debug,
             'errorHandling'      => $debug,
@@ -120,6 +120,10 @@ class Renderer
             'varAccessor'        => '->',
             'varExpander'        => '`',
         ];
+        if ($debug && $diff = array_diff_key($options, $defaults)) {
+            trigger_error(sprintf('%s specified unknown options(%s)', get_class($this), implode(',', array_keys($diff))), E_USER_NOTICE);
+        }
+        $options += $defaults;
 
         $explodes = fn($types) => array_map(fn($types) => array_flatten(array_map(fn($v) => explode('|', $v), (array) $types)), $types);
 
