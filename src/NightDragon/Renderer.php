@@ -5,6 +5,7 @@ namespace ryunosuke\NightDragon;
 class Renderer
 {
     const META_COMMENT              = '# meta template data';
+    const META_EVAL_MARKER          = '# meta eval marker';
     const VARIABLE_COMMENT          = '// using variables:';
     const MODIFIER_FUNCTION_COMMENT = '// using modifier functions:';
     const ACCESS_KEY_COMMENT        = '// using array keys:';
@@ -400,7 +401,8 @@ class Renderer
 
         return file_rewrite_contents($filename, function ($contents) use ($consts) {
             try {
-                $current = eval('?>' . $contents);
+                $start = strpos($contents, self::META_EVAL_MARKER) ?: 0;
+                $current = eval(substr($contents, $start));
             }
             catch (\Throwable) {
                 $current = [];
@@ -410,8 +412,6 @@ class Renderer
             $consts['variable'] += $current['variable'] ?? [];
             $consts['modifier'] += $current['modifier'] ?? [];
             $consts['accessor'] += $current['accessor'] ?? [];
-
-            unset($consts['variable']['$this']);
 
             ksort($consts['variable']);
             ksort($consts['modifier']);
@@ -435,6 +435,7 @@ class Renderer
                     {$V(self::ACCESS_KEY_COMMENT)}
                     {$V(php_indent($as, 4))}
                 }
+                {$V(self::META_EVAL_MARKER)}
                 return {$V(var_export2($consts, 1))};
                 
                 PHP;

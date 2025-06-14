@@ -406,15 +406,19 @@ PHP
 // using variables:
 /** @var string $hoge */
 $hoge = $hoge ?? null;
+/** @var string $this */
+$this = $this ?? null;
 if (null) {
     // using modifier functions:
     function fuga1(...$args){define('fuga1', fuga1(...[]));return fuga1(...$args);}
     // using array keys:
     define('hoge1', 'hoge1');
 }
+# meta eval marker
 return [
     "variable" => [
         "\$hoge" => "string",
+        "\$this" => "string",
     ],
     "accessor" => [
         "hoge1" => "hoge1",
@@ -448,6 +452,8 @@ EXPECTED
 $fuga = $fuga ?? null;
 /** @var string|int $hoge */
 $hoge = $hoge ?? null;
+/** @var string $this */
+$this = $this ?? null;
 if (null) {
     // using modifier functions:
     function \ns\fuga2(...$args){define('\\ns\\fuga2', ns\fuga2(...[]));return ns\fuga2(...$args);}
@@ -458,10 +464,12 @@ if (null) {
     define('ns\\hoge2', 'ns\\hoge2');
     define('over', 'over');
 }
+# meta eval marker
 return [
     "variable" => [
         "\$fuga" => "string",
         "\$hoge" => "string|int",
+        "\$this" => "string",
     ],
     "accessor" => [
         "hoge1"     => "hoge1",
@@ -501,6 +509,7 @@ if (null) {
     // using array keys:
     define('hoge1', 'hoge1');
 }
+# meta eval marker
 return [
     "variable" => [
         "\$hoge" => "bool",
