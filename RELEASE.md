@@ -22,6 +22,12 @@
   - microsoft/tolerant-php-parser を試す
 - パス周りがメチャクチャなので正規化して realpath したい
 
+## 2.0.4
+
+- [feature] 未知のオプションを与えていると notice を出す
+- [feature] 独自コードをファイルメタ情報に埋め込む機能
+- [feature] constFilename の $this 対応
+
 ## 2.0.3
 
 - [feature] ignoreVariable オプションを追加

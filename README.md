@@ -577,6 +577,7 @@ $renderer = new \ryunosuke\NightDragon\Renderer([
     'gatherAccessor'     => $debug,
     'constFilename'      => null,
     'typeMapping'        => [],
+    'specialDeclaration' => '',
     'specialVariable'    => [],
     'ignoreVariable'     => [],
     // インジェクション系
@@ -701,7 +702,6 @@ gatherAccessor を true にすると `<?= $array->key ?>` の `key` が定数宣
 
 - include/extract を使用すると未定義警告を無くせる
 - array-shapes の対応が未完全
-- $this はどうしようもない
 
 埋め込んでしまった方が全体的な利便性は高いんですが、基本的には余計なことをしない別ファイルに逃がす方を推奨します。
 
@@ -709,6 +709,17 @@ gatherAccessor を true にすると `<?= $array->key ?>` の `key` が定数宣
 
 ここで `[original => alias]` という配列を指定すると、 gatherVariable で挿入される型情報を上書きすることができます。
 「実際は array なんだけど、深遠な理由で ArrayObject として扱いたい」のようなかなり特殊な状況で使用します。
+
+#### specialDeclaration
+
+ここにコードを指定するとテンプレートの書き換えや constFilename で吐き出されたコードの冒頭にそのコードが挿入されます。
+gatherVariable, gatherModifier, gatherAccessor だけではいかんともしがたいエラーの解消や名前解決を行うために使用します。
+
+例えば現行の phpstorm では `class_alias('Original', 'Alias')` した場合に Alias のコード補完が効きません。
+そんな時、`new class Alias extends Original{}` 等としておけば Alias でコード補完が効くようになります。
+あまり view 内で名前空間の絶対参照や use を使いたくないので、特定の識別子をグローバル的に扱いたい場合に便利です。
+
+コードはそのまま記述されます。一切の加工やエスケープは行われません。
 
 #### specialVariable
 
