@@ -97,6 +97,7 @@ class Renderer
             'gatherAccessor'     => $debug,
             'constFilename'      => null,
             'typeMapping'        => [],
+            'specialDeclaration' => '',
             'specialVariable'    => [],
             'ignoreVariable'     => [],
             // インジェクション系
@@ -127,13 +128,14 @@ class Renderer
         $this->templateClass = '\\' . ltrim($options['templateClass'], '\\');
         $this->compileDir = (string) $options['compileDir'];
         $this->gatherOptions = [
-            'gatherVariable'  => (int) $options['gatherVariable'],
-            'gatherModifier'  => (bool) $options['gatherModifier'],
-            'gatherAccessor'  => (bool) $options['gatherAccessor'],
-            'constFilename'   => (string) $options['constFilename'],
-            'typeMapping'     => $explodes((array) $options['typeMapping']),
-            'specialVariable' => $explodes((array) $options['specialVariable']),
-            'ignoreVariable'  => (array) $options['ignoreVariable'],
+            'gatherVariable'     => (int) $options['gatherVariable'],
+            'gatherModifier'     => (bool) $options['gatherModifier'],
+            'gatherAccessor'     => (bool) $options['gatherAccessor'],
+            'constFilename'      => (string) $options['constFilename'],
+            'typeMapping'        => $explodes((array) $options['typeMapping']),
+            'specialDeclaration' => (string) $options['specialDeclaration'],
+            'specialVariable'    => $explodes((array) $options['specialVariable']),
+            'ignoreVariable'     => (array) $options['ignoreVariable'],
         ];
         $this->renderOptions = [
             'customTagHandler'   => (array) $options['customTagHandler'],
@@ -198,6 +200,7 @@ class Renderer
             $source = new Source($content, $ropt['compatibleShortTag'] ? Source::SHORT_TAG_REPLACE : Source::SHORT_TAG_NOTHING);
 
             $E = fn($v) => var_export($v, true);
+            $L = fn($v) => strlen($v) ? "$v\n" : $v;
             $meta = [];
             if ($this->gatherOptions['gatherVariable']) {
                 $variables = $this->gatherVariable($source, $ropt['varReceiver'], $vars, $parentVars);
@@ -237,7 +240,7 @@ class Renderer
                     fn(Token $token) => $token->id === T_COMMENT && trim($token->text) === self::META_COMMENT,
                     Source::MATCH_MANY,
                     T_CLOSE_TAG,
-                ], /** @lang */ "<?php\n" . self::META_COMMENT . "\n// $formatter:off\n" . implode("\n", $meta) . "\n// $formatter:on\n?>\n");
+                ], /** @lang */ "<?php\n" . self::META_COMMENT . "\n// $formatter:off\n" . $L($this->gatherOptions['specialDeclaration']) . implode("\n", $meta) . "\n// $formatter:on\n?>\n");
 
                 // phpstorm が「変更された」と感知して ctrl+z が効かなくなるので書き換えられた場合のみ保存する
                 if ($content !== $newcontent) {
@@ -419,6 +422,7 @@ class Renderer
 
             $E = fn($v) => var_export($v, true);
             $V = fn($v) => $v;
+            $L = fn($v) => strlen($v) ? "$v\n" : $v;
             $vs = array_sprintf($consts['variable'], fn($v, $k) => "/** @var $v $k */\n$k = $k ?? null;", "\n");
             $ms = array_sprintf($consts['modifier'], fn($v, $k) => "function $k(...\$args){define({$E($k)}, $v(...[]));return $v(...\$args);}", "\n");
             $as = array_sprintf($consts['accessor'], fn($v, $k) => "define({$E($v)}, {$E($v)});", "\n");
@@ -427,7 +431,7 @@ class Renderer
             // 定義系はコンパイル時点でエラーになるので if (null) で包む
             return <<<PHP
                 <?php
-                {$V(self::VARIABLE_COMMENT)}
+                {$L($this->gatherOptions['specialDeclaration'])}{$V(self::VARIABLE_COMMENT)}
                 {$V($vs)}
                 if (null) {
                     {$V(self::MODIFIER_FUNCTION_COMMENT)}

@@ -260,15 +260,17 @@ PHP
         $this->assertStringContainsString("define('ucwords", $template);
 
         $renderer = new Renderer([
-            'debug'          => true,
-            'gatherModifier' => false,
-            'gatherAccessor' => false,
-            'compileDir'     => self::COMPILE_DIR,
+            'debug'              => true,
+            'gatherModifier'     => false,
+            'gatherAccessor'     => false,
+            'compileDir'         => self::COMPILE_DIR,
+            'specialDeclaration' => "// this is special code",
         ]);
 
         // 指定した Variable だけのメタ情報が埋め込まれている
         $renderer->compile(self::TEMPLATE_DIR . '/meta.phtml', $VARS);
         $template = file_get_contents(self::TEMPLATE_DIR . '/meta.phtml');
+        $this->assertStringContainsString("// this is special code", $template);
         $this->assertStringContainsString(Renderer::VARIABLE_COMMENT, $template);
         $this->assertStringNotContainsString(Renderer::MODIFIER_FUNCTION_COMMENT, $template);
         $this->assertStringNotContainsString(Renderer::ACCESS_KEY_COMMENT, $template);
@@ -377,7 +379,8 @@ PHP
         @unlink($FILENAME);
 
         $renderer = new Renderer([
-            'debug' => true,
+            'debug'              => true,
+            'specialDeclaration' => "// this is special code",
         ]);
 
         /** @see Renderer::outputConstFile() */
@@ -403,6 +406,7 @@ PHP
         ]);
         $this->assertStringEqualsFile($FILENAME, <<<'EXPECTED'
 <?php
+// this is special code
 // using variables:
 /** @var string $hoge */
 $hoge = $hoge ?? null;
@@ -447,6 +451,7 @@ EXPECTED
         ]);
         $this->assertStringEqualsFile($FILENAME, <<<'EXPECTED'
 <?php
+// this is special code
 // using variables:
 /** @var string $fuga */
 $fuga = $fuga ?? null;
@@ -500,6 +505,7 @@ EXPECTED
         ]);
         $this->assertStringEqualsFile($FILENAME, <<<'EXPECTED'
 <?php
+// this is special code
 // using variables:
 /** @var bool $hoge */
 $hoge = $hoge ?? null;
