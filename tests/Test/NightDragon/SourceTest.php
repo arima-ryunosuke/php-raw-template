@@ -97,6 +97,19 @@ $func = function () {
         ], $source->filter(['+', '-']));
     }
 
+    function test_unshift_push()
+    {
+        $source = new Source('<?php A + B - C');
+
+        $source->unshift(',X');
+        $source->unshift(T_INLINE_HTML, 'first');
+
+        $source->push(',Y');
+        $source->push(T_INLINE_HTML, 'last');
+
+        $this->assertEquals('first,X<?php A + B - C,Ylast', (string) $source);
+    }
+
     function test_shift_pop_shrink()
     {
         $source = new Source('<?php $var = "prefix-" . "-middle-" . __FUNCTION__ . "-suffix";');
@@ -378,5 +391,15 @@ $func = function () {
             return ['A', 'A'];
         }, 0);
         $this->assertEquals('<?php AAAAAA', (string) $source);
+
+        $source = new Source('<?php B');
+        $source->replace(['B'], function ($tokens, &$skip) {
+            static $count = 0;
+            if (++$count === 5) {
+                $skip = 999;
+            }
+            return [$tokens, "$count", 'B'];
+        }, -1);
+        $this->assertEquals('<?php B1B2B3B4B5B', (string) $source);
     }
 }

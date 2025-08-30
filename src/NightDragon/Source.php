@@ -28,7 +28,7 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
         $tokens = is_string($eitherCodeOrTokens) ? Token::tokenize($eitherCodeOrTokens) : array_values($eitherCodeOrTokens);
         foreach ($tokens as $token) {
             // ショートタグ互換ならそのインラインテキストを再パース
-            if ($this->compatibleShortTagMode > 0 && $token->is(T_INLINE_HTML)) {
+            if ($this->compatibleShortTagMode > 0 && $token->is(T_INLINE_HTML) && strlen($token->text)) {
                 $inline = str_replace('<?', self::SHORT_OPEN_TAG, $token->text);
                 $this->tokens = array_merge($this->tokens, (new self($inline, self::SHORT_TAG_NOTHING))->tokens);
                 continue;
@@ -135,6 +135,26 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
             }
         }
         return $count;
+    }
+
+    /**
+     * トークン先頭に1つ追加する
+     */
+    public function unshift(...$parts): Token
+    {
+        $token = Token::instance(...$parts);
+        array_unshift($this->tokens, $token);
+        return $token;
+    }
+
+    /**
+     * トークン末尾に1つ追加する
+     */
+    public function push(...$parts): Token
+    {
+        $token = Token::instance(...$parts);
+        array_push($this->tokens, $token);
+        return $token;
     }
 
     /**
@@ -337,6 +357,10 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
 
             if ($skip === null) {
                 $skip = count($replace);
+            }
+            // 負数は戻り読み確定
+            if ($skip < 0) {
+                $skip = count($replace) + $skip;
             }
             return $skip - 1;
         });
