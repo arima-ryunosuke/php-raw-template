@@ -589,6 +589,7 @@ $renderer = new \ryunosuke\NightDragon\Renderer([
         'strip' => Renderer::class . '::strip',
     ],
     'compatibleShortTag' => false,
+    'stripWhitespace'    => '',
     'defaultNamespace'   => '\\',
     'defaultClass'       => '',
     'defaultFilter'      => Renderer::class . '::html',
@@ -768,6 +769,72 @@ FAQ やガイドなど、静的な部分が多くなるページでかなり有�
 
 このキーを true に設定すると ini の short_open_tag の設定に関わらず `<? ?>` タグが有効になります。
 ini の変更ができなかったり、 short_open_tag が廃止されたりした状況を想定してますが、気休め程度のオプションなので原則的に false にしてください。
+
+#### stripWhitespace
+
+同じくソース書き換えのオプションです。
+
+このキーを文字列でモードに設定すると `<?php ?>` の前後の空白が除去されます。
+例えば連想配列を dl リストにするような下記のようなコードは・・・
+
+```php
+<dl>
+    <?php foreach (['a' => 'A', 'b' => 'B'] as $k => $v): ?>
+        <dt><?= $k ?></dt>
+        <dd><?= $k ?></dd>
+    <?php endforeach ?>
+</dl>
+```
+
+普通にやると下記のようになりますが・・・
+
+```php
+<dl>
+            <dt>a</dt>
+        <dd>a</dd>
+            <dt>b</dt>
+        <dd>b</dd>
+    </dl>
+```
+
+このオプションを使うと下記のようになります。
+
+```php
+<dl><dt>a</dt>
+        <dd>a</dd><dt>b</dt>
+        <dd>b</dd></dl>
+```
+
+これの嬉しいところは空白のテキストノードさえ出力されないため、css の `:empty` をインデントを意識せず使えることです。
+空白のテキストノードを避けるために下記のような記述をすることがありますが、このようなことはほぼ意識せず記述できます。
+
+```php
+<dl
+><?php foreach (['a' => 'A', 'b' => 'B'] as $k => $v): ?><dt><?= $k ?></dt>
+        <dd><?= $k ?></dd><?php endforeach ?></dl>
+```
+
+モードは現在のところ phpize のみです。これは空白が php タグで囲われることを意味します。
+なぜ普通に消さないかというと、行番号維持のためです。
+普通に消す実装だと下記のようなコードで・・・
+
+```php
+<?php foreach ($a as $v1): ?>
+    <?php foreach ($b as $v2): ?>
+        <?php foreach ($c as $v3): ?>
+        <?= "$v1,$v2,$v3" ?>
+        <?php endforeach ?>
+    <?php endforeach ?>
+<?php endforeach ?>
+```
+
+下記のようになります。
+
+```php
+?><?php foreach ($a as $v1): ?><?php foreach ($b as $v2): ?><?php foreach ($c as $v3): ?><?= "$v1,$v2,$v3" ?><?php endforeach ?><?php endforeach ?><?php endforeach ?>
+```
+
+これでは完全に1行化されてしまい、エラー時などに行番号のマッピングができません。
 
 #### defaultNamespace, defaultClass
 

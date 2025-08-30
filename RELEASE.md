@@ -22,6 +22,12 @@
   - microsoft/tolerant-php-parser を試す
 - パス周りがメチャクチャなので正規化して realpath したい
 
+## 2.0.5
+
+- [fixbug] defaultFilter/Getter に空文字を渡すとパースエラーになる不具合
+- [feature] 前後の空白を除去する stripWhitespace オプションを追加
+- [feature] Source を少し改良
+
 ## 2.0.4
 
 - [feature] 未知のオプションを与えていると notice を出す
