@@ -144,6 +144,31 @@ line3
         $this->assertFileExists(self::COMPILE_DIR . '/defined.php');
     }
 
+    function test_string_option()
+    {
+        $renderer = new Renderer([
+            'debug'         => false,
+            'compileDir'    => self::COMPILE_DIR,
+            'defaultFilter' => '',
+            'defaultGetter' => '',
+            'varAccessor'   => '.',
+        ]);
+        $this->assertEquals(<<<RENDERED
+        <b>html'string</b>
+        array's value
+        object's value
+        
+        RENDERED, $renderer->render(realpath(self::TEMPLATE_DIR . '/default.phtml'), [
+            'html'   => "<b>html'string</b>",
+            'array'  => [
+                'key' => "array's value",
+            ],
+            'object' => [
+                'key' => "object's value",
+            ],
+        ]));
+    }
+
     function test_compile()
     {
         $renderer = new Renderer([
