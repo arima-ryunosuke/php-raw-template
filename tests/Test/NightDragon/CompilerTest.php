@@ -14,6 +14,7 @@ class CompilerTest extends \ryunosuke\Test\AbstractTestCase
     const defaultOption = [
         'customTagHandler'   => [''],
         'compatibleShortTag' => false,
+        'stripWhitespace'    => false,
         'defaultNamespace'   => ['\\'],
         'defaultClass'       => [''],
         'defaultFilter'      => 'html',
@@ -316,6 +317,85 @@ z
 <?php foreach(\$array | array_slice): ?>
 <?php endforeach ?>";
         $this->assertEquals($expected, $rewrite($actual, self::defaultOption));
+    }
+
+    function test_rewriteWhitespace()
+    {
+        /** @see Compiler::rewriteWhitespace() */
+        $rewriteWhitespace = $this->publishMethod(new Compiler(), 'rewriteWhitespace');
+
+        $source = new Source(<<<'HTML'
+        <tbody>
+            <?php foreach ([] as $row): ?>
+            <tr>
+                <td>
+                <?php if (true): ?>
+                <?= $row[0] ?>
+                <?php endif ?>
+                </td>
+            </tr>
+            <?php endforeach ?>
+        </tbody>
+        HTML);
+        $expected = <<<'HTML'
+        <tbody><?php
+            ?><?php foreach ([] as $row): ?><?php
+            ?><tr>
+                <td><?php
+                ?><?php if (true): ?><?php
+                ?><?= $row[0] ?>
+        <?php        ?><?php endif ?><?php
+                ?></td>
+            </tr><?php
+            ?><?php endforeach ?><?php
+        ?></tbody>
+        HTML;
+        $rewriteWhitespace($source, 'phpize');
+        $this->assertEquals($expected, (string) $source);
+
+        $source = new Source(<<<'HTML'
+        <div>
+        <?php foreach ($array as $key => $value): ?>
+            <?php if ($key === 'hoge'): ?>
+                <?php echo $key ?>
+                <?php echo $value ?>
+            <?php endif ?>
+        <?php endforeach ?>
+        </div>
+        HTML);
+        $expected = <<<'HTML'
+        <div><?php
+        ?><?php foreach ($array as $key => $value): ?><?php
+            ?><?php if ($key === 'hoge'): ?><?php
+                ?><?php echo $key ?><?php
+                ?><?php echo $value ?><?php
+            ?><?php endif ?>
+        <?php endforeach ?><?php
+        ?></div>
+        HTML;
+        $rewriteWhitespace($source, 'phpize');
+        $this->assertEquals($expected, (string) $source);
+
+        $source = new Source(<<<'HTML'
+        <?php foreach ($a as $v1): ?>
+            <?php foreach ($b as $v2): ?>
+                <?php foreach ($c as $v3): ?>
+                    <?= "$v1,$v2,$v3" ?>
+                <?php endforeach ?>
+            <?php endforeach ?>
+        <?php endforeach ?>
+        HTML);
+        $expected = <<<'HTML'
+        <?php foreach ($a as $v1): ?><?php
+            ?><?php foreach ($b as $v2): ?><?php
+                ?><?php foreach ($c as $v3): ?><?php
+                    ?><?= "$v1,$v2,$v3" ?>
+        <?php        ?><?php endforeach ?><?php
+            ?><?php endforeach ?>
+        <?php endforeach ?>
+        HTML;
+        $rewriteWhitespace($source, 'phpize');
+        $this->assertEquals($expected, (string) $source);
     }
 
     function test_rewrite_none()

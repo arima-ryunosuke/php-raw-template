@@ -45,6 +45,8 @@ class Compiler
         $source = $this->rewriteCustomTag($source, $options['customTagHandler'] ?? [], self::$lineMapping[$this->filename ?? '']);
         $source = new Source($source, $options['compatibleShortTag'] ? Source::SHORT_TAG_REWRITE : Source::SHORT_TAG_NOTHING);
 
+        $this->rewriteWhitespace($source, $options['stripWhitespace'], self::$lineMapping[$this->filename ?? '']);
+
         $options['defaultNamespace'][] = $source->namespace();
 
         $source->replace([
@@ -116,6 +118,53 @@ class Compiler
         }, $tokens, -1, $count, PREG_OFFSET_CAPTURE);
     }
 
+    private function rewriteWhitespace(Source $tokens, string $mode, &$mappling = null)
+    {
+        $mappling ??= [];
+
+        $line_count = function ($subject) {
+            preg_match_all('#\R#u', $subject, $m, PREG_SET_ORDER);
+            return count($m);
+        };
+
+        if ($mode === 'phpize') {
+            // 現状ではファイル冒頭をひっかける術がないので強制的に突っ込む（こうしないと <?php から始まるファイルが引っ掛からない）
+            $tokens->unshift(T_INLINE_HTML, '');
+
+            $tokens->replace([
+                T_INLINE_HTML,
+                T_OPEN_TAG,
+                Source::MATCH_MANY,
+                T_CLOSE_TAG,
+                T_INLINE_HTML,
+            ], function (Source $tokens) use ($line_count) {
+                [$prefix, $suffix] = $tokens->shrink();
+                [$open, $close] = $tokens->shrink();
+
+                $prefixes = [];
+                $prefixes[] = $prefix;
+                if (preg_match('#([\s\r\n]+)\z#u', $prefix->text, $matches)) {
+                    $prefixes[] = [T_OPEN_TAG, '<?php', $prefix->line];
+                    $prefixes[] = [T_WHITESPACE, $matches[1], $prefix->line];
+                    $prefixes[] = [T_CLOSE_TAG, '?>', $prefix->line + $line_count($prefix->text)];
+                    $prefix->text = rtrim($prefix->text);
+                }
+
+                $suffixes = [];
+                if (preg_match('#\A([\s\r\n]+)#u', substr($close->text, 2) . $suffix->text, $matches)) {
+                    $suffixes[] = [T_OPEN_TAG, '<?php', $suffix->line];
+                    $suffixes[] = [T_WHITESPACE, $matches[1], $suffix->line];
+                    $suffixes[] = [T_CLOSE_TAG, '?>', $suffix->line + $line_count($suffix->text)];
+                    $suffix->text = ltrim($suffix->text);
+                    $close->text = rtrim($close->text);
+                }
+                $suffixes[] = $suffix;
+
+                return [...$prefixes, $open, $tokens, $close, ...$suffixes];
+            }, -1);
+        }
+    }
+
     private function rewriteExpand(Source $tokens, string $expander): void
     {
         $tokens->replace([
@@ -131,8 +180,9 @@ class Compiler
             ], function ($curlys) {
                 $curlys->shrink();
                 $inner = $this->rewrite("<?=$curlys?>", array_replace($this->options, [
-                    'defaultFilter' => '',
-                    'defaultCloser' => '',
+                    'defaultFilter'   => '',
+                    'defaultCloser'   => '',
+                    'stripWhitespace' => '',
                 ]));
                 $inner->shrink();
                 return ['".(', $inner, ')."'];

@@ -109,6 +109,7 @@ class Renderer
                 'strip' => Renderer::class . '::strip',
             ],
             'compatibleShortTag' => false,
+            'stripWhitespace'    => '',
             'defaultNamespace'   => '\\',
             'defaultClass'       => '',
             'defaultFilter'      => Renderer::class . '::html',
@@ -144,6 +145,7 @@ class Renderer
         $this->renderOptions = [
             'customTagHandler'   => (array) $options['customTagHandler'],
             'compatibleShortTag' => (bool) $options['compatibleShortTag'],
+            'stripWhitespace'    => (string) $options['stripWhitespace'],
             'defaultNamespace'   => (array) $options['defaultNamespace'],
             'defaultClass'       => (array) $options['defaultClass'],
             'defaultFilter'      => (string) '\\' . ltrim($options['defaultFilter'], '\\'),
