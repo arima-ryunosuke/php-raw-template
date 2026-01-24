@@ -454,11 +454,35 @@ z
 
         $source = new Source('<?= "A-{$array.key1.key2.3.key}-Z" ?>');
         $rewrite($source, '.', 'access');
-        $this->assertEquals("<?= \"A-\".access(\$array,[false,'key1'],[false,'key2'],[false,'3'],[false,'key']).\"-Z\" ?>", (string) $source);
+        $this->assertEquals("<?= \"A-{\$this->E(access(\$array,[false,'key1'],[false,'key2'],[false,'3'],[false,'key']))}-Z\" ?>", (string) $source);
 
         $source = new Source('<?= "A-{$array->key1->key2->3->key}-Z" ?>');
         $rewrite($source, '->', 'access');
-        $this->assertEquals("<?= \"A-\".access(\$array,[false,'key1'],[false,'key2'],[false,'3'],[false,'key']).\"-Z\" ?>", (string) $source);
+        $this->assertEquals("<?= \"A-{\$this->E(access(\$array,[false,'key1'],[false,'key2'],[false,'3'],[false,'key']))}-Z\" ?>", (string) $source);
+
+        $source = new Source(<<<'TEMPLATE'
+        <?= func(<<<HERE
+        here-document: {$here->property}+{$document->method()}
+        HERE,) ?>
+        TEMPLATE, );
+        $rewrite($source, '->', 'access');
+        $this->assertEquals(<<<'TEMPLATE'
+        <?= func(<<<HERE
+        here-document: {$this->E(access($here,[false,'property']))}+{$this->E($document->method())}
+        HERE,) ?>
+        TEMPLATE, (string) $source);
+
+        $source = new Source(<<<'TEMPLATE'
+        <?= func(<<<'NOW'
+        here-document: {$here->property}+{$document->method()}
+        NOW,) ?>
+        TEMPLATE,);
+        $rewrite($source, '->', 'access');
+        $this->assertEquals(<<<'TEMPLATE'
+        <?= func(<<<'NOW'
+        here-document: {$here->property}+{$document->method()}
+        NOW,) ?>
+        TEMPLATE, (string) $source);
 
         $source = new Source('<?= $array.key1.key2.3 + 3.14 ?>');
         $rewrite($source, '.', '');

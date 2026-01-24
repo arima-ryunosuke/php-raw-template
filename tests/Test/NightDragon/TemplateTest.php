@@ -34,6 +34,7 @@ class TemplateTest extends \ryunosuke\Test\AbstractTestCase
             'array'  => [1, 2, 3],
             'object' => new \Exception('exception', 123),
             'key'    => 'key',
+            'embed'  => 'embed',
             'nest'   => [
                 'key' => [
                     'stdClass' => (object) [
@@ -47,6 +48,7 @@ class TemplateTest extends \ryunosuke\Test\AbstractTestCase
 1
 1, 2, 3
 exception
+embed:EMBED
 nesting
 ', $contents);
     }

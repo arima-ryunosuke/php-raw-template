@@ -235,13 +235,14 @@ class Compiler
             $tokens->shrink();
             return array_merge(
                 [
-                    [null, '"'],
-                    [null, '.'],
+                    [null, '{'],
+                    [null, '$this->E'],
+                    [null, '('],
                 ],
                 iterator_to_array($tokens),
                 [
-                    [null, '.'],
-                    [null, '"'],
+                    [null, ')'],
+                    [null, '}'],
                 ]
             );
         });
