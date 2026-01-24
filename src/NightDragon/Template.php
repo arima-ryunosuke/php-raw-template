@@ -274,6 +274,20 @@ class Template
     }
 
     /**
+     * 引数をそのまま返す恒等関数
+     *
+     * php の文字列埋め込みは式が使えないので、テンプレート内で "{$this->E(strtoupper($value))}" のように使う。
+     *
+     * @template T
+     * @param T $v
+     * @return T
+     */
+    public function E(mixed $v): mixed
+    {
+        return $v;
+    }
+
+    /**
      * 指定されたパスを解決する
      *
      * 絶対パスはそのまま、相対パスは自身のディレクトリが基底となる。

@@ -226,13 +226,14 @@ class RewriteWrapper
             $tokens->shrink();
             return array_merge(
                 [
-                    [Token::UNKNOWN_ID, '"'],
-                    [Token::UNKNOWN_ID, '.'],
+                    [Token::UNKNOWN_ID, '{'],
+                    [Token::UNKNOWN_ID, '$this->E'],
+                    [Token::UNKNOWN_ID, '('],
                 ],
                 iterator_to_array($tokens),
                 [
-                    [Token::UNKNOWN_ID, '.'],
-                    [Token::UNKNOWN_ID, '"'],
+                    [Token::UNKNOWN_ID, ')'],
+                    [Token::UNKNOWN_ID, '}'],
                 ]
             );
         });
