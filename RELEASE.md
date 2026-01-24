@@ -22,6 +22,10 @@
   - microsoft/tolerant-php-parser を試す
 - パス周りがメチャクチャなので正規化して realpath したい
 
+## 2.0.6
+
+- Merge tag 'v1.2.15'
+
 ## 2.0.5
 
 - [fixbug] defaultFilter/Getter に空文字を渡すとパースエラーになる不具合
