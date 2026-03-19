@@ -80,7 +80,7 @@ class Template
         $this->vars = $vars;
         $this->parentVars = $parentVars;
 
-        $contents = $this->fetch($this->renderer->compile($this->filename, $this->vars, $this->parentVars));
+        $contents = $this->fetch($this->renderer->compile($this->filename, $this->vars, $this->parentVars), false);
 
         if ($this->parent) {
             assert(strlen(trim($contents)) === 0, "child template can't have content outside blocks [$contents]");
@@ -221,7 +221,18 @@ class Template
      */
     public function include(string $filename, array $vars = [])
     {
-        echo $this->fetch($this->renderer->compile($this->resolvePath($filename), $vars, $this->vars + $this->parentVars), $vars);
+        echo $this->fetch($this->renderer->compile($this->resolvePath($filename), $vars, $this->vars + $this->parentVars), false, $vars);
+    }
+
+    /**
+     * 指定ファイルを取り込む（一度のみ）
+     *
+     * 一度だけファイルを取り込む。
+     * その他の挙動は include と同じ。
+     */
+    public function require(string $filename, array $vars = [])
+    {
+        echo $this->fetch($this->renderer->compile($this->resolvePath($filename), $vars, $this->vars + $this->parentVars), true, $vars);
     }
 
     /**
@@ -308,18 +319,24 @@ class Template
      * 指定配列を展開しつつファイルを require するキモメソッド
      *
      * @param string $filename 読み込むファイル名
+     * @param bool $once require_once フラグ
      * @param array $vars 変数配列
      * @return mixed 読み込んだコンテンツ
      */
-    private function fetch(string $filename, array $vars = [])
+    private function fetch(string $filename, bool $once, array $vars = [])
     {
         /** @noinspection PhpMethodParametersCountMismatchInspection */
         return (function () {
             ob_start();
-            extract(func_get_arg(1));
-            require func_get_arg(0);
+            extract(func_get_arg(2));
+            if (func_get_arg(1)) {
+                require_once func_get_arg(0);
+            }
+            else {
+                require func_get_arg(0);
+            }
             return ob_get_clean();
-        })($filename, $vars + $this->vars + $this->parentVars);
+        })($filename, $once, $vars + $this->vars + $this->parentVars);
     }
 
     /**
