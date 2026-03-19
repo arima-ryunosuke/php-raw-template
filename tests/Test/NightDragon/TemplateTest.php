@@ -246,6 +246,37 @@ CONTENT;
         $this->assertEquals($actual, $contents);
     }
 
+    function test_require()
+    {
+        $actual = <<<CONTENT
+<html lang="ja">
+<head>
+    <title>5 - That&#039;s Example</title>
+</head>
+<body>
+extend5
+
+extend1
+extend1/extend2
+extend1/extend2/extend3
+extend1/extend3
+</body>
+</html>
+
+CONTENT;
+
+        $renderer = new Renderer([
+            'debug'      => true,
+            'compileDir' => self::COMPILE_DIR,
+        ]);
+        $template = new Template($renderer, self::TEMPLATE_DIR . '/extend5.phtml');
+        $contents = $template->render([
+            'sitename' => "That's Example",
+            'variable' => "<tag>hoge</tag>",
+        ]);
+        $this->assertEquals($actual, $contents);
+    }
+
     function test_content()
     {
         $actual = <<<CONTENT

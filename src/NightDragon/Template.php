@@ -37,7 +37,7 @@ class Template
     {
         $this->vars = $vars + $parentVars;
         $compiled = $this->renderer->compile($this->filename, $vars, $parentVars);
-        $contents = $this->fetch($compiled, $this->vars);
+        $contents = $this->fetch($compiled, false, $this->vars);
 
         if (isset($this->parent)) {
             assert(strlen(trim($contents)) === 0, "child template can't have content outside blocks [$contents]");
@@ -166,7 +166,19 @@ class Template
     public function include(string $filename, array $vars = []): void
     {
         $compiled = $this->renderer->compile($this->resolvePath($filename), $vars, $this->vars);
-        echo $this->fetch($compiled, $vars + $this->vars);
+        echo $this->fetch($compiled, false, $vars + $this->vars);
+    }
+
+    /**
+     * 指定ファイルを取り込む（一度のみ）
+     *
+     * 一度だけファイルを取り込む。
+     * その他の挙動は include と同じ。
+     */
+    public function require(string $filename, array $vars = []): void
+    {
+        $compiled = $this->renderer->compile($this->resolvePath($filename), $vars, $this->vars);
+        echo $this->fetch($compiled, true, $vars + $this->vars);
     }
 
     /**
@@ -245,15 +257,20 @@ class Template
     /**
      * 指定配列を展開しつつファイルを require するキモメソッド
      */
-    private function fetch(string $filename, array $vars = []): string
+    private function fetch(string $filename, bool $once, array $vars = []): string
     {
         /** @noinspection PhpMethodParametersCountMismatchInspection */
         return (function () {
             ob_start();
-            extract(func_get_arg(1));
-            require func_get_arg(0);
+            extract(func_get_arg(2));
+            if (func_get_arg(1)) {
+                require_once func_get_arg(0);
+            }
+            else {
+                require func_get_arg(0);
+            }
             return ob_get_clean();
-        })($filename, $vars);
+        })($filename, $once, $vars);
     }
 
     /**

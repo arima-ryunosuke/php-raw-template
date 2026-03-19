@@ -275,12 +275,8 @@ if (!defined('ryunosuke\\NightDragon\\JSON_BARE_AS_STRING')) {
     define('ryunosuke\\NightDragon\\JSON_BARE_AS_STRING', -106);
 }
 
-if (!defined('ryunosuke\\NightDragon\\JSON_OBJECT_HANDLER')) {
-    define('ryunosuke\\NightDragon\\JSON_OBJECT_HANDLER', -107);
-}
-
-if (!defined('ryunosuke\\NightDragon\\JSON_ESCAPE_SINGLE_QUOTE')) {
-    define('ryunosuke\\NightDragon\\JSON_ESCAPE_SINGLE_QUOTE', -108);
+if (!defined('ryunosuke\\NightDragon\\TOKEN_NAME')) {
+    define('ryunosuke\\NightDragon\\TOKEN_NAME', 2);
 }
 
 if (!defined('ryunosuke\\NightDragon\\SI_UNITS')) {
