@@ -2774,6 +2774,15 @@ if (!function_exists('ryunosuke\\NightDragon\\callable_code')) {
     function callable_code($callable, bool $return_token = false)
     {
         $ref = $callable instanceof \ReflectionFunctionAbstract ? $callable : reflect_callable($callable);
+        if ($ref->getFileName() === false) {
+            $reference = $ref->returnsReference() ? '&' : '';
+            $return = reflect_type_resolve($ref->getReturnType()) ?? 'void';
+            $params = function_parameter($ref);
+            $keys = implode(', ', array_map(fn($v) => ltrim($v, '&'), array_keys($params)));
+            $vals = implode(', ', $params);
+            return ["fn$reference($vals): $return", "\\$ref->name($keys)"];
+        }
+
         $contents = file($ref->getFileName());
         $start = $ref->getStartLine();
         $end = $ref->getEndLine();
@@ -2782,7 +2791,10 @@ if (!function_exists('ryunosuke\\NightDragon\\callable_code')) {
         $tokens = php_tokens("<?php $codeblock");
 
         $begin = $tokens[0]->next([T_FUNCTION, T_FN]);
-        $close = $begin->next(['{', T_DOUBLE_ARROW]);
+        $close = $begin->next(['{', T_DOUBLE_ARROW, '[']);
+        if ($close->is('[')) {
+            $close = $close->end()->next(['{', T_DOUBLE_ARROW]);
+        }
 
         if ($begin->is(T_FN)) {
             $meta = array_slice($tokens, $begin->index, $close->prev()->index - $begin->index + 1);
@@ -2818,6 +2830,81 @@ if (!function_exists('ryunosuke\\NightDragon\\callable_code')) {
         }
 
         return [trim(implode('', array_column($meta, 'text'))), trim(implode('', array_column($body, 'text')))];
+    }
+}
+
+assert(!function_exists('ryunosuke\\NightDragon\\function_parameter') || (new \ReflectionFunction('ryunosuke\\NightDragon\\function_parameter'))->isUserDefined());
+if (!function_exists('ryunosuke\\NightDragon\\function_parameter')) {
+    /**
+     * 関数/メソッドの引数定義を取得する
+     *
+     * ほぼ内部向けで外から呼ぶことはあまり想定していない。
+     *
+     * @package ryunosuke\Functions\Package\reflection
+     *
+     * @param \ReflectionFunctionAbstract|callable $eitherReffuncOrCallable 関数/メソッドリフレクション or callable
+     * @return array [引数名 => 引数宣言] の配列
+     */
+    function function_parameter($eitherReffuncOrCallable)
+    {
+        $reffunc = $eitherReffuncOrCallable instanceof \ReflectionFunctionAbstract
+            ? $eitherReffuncOrCallable
+            : reflect_callable($eitherReffuncOrCallable);
+
+        $result = [];
+        foreach ($reffunc->getParameters() as $parameter) {
+            $declare = '';
+
+            if ($parameter->hasType()) {
+                $declare .= reflect_type_resolve($parameter->getType()) . ' ';
+            }
+
+            if ($parameter->isPassedByReference()) {
+                $declare .= '&';
+            }
+
+            if ($parameter->isVariadic()) {
+                $declare .= '...';
+            }
+
+            $declare .= '$' . $parameter->getName();
+
+            if ($parameter->isOptional()) {
+                $defval = null;
+
+                if ($parameter->isDefaultValueAvailable()) {
+                    // 修飾なしでデフォルト定数が使われているとその名前空間で解決してしまうので場合分けが必要
+                    if ($parameter->isDefaultValueConstant() && strpos($parameter->getDefaultValueConstantName(), '\\') === false) {
+                        // 存在チェック＋$dummy でグローバル定数を回避しているが、いっそのこと一律 \\ を付与してしまっても良いような気がする
+                        if (const_exists(...(explode('::', $parameter->getDefaultValueConstantName()) + [1 => '$dummy']))) {
+                            $defval = '\\' . $parameter->getDefaultValueConstantName();
+                        }
+                        else {
+                            $defval = $parameter->getDefaultValueConstantName();
+                        }
+                    }
+                    else {
+                        $default = $parameter->getDefaultValue();
+                        $defval = var_export2($default, true);
+                    }
+                }
+                // isOptional だが isDefaultValueAvailable でないし isVariadic でもない（稀にある（stream_filter_append で確認））
+                elseif (!$parameter->isVariadic()) {
+                    // Type に応じたデフォルト値が得られればベストだがそこまでする必要もない
+                    // 少なくとも 8.0 時点では = null してしまえば型エラーも起きない（8.4 で非推奨になってるけど）
+                    $defval = "null";
+                }
+
+                if (isset($defval)) {
+                    $declare .= ' = ' . $defval;
+                }
+            }
+
+            $name = ($parameter->isPassedByReference() ? '&' : '') . '$' . $parameter->getName();
+            $result[$name] = $declare;
+        }
+
+        return $result;
     }
 }
 
@@ -3818,6 +3905,13 @@ if (!function_exists('ryunosuke\\NightDragon\\function_configure')) {
         $config['chain.nullsafe'] ??= false;
         $config['process.autoload'] ??= [];
         $config['datetime.class'] ??= \DateTimeImmutable::class;
+        $config['unique_id.config'] ??= [
+            'timestamp_base'      => 1704034800, // 2024-01-01 00:00:00
+            'timestamp_precision' => 1,
+            'timestamp_bit'       => 41,
+            'sequence_bit'        => 7,
+            'ipaddress_bit'       => 16,
+        ];
 
         // setting
         if (is_array($option)) {
@@ -4396,8 +4490,14 @@ if (!function_exists('ryunosuke\\NightDragon\\is_stringable')) {
         if (is_array($var)) {
             return false;
         }
-        if (is_object($var) && !method_exists($var, '__toString')) {
-            return false;
+        if (is_object($var)) {
+            // toString は未実装だが cast_object レベルで文字列化可能になっている
+            if ($var instanceof \GMP) {
+                return true;
+            }
+            if (!method_exists($var, '__toString')) {
+                return false;
+            }
         }
         return true;
     }
@@ -4412,10 +4512,19 @@ if (!function_exists('ryunosuke\\NightDragon\\var_export2')) {
      *
      * - 配列は 5.4 以降のショートシンタックス（[]）で出力
      * - ただの配列は1行（[1, 2, 3]）でケツカンマなし、連想配列は桁合わせインデントでケツカンマあり
+     *   - 多少の整形は下記の minify オプションで指定可能（4 ～ 8 は未定義）
+     *     - 0: 完全なるフォーマット
+     *     - 1: アライン無しフォーマット
+     *     - 2: スペースありのワンライン
+     *     - 3: 要素ペアごとにスペースありのワンライン
+     *     - 9: 一切スペースなし最短縮
      * - 文字列はダブルクオート
      * - null は null（小文字）
      * - 再帰構造を渡しても警告がでない（さらに NULL ではなく `'*RECURSION*'` という文字列になる）
      * - 配列の再帰構造の出力が異なる（Example参照）
+     *
+     * named オプションを渡すと出力が名前付き引数形式になる。
+     * シンタックスのチェックや値の検証などは行わないので注意。
      *
      * Example:
      * ```php
@@ -4451,6 +4560,8 @@ if (!function_exists('ryunosuke\\NightDragon\\var_export2')) {
      *         ],
      *     ],
      * ]');
+     * // 名前付き引数形式
+     * that(var_export2(['name' => 'taro', 'age' => 27, 'opt' => ['X', 'Y', 'Z']], ['return' => true, 'minify' => 2, 'named' => true]))->isSame('name: "taro", age: 27, opt: ["X", "Y", "Z"]');
      * ```
      *
      * @package ryunosuke\Functions\Package\var
@@ -4468,46 +4579,71 @@ if (!function_exists('ryunosuke\\NightDragon\\var_export2')) {
         }
 
         $options += [
-            'minify' => false, // 短縮形で返す（実質的には情報を減らして1行で返す）
-            'indent' => 4,     // インデントの空白数
-            'return' => false, // 値を戻すか出力するか
+            'minify'   => 0,     // 短縮レベル
+            'named'    => false, // 名前付き引数の形式で返す
+            'indent'   => 4,     // インデントの空白数
+            'return'   => false, // 値を戻すか出力するか
+            'nest'     => 0,     // ネストの初期値
+            'callback' => null,  // コールバック
         ];
+        // for compatible
+        if ($options['minify'] === true) {
+            $options['minify'] = 9;
+        }
+        $options['minify'] = (int) $options['minify'];
+
+        $options['first-nest'] = $options['nest'] + ($options['named'] ? -1 : 0);
 
         // 再帰用クロージャ
-        $export = function ($value, $context, $nest = 0, $parents = []) use (&$export, $options) {
+        $export = function ($value, $context, $nest, $parents = []) use (&$export, $options) {
+            // コールバックを最優先とする
+            if ($options['callback']) {
+                if (($string = $options['callback']($value)) !== null) {
+                    return $string;
+                }
+            }
             // 再帰を検出したら *RECURSION* とする（処理に関しては is_recursive のコメント参照）
             foreach ($parents as $parent) {
                 if ($parent === $value) {
-                    return $export('*RECURSION*', 'recursion');
+                    return $export('*RECURSION*', 'recursion', $nest);
                 }
             }
 
-            $space = $options['minify'] ? "" : " ";
-            $break = $options['minify'] ? "" : "\n";
+            $space = $options['minify'] < 9 ? " " : "";
+            $break = $options['minify'] > 1 ? "" : "\n";
+            $lastcomma = $options['minify'] === 0 || $options['minify'] === 1 ? "," : "";
+            $tailcomma = 1 < $options['minify'] && $options['minify'] < 9 ? ", " : ",";
+            $indent = $options['minify'] === 0 || $options['minify'] === 1 ? $space : "";
+            $align = $options['minify'] === 0 ? $space : "";
+            $arrow = $options['minify'] <= 2 ? $space : "";
+            $delim = $options['named'] && $nest === $options['first-nest'] ? ":$arrow" : "$arrow=>$arrow";
 
             // 配列は連想判定したり再帰したり色々
             if (is_array($value)) {
-                $spacer1 = str_repeat($space, ($nest + 1) * $options['indent']);
-                $spacer2 = str_repeat($space, $nest * $options['indent']);
+                $spacer1 = str_repeat($indent, ($nest + 1) * $options['indent']);
+                $spacer2 = str_repeat($indent, max(0, $nest) * $options['indent']);
 
                 $hashed = is_hasharray($value);
 
                 // スカラー値のみで構成されているならシンプルな再帰
                 if (!$hashed && array_and($value, fn(...$args) => is_primitive(...$args))) {
-                    return '[' . implode(",$space", array_map(fn($v) => $export($v, 'array-value'), $value)) . ']';
+                    return '[' . implode(",$arrow", array_map(fn($v) => $export($v, 'array-value', $nest), $value)) . ']';
                 }
 
                 // 連想配列はキーを含めて桁あわせ
                 if ($hashed) {
-                    $keys = array_map(fn($v) => $export($v, 'array-key'), array_combine($keys = array_keys($value), $keys));
+                    $keys = array_map(fn($v) => $export($v, 'array-key', $nest), array_combine($keys = array_keys($value), $keys));
                     $maxlen = max(array_map('strlen', $keys));
                 }
                 $kvl = '';
                 $lastkey = array_key_last($value);
                 $parents[] = $value;
                 foreach ($value as $k => $v) {
-                    $keystr = $hashed ? $keys[$k] . str_repeat($space, $maxlen - strlen($keys[$k])) . "$space=>$space" : '';
-                    $kvl .= $spacer1 . $keystr . $export($v, 'array-value', $nest + 1, $parents) . ($k === $lastkey && $options['minify'] ? "" : ",") . "$break";
+                    $keystr = $hashed ? $keys[$k] . str_repeat($align, $maxlen - strlen($keys[$k])) . $delim : '';
+                    $kvl .= $spacer1 . $keystr . $export($v, 'array-value', $nest + 1, $parents) . ($k === $lastkey ? $lastcomma : $tailcomma) . $break;
+                }
+                if ($options['named'] && $nest === $options['first-nest']) {
+                    return $kvl;
                 }
                 return "[$break{$kvl}{$spacer2}]";
             }
@@ -4524,6 +4660,9 @@ if (!function_exists('ryunosuke\\NightDragon\\var_export2')) {
             elseif (is_string($value)) {
                 // 列揃えのため配列のキーは常にダブルクォート
                 if ($context === 'array-key') {
+                    if ($options['named'] && $nest === $options['first-nest']) {
+                        return $value;
+                    }
                     return str_quote($value);
                 }
                 // 改行を含むならヒアドキュメント
@@ -4549,7 +4688,7 @@ if (!function_exists('ryunosuke\\NightDragon\\var_export2')) {
         };
 
         // 結果を返したり出力したり
-        $result = $export($value, null);
+        $result = $export($value, null, $options['first-nest']);
         if ($options['return']) {
             return $result;
         }
