@@ -80,7 +80,7 @@ class Template
         $this->vars = $vars;
         $this->parentVars = $parentVars;
 
-        $contents = $this->fetch($this->renderer->compile($this->filename, $this->vars, $this->parentVars), false);
+        [$contents] = $this->fetch($this->renderer->compile($this->filename, $this->vars, $this->parentVars), false);
 
         if ($this->parent) {
             assert(strlen(trim($contents)) === 0, "child template can't have content outside blocks [$contents]");
@@ -218,10 +218,13 @@ class Template
      *
      * @param string $filename 読み込むファイル名
      * @param array $vars 変数配列
+     * @return mixed require の返り値
      */
     public function include(string $filename, array $vars = [])
     {
-        echo $this->fetch($this->renderer->compile($this->resolvePath($filename), $vars, $this->vars + $this->parentVars), false, $vars);
+        [$contents, $return] = $this->fetch($this->renderer->compile($this->resolvePath($filename), $vars, $this->vars + $this->parentVars), false, $vars);
+        echo $contents;
+        return $return;
     }
 
     /**
@@ -232,7 +235,9 @@ class Template
      */
     public function require(string $filename, array $vars = [])
     {
-        echo $this->fetch($this->renderer->compile($this->resolvePath($filename), $vars, $this->vars + $this->parentVars), true, $vars);
+        [$contents, $return] = $this->fetch($this->renderer->compile($this->resolvePath($filename), $vars, $this->vars + $this->parentVars), true, $vars);
+        echo $contents;
+        return $return;
     }
 
     /**
@@ -321,7 +326,7 @@ class Template
      * @param string $filename 読み込むファイル名
      * @param bool $once require_once フラグ
      * @param array $vars 変数配列
-     * @return mixed 読み込んだコンテンツ
+     * @return array [読み込んだコンテンツ, require 返り値]
      */
     private function fetch(string $filename, bool $once, array $vars = [])
     {
@@ -330,12 +335,12 @@ class Template
             ob_start();
             extract(func_get_arg(2));
             if (func_get_arg(1)) {
-                require_once func_get_arg(0);
+                $return = require_once func_get_arg(0);
             }
             else {
-                require func_get_arg(0);
+                $return = require func_get_arg(0);
             }
-            return ob_get_clean();
+            return [ob_get_clean(), $return];
         })($filename, $once, $vars + $this->vars + $this->parentVars);
     }
 
