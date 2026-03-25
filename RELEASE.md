@@ -22,6 +22,10 @@
   - microsoft/tolerant-php-parser を試す
 - パス周りがメチャクチャなので正規化して realpath したい
 
+## 1.3.0
+
+- [*feature] include/require の返り値を返す機能
+
 ## 1.2.16
 
 - [feature] require_once 相当の require を追加
