@@ -37,7 +37,7 @@ class Template
     {
         $this->vars = $vars + $parentVars;
         $compiled = $this->renderer->compile($this->filename, $vars, $parentVars);
-        $contents = $this->fetch($compiled, false, $this->vars);
+        [$contents] = $this->fetch($compiled, false, $this->vars);
 
         if (isset($this->parent)) {
             assert(strlen(trim($contents)) === 0, "child template can't have content outside blocks [$contents]");
@@ -163,10 +163,12 @@ class Template
      * 極論するとコピペと同じ。 $this は $this だし、begin ～ end のブロックも自身のブロックとして定義される。
      * $filename が継承をしていたり（意図してない）ブロックを定義していたりするとおそらく意図通りには動かない。
      */
-    public function include(string $filename, array $vars = []): void
+    public function include(string $filename, array $vars = []): mixed
     {
         $compiled = $this->renderer->compile($this->resolvePath($filename), $vars, $this->vars);
-        echo $this->fetch($compiled, false, $vars + $this->vars);
+        [$contents, $return] = $this->fetch($compiled, false, $vars + $this->vars);
+        echo $contents;
+        return $return;
     }
 
     /**
@@ -175,10 +177,12 @@ class Template
      * 一度だけファイルを取り込む。
      * その他の挙動は include と同じ。
      */
-    public function require(string $filename, array $vars = []): void
+    public function require(string $filename, array $vars = []): mixed
     {
         $compiled = $this->renderer->compile($this->resolvePath($filename), $vars, $this->vars);
-        echo $this->fetch($compiled, true, $vars + $this->vars);
+        [$contents, $return] = $this->fetch($compiled, true, $vars + $this->vars);
+        echo $contents;
+        return $return;
     }
 
     /**
@@ -257,19 +261,19 @@ class Template
     /**
      * 指定配列を展開しつつファイルを require するキモメソッド
      */
-    private function fetch(string $filename, bool $once, array $vars = []): string
+    private function fetch(string $filename, bool $once, array $vars = []): array
     {
         /** @noinspection PhpMethodParametersCountMismatchInspection */
         return (function () {
             ob_start();
             extract(func_get_arg(2));
             if (func_get_arg(1)) {
-                require_once func_get_arg(0);
+                $return = require_once func_get_arg(0);
             }
             else {
-                require func_get_arg(0);
+                $return = require func_get_arg(0);
             }
-            return ob_get_clean();
+            return [ob_get_clean(), $return];
         })($filename, $once, $vars);
     }
 

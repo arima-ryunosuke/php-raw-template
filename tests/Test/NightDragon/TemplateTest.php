@@ -277,6 +277,26 @@ CONTENT;
         $this->assertEquals($actual, $contents);
     }
 
+    function test_include_require_return()
+    {
+        $actual = <<<CONTENT
+this is part1
+part1 result
+this is part2
+part2 result
+1
+
+CONTENT;
+
+        $renderer = new Renderer([
+            'debug'      => true,
+            'compileDir' => self::COMPILE_DIR,
+        ]);
+        $template = new Template($renderer, self::TEMPLATE_DIR . '/include.phtml');
+        $contents = $template->render([]);
+        $this->assertEquals($actual, $contents);
+    }
+
     function test_content()
     {
         $actual = <<<CONTENT

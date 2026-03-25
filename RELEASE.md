@@ -68,6 +68,10 @@
 - [*change] 後方互換用コードを削除
   - 一部のデフォルト値を変更
 
+## 1.3.0
+
+- [*feature] include/require の返り値を返す機能
+
 ## 1.2.16
 
 - [feature] require_once 相当の require を追加
