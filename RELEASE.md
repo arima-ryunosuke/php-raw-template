@@ -22,6 +22,10 @@
   - microsoft/tolerant-php-parser を試す
 - パス周りがメチャクチャなので正規化して realpath したい
 
+## 2.1.0
+
+- Merge tag 'v1.3.0'
+
 ## 2.0.7
 
 - Merge tag 'v1.2.16'
