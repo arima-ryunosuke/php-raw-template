@@ -25,6 +25,8 @@ class Template
     /** @var array begin で始められた現在のブロック名 */
     private $currentBlocks = [];
 
+    private $onces = [];
+
     public function __construct(Renderer $renderer, string $filename)
     {
         $this->renderer = $renderer;
@@ -192,6 +194,47 @@ class Template
         $this->blocks[$name][] = fn() => $this->parent->closestBlock($name);
         ob_start();
     }
+
+    /**
+     * 一度だけ出力されるブロックを開始する
+     */
+    public function once(?string $name = null)
+    {
+        $name ??= (function () {
+            $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1];
+            return "{$trace['file']}:{$trace['line']}";
+        })();
+
+        $this->onces[$name] ??= 0;
+
+        // ob_start しないと標準出力に出てしまうので常に start して endOnce で捨てる
+        ob_start();
+    }
+
+    /**
+     * once を閉じる
+     */
+    public function endOnce(): void
+    {
+        assert(!empty($this->onces), "once is not begun.");
+
+        $name = last_key($this->onces);
+        $contents = ob_get_clean();
+        if ($this->onces[$name]++ === 0) {
+            echo $contents;
+        }
+    }
+
+    /**
+     * コンテンツ付き once ブロック
+     */
+    public function onceContents(string $contents): void
+    {
+        $this->once(null);
+        echo $contents;
+        $this->endOnce();
+    }
+
 
     /**
      * 指定ファイルを出力する
