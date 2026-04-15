@@ -298,7 +298,7 @@ class Template
      * @param T $v
      * @return T
      */
-    public function E(mixed $v): mixed
+    public function E($v)
     {
         return $v;
     }

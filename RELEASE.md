@@ -26,6 +26,10 @@
 
 - [*feature] include/require の返り値を返す機能
 
+## 1.2.17
+
+- [fixbug] 構文エラー修正
+
 ## 1.2.16
 
 - [feature] require_once 相当の require を追加
