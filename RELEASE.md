@@ -22,6 +22,11 @@
   - microsoft/tolerant-php-parser を試す
 - パス周りがメチャクチャなので正規化して realpath したい
 
+## 1.3.1
+
+- [feature] 一度しかレンダリングしない once 系メソッド
+- Merge tag 'v1.2.17'
+
 ## 1.3.0
 
 - [*feature] include/require の返り値を返す機能
