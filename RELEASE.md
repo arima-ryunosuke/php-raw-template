@@ -22,6 +22,10 @@
   - microsoft/tolerant-php-parser を試す
 - パス周りがメチャクチャなので正規化して realpath したい
 
+## 1.3.2
+
+- [fixbug] ビルド漏れ
+
 ## 1.3.1
 
 - [feature] 一度しかレンダリングしない once 系メソッド
