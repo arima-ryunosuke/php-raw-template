@@ -195,6 +195,35 @@ This is parent end
 ', $contents);
     }
 
+    function test_once()
+    {
+        $actual = <<<CONTENT
+prefix
+1
+suffix
+prefix
+suffix
+prefix
+suffix
+
+prefix
+4suffix
+prefix
+suffix
+prefix
+suffix
+
+CONTENT;
+
+        $renderer = new Renderer([
+            'debug'      => true,
+            'compileDir' => self::COMPILE_DIR,
+        ]);
+        $template = new Template($renderer, self::TEMPLATE_DIR . '/once.phtml');
+        $contents = $template->render([]);
+        $this->assertEquals($actual, $contents);
+    }
+
     function test_import()
     {
         $actual = <<<CONTENT

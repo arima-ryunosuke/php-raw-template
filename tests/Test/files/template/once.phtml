@@ -1,0 +1,15 @@
+<?php foreach (range(1, 3) as $i): ?>
+prefix
+<?php $this->once() ?>
+<?= $i ?>
+<?php $this->endOnce() ?>
+suffix
+<?php endforeach ?>
+
+<?php foreach (range(4, 6) as $i): ?>
+prefix
+<?php $this->onceContents(<<<TEXT
+$i
+TEXT,) ?>
+suffix
+<?php endforeach ?>
