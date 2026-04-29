@@ -91,15 +91,17 @@ php の素材の味を生かしたシンプルなテンプレートエンジン�
 
 <section>
     <h2>修飾子機能</h2>
-    これは修飾子機能です（"|" でパイプ演算子のような挙動になります）：<?= $string | strtoupper ?>
-    修飾子は繋げられるし、 $_ という特殊変数を使うと任意引数位置に適用できます：<?= $string | strtoupper ?? 'default' | str_replace('TITLE', 'subject', $_) ?>
-    登録しておけば静的メソッドも呼べます：<?= $float | number ?>
-    引数付きです：<?= $float | number(3) ?>
+    これは修飾子機能です（"|>" でパイプ演算子のような挙動になります）：<?= $string |> strtoupper ?>
+    修飾子は繋げられるし、 ? という特殊構文を使うと任意引数位置に適用できます：<?= $string |> strtoupper ?? 'default' |> str_replace('TITLE', 'subject', ?) ?>
+    この ? は実験的な構文であり、パースの都合上、三項演算子が使えなくなるデメリットがあります（通常の利用であれば '$_' などの変数名の方がよいです）。
+    登録しておけば静的メソッドも呼べます：<?= $float |> number ?>
+    引数付きです：<?= $float |> number(3) ?>
+    この ? は文字列内に埋め込むこともできます：<?= $string |> strtoupper("upper {$?}") ?>
 
-    & は基本的に | と同じですが、値が null の場合にスルーされます（ぼっち演算子みたいなものです）：<?= $null & number ?? 'default' ?>
-    引数付きです：<?= $float & number(3) ?? 'default' ?>
+    &> は基本的に |> と同じですが、値が null の場合にスルーされます（ぼっち演算子みたいなものです）：<?= $null &> number ?? 'default' ?>
+    引数付きです：<?= $float &> number(3) ?? 'default' ?>
 
-    | と & は混在可能です：<?= $null & number | is_null | var_export ?>
+    |> と &> は混在可能です：<?= $null &> number |> is_null |> var_export ?>
 </section>
 
 <section>
@@ -112,10 +114,10 @@ php の素材の味を生かしたシンプルなテンプレートエンジン�
     埋め込み構文も使えます1：<?= "prefix-{$object->fuga->x}-suffix" ?>
     埋め込み構文も使えます2：<?= "prefix-{$closure(strtolower($object->fuga->x))}-suffix" ?>
     このように ?? 演算子とも併用できます：<?= $array->undefined ?? 'default' ?>
-    オブジェクトも可能できます。共にネストも出来ます：<?= $object->undefined1->undefined2 ?? 'default' | strtoupper ?>
+    オブジェクトも可能できます。共にネストも出来ます：<?= $object->undefined1->undefined2 ?? 'default' |> strtoupper ?>
 
-    上記2つの機能は「配列アクセス -> 修飾子」のときのみ組み合わせ可能です：<?= $array->fuga | implode(',', $_) ?>
-    右記のような順番の組み合わせはできません：<?= @"<?=" ?> $string | str_split->z <?= @"?>" ?>
+    上記2つの機能は「配列アクセス -> 修飾子」のときのみ組み合わせ可能です：<?= $array->fuga |> implode(',', ?) ?>
+    右記のような順番の組み合わせはできません：<?= @"<?=" ?> $string |> str_split->z <?= @"?>" ?>
 </section>
 
 <section>
@@ -130,7 +132,7 @@ php の素材の味を生かしたシンプルなテンプレートエンジン�
     Smarty でいう capture のような機能はありませんが、所詮素の php なので ob_ 系を使用することで簡単に模倣できます。
     <?php ob_start() ?>
     <blockquote>
-        これはキャプチャー中の変数表示です：<?= $string | strtoupper ?>
+        これはキャプチャー中の変数表示です：<?= $string |> strtoupper ?>
     </blockquote>
     <?php $buffer = ob_get_clean() ?>
     キャプチャ結果を呼び出します。<?= @$buffer ?>
@@ -138,7 +140,7 @@ php の素材の味を生かしたシンプルなテンプレートエンジン�
     Smarty でいう function のような機能はありませんが、所詮素の php なのでクロージャを使用することで簡単に模倣できます。
     <?php $template = function ($arg1, $arg2) { ?>
         <blockquote>
-            arg1+arg2: <?= $arg1 | strtoupper ?> <?= $arg2 | strtolower ?>
+            arg1+arg2: <?= $arg1 |> strtoupper ?> <?= $arg2 |> strtolower ?>
         </blockquote>
     <?php } ?>
     テンプレートを引数付きで呼び出します。<?= @$template("Hello's", 'World') ?>
@@ -242,15 +244,17 @@ php の素材の味を生かしたシンプルなテンプレートエンジン�
 
 <section>
     <h2>修飾子機能</h2>
-    これは修飾子機能です（"|" でパイプ演算子のような挙動になります）：<?=\ryunosuke\NightDragon\Renderer::html(strtoupper($string)),"\n"?>
-    修飾子は繋げられるし、 $_ という特殊変数を使うと任意引数位置に適用できます：<?=\ryunosuke\NightDragon\Renderer::html(str_replace('TITLE','subject',strtoupper($string) ?? 'default')),"\n"?>
+    これは修飾子機能です（"|>" でパイプ演算子のような挙動になります）：<?=\ryunosuke\NightDragon\Renderer::html(strtoupper($string)),"\n"?>
+    修飾子は繋げられるし、 ? という特殊構文を使うと任意引数位置に適用できます：<?=\ryunosuke\NightDragon\Renderer::html(str_replace('TITLE','subject',strtoupper($string) ?? 'default')),"\n"?>
+    この ? は実験的な構文であり、パースの都合上、三項演算子が使えなくなるデメリットがあります（通常の利用であれば '$_' などの変数名の方がよいです）。
     登録しておけば静的メソッドも呼べます：<?=\ryunosuke\NightDragon\Renderer::html(\Modifier::number($float)),"\n"?>
     引数付きです：<?=\ryunosuke\NightDragon\Renderer::html(\Modifier::number($float,3)),"\n"?>
+    この ? は文字列内に埋め込むこともできます：<?=\ryunosuke\NightDragon\Renderer::html(strtoupper("upper ".$string."")),"\n"?>
 
-    & は基本的に | と同じですが、値が null の場合にスルーされます（ぼっち演算子みたいなものです）：<?=\ryunosuke\NightDragon\Renderer::html(((${"\0"}=$null) === null ? ${"\0"} : \Modifier::number(${"\0"})) ?? 'default'),"\n"?>
+    &> は基本的に |> と同じですが、値が null の場合にスルーされます（ぼっち演算子みたいなものです）：<?=\ryunosuke\NightDragon\Renderer::html(((${"\0"}=$null) === null ? ${"\0"} : \Modifier::number(${"\0"})) ?? 'default'),"\n"?>
     引数付きです：<?=\ryunosuke\NightDragon\Renderer::html(((${"\0"}=$float) === null ? ${"\0"} : \Modifier::number(${"\0"},3)) ?? 'default'),"\n"?>
 
-    | と & は混在可能です：<?=\ryunosuke\NightDragon\Renderer::html(var_export(is_null(((${"\0"}=$null) === null ? ${"\0"} : \Modifier::number(${"\0"}))))),"\n"?>
+    |> と &> は混在可能です：<?=\ryunosuke\NightDragon\Renderer::html(var_export(is_null(((${"\0"}=$null) === null ? ${"\0"} : \Modifier::number(${"\0"}))))),"\n"?>
 </section>
 
 <section>
@@ -260,13 +264,13 @@ php の素材の味を生かしたシンプルなテンプレートエンジン�
     "?->" で nullsafe アクセスができます：<?=\ryunosuke\NightDragon\Renderer::html(@\ryunosuke\NightDragon\Renderer::access($array,[true,'undefined1'],[true,'undefined2']) ?? 'default'),"\n"?>
     オブジェクトもアクセスできます：<?=\ryunosuke\NightDragon\Renderer::html(\ryunosuke\NightDragon\Renderer::access($object,[false,'hoge'])),"\n"?>
     配列とオブジェクトは混在して OK です：<?=\ryunosuke\NightDragon\Renderer::html(\ryunosuke\NightDragon\Renderer::access($object,[false,'fuga'],[false,'x'])),"\n"?>
-    埋め込み構文も使えます1：<?=\ryunosuke\NightDragon\Renderer::html("prefix-".\ryunosuke\NightDragon\Renderer::access($object,[false,'fuga'],[false,'x'])."-suffix"),"\n"?>
+    埋め込み構文も使えます1：<?=\ryunosuke\NightDragon\Renderer::html("prefix-{$this->E(\ryunosuke\NightDragon\Renderer::access($object,[false,'fuga'],[false,'x']))}-suffix"),"\n"?>
     埋め込み構文も使えます2：<?=\ryunosuke\NightDragon\Renderer::html("prefix-{$closure(strtolower(\ryunosuke\NightDragon\Renderer::access($object,[false,'fuga'],[false,'x'])))}-suffix"),"\n"?>
     このように ?? 演算子とも併用できます：<?=\ryunosuke\NightDragon\Renderer::html(@\ryunosuke\NightDragon\Renderer::access($array,[false,'undefined']) ?? 'default'),"\n"?>
     オブジェクトも可能できます。共にネストも出来ます：<?=\ryunosuke\NightDragon\Renderer::html(strtoupper(@\ryunosuke\NightDragon\Renderer::access($object,[false,'undefined1'],[false,'undefined2']) ?? 'default')),"\n"?>
 
     上記2つの機能は「配列アクセス -> 修飾子」のときのみ組み合わせ可能です：<?=\ryunosuke\NightDragon\Renderer::html(implode(',',\ryunosuke\NightDragon\Renderer::access($array,[false,'fuga']))),"\n"?>
-    右記のような順番の組み合わせはできません：<?="<?="?> $string | str_split->z <?="?>","\n"?>
+    右記のような順番の組み合わせはできません：<?="<?="?> $string |> str_split->z <?="?>","\n"?>
 </section>
 
 <section>
@@ -367,15 +371,17 @@ php の素材の味を生かしたシンプルなテンプレートエンジン�
 
 <section>
     <h2>修飾子機能</h2>
-    これは修飾子機能です（"|" でパイプ演算子のような挙動になります）：THIS&#039;S TITLE
-    修飾子は繋げられるし、 $_ という特殊変数を使うと任意引数位置に適用できます：THIS&#039;S subject
+    これは修飾子機能です（"|>" でパイプ演算子のような挙動になります）：THIS&#039;S TITLE
+    修飾子は繋げられるし、 ? という特殊構文を使うと任意引数位置に適用できます：THIS&#039;S subject
+    この ? は実験的な構文であり、パースの都合上、三項演算子が使えなくなるデメリットがあります（通常の利用であれば '$_' などの変数名の方がよいです）。
     登録しておけば静的メソッドも呼べます：12,346
     引数付きです：12,345.679
+    この ? は文字列内に埋め込むこともできます：UPPER THIS&#039;S TITLE
 
-    & は基本的に | と同じですが、値が null の場合にスルーされます（ぼっち演算子みたいなものです）：default
+    &> は基本的に |> と同じですが、値が null の場合にスルーされます（ぼっち演算子みたいなものです）：default
     引数付きです：12,345.679
 
-    | と & は混在可能です：true
+    |> と &> は混在可能です：true
 </section>
 
 <section>
@@ -391,7 +397,7 @@ php の素材の味を生かしたシンプルなテンプレートエンジン�
     オブジェクトも可能できます。共にネストも出来ます：DEFAULT
 
     上記2つの機能は「配列アクセス -> 修飾子」のときのみ組み合わせ可能です：X,Y,Z
-    右記のような順番の組み合わせはできません：<?= $string | str_split->z ?>
+    右記のような順番の組み合わせはできません：<?= $string |> str_split->z ?>
 </section>
 
 <section>
@@ -522,6 +528,9 @@ line3</div>
     - `<?= $value | undefined ?>` (未定義関数。構文的にエラーではないが呼び出せない)
     - `<?= $value | class::method ?>` (メソッド形式は呼び出し不可)
     - `<?= $value | $callable ?>` (変数に格納された callable は現状呼び出せるが、正式な仕様ではない)
+
+php8.4, php8.5 から パイプライン演算子、部分適用演算子が実装されたため '|>' '&>' '?' を使用すると IDE との親和性が高くなります。
+現在のところデフォルトは `|` `&` `$_` ですが、将来的に上記に変更される可能性があります。
 
 #### auto filter
 
@@ -873,15 +882,14 @@ nofilter は `<?= $string ?>` で変換されるデフォルトフィルタを�
 空文字にすると無効機能が無効になり、常に変換されます。
 
 varModifier は `<?= $array | implode(',', $_) ?>` における `|` を指定します。
-例えば `>>` を指定するとこれを `<?= $array >> implode(',', $_) ?>` と記述できるようになります。
-互換性維持のため現在のデフォルトは `|` ですが、本来は配列を指定します。
-順番に「単純パイプ修飾子記号」「null ならパイプしない修飾子記号」です。
-将来のバージョンでは `['|', '&']` がデフォルトになります。
+例えば `|>` を指定するとこれを `<?= $array |> implode(',', $_) ?>` と記述できるようになります。
+順番に「単純パイプ修飾子記号」「null ならパイプしない修飾子記号」という配列を渡します。
+将来のバージョンでは `['|>', '&>']` がデフォルトになります。
 空文字にすると修飾子機能が無効になり、変換自体が行われなくなります。
 
 varReceiver は `<?= $array | implode(',', $_) ?>` における `$_` を指定します。
 例えば `$__var` を指定するとこれを `<?= $array | implode(',', $__var) ?>` と記述できるようになります。
-変数名として有効な文字列である必要があります。
+変数名として有効な文字列である必要がありますが、 `?` だけは特例で、部分適用との相性もあり、将来的に `?` がデフォルトになる可能性があります。
 
 varAccessor は `<?= $array->key ?>` における `->` を指定します。
 例えば `.` を指定するとこれを `<?= $array.key ?>` と記述できるようになります。
