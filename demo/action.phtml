@@ -24,15 +24,17 @@
 
 <section>
     <h2>修飾子機能</h2>
-    これは修飾子機能です（"|" でパイプ演算子のような挙動になります）：<?= $string | strtoupper ?>
-    修飾子は繋げられるし、 $_ という特殊変数を使うと任意引数位置に適用できます：<?= $string | strtoupper ?? 'default' | str_replace('TITLE', 'subject', $_) ?>
-    登録しておけば静的メソッドも呼べます：<?= $float | number ?>
-    引数付きです：<?= $float | number(3) ?>
+    これは修飾子機能です（"|>" でパイプ演算子のような挙動になります）：<?= $string |> strtoupper ?>
+    修飾子は繋げられるし、 ? という特殊構文を使うと任意引数位置に適用できます：<?= $string |> strtoupper ?? 'default' |> str_replace('TITLE', 'subject', ?) ?>
+    この ? は実験的な構文であり、パースの都合上、三項演算子が使えなくなるデメリットがあります（通常の利用であれば '$_' などの変数名の方がよいです）。
+    登録しておけば静的メソッドも呼べます：<?= $float |> number ?>
+    引数付きです：<?= $float |> number(3) ?>
+    この ? は文字列内に埋め込むこともできます：<?= $string |> strtoupper("upper {$?}") ?>
 
-    & は基本的に | と同じですが、値が null の場合にスルーされます（ぼっち演算子みたいなものです）：<?= $null & number ?? 'default' ?>
-    引数付きです：<?= $float & number(3) ?? 'default' ?>
+    &> は基本的に |> と同じですが、値が null の場合にスルーされます（ぼっち演算子みたいなものです）：<?= $null &> number ?? 'default' ?>
+    引数付きです：<?= $float &> number(3) ?? 'default' ?>
 
-    | と & は混在可能です：<?= $null & number | is_null | var_export ?>
+    |> と &> は混在可能です：<?= $null &> number |> is_null |> var_export ?>
 </section>
 
 <section>
@@ -45,10 +47,10 @@
     埋め込み構文も使えます1：<?= "prefix-{$object->fuga->x}-suffix" ?>
     埋め込み構文も使えます2：<?= "prefix-{$closure(strtolower($object->fuga->x))}-suffix" ?>
     このように ?? 演算子とも併用できます：<?= $array->undefined ?? 'default' ?>
-    オブジェクトも可能できます。共にネストも出来ます：<?= $object->undefined1->undefined2 ?? 'default' | strtoupper ?>
+    オブジェクトも可能できます。共にネストも出来ます：<?= $object->undefined1->undefined2 ?? 'default' |> strtoupper ?>
 
-    上記2つの機能は「配列アクセス -> 修飾子」のときのみ組み合わせ可能です：<?= $array->fuga | implode(',', $_) ?>
-    右記のような順番の組み合わせはできません：<?= @"<?=" ?> $string | str_split->z <?= @"?>" ?>
+    上記2つの機能は「配列アクセス -> 修飾子」のときのみ組み合わせ可能です：<?= $array->fuga |> implode(',', ?) ?>
+    右記のような順番の組み合わせはできません：<?= @"<?=" ?> $string |> str_split->z <?= @"?>" ?>
 </section>
 
 <section>
@@ -63,7 +65,7 @@
     Smarty でいう capture のような機能はありませんが、所詮素の php なので ob_ 系を使用することで簡単に模倣できます。
     <?php ob_start() ?>
     <blockquote>
-        これはキャプチャー中の変数表示です：<?= $string | strtoupper ?>
+        これはキャプチャー中の変数表示です：<?= $string |> strtoupper ?>
     </blockquote>
     <?php $buffer = ob_get_clean() ?>
     キャプチャ結果を呼び出します。<?= @$buffer ?>
@@ -71,7 +73,7 @@
     Smarty でいう function のような機能はありませんが、所詮素の php なのでクロージャを使用することで簡単に模倣できます。
     <?php $template = function ($arg1, $arg2) { ?>
         <blockquote>
-            arg1+arg2: <?= $arg1 | strtoupper ?> <?= $arg2 | strtolower ?>
+            arg1+arg2: <?= $arg1 |> strtoupper ?> <?= $arg2 |> strtolower ?>
         </blockquote>
     <?php } ?>
     テンプレートを引数付きで呼び出します。<?= @$template("Hello's", 'World') ?>

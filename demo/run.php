@@ -29,7 +29,9 @@ $renderer = new \ryunosuke\NightDragon\Renderer([
     'debug'              => defined('DEBUG') && DEBUG,
     'constFilename'      => __DIR__ . '/compiles/constant.php',
     'compileDir'         => __DIR__ . '/compiles',
+    'varModifier'        =>  ['|>', '&>'],
     'defaultClass'       => Modifier::class,
+    'varReceiver'        => '?',
     'compatibleShortTag' => true,
 ]);
 
