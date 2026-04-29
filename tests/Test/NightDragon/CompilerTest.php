@@ -319,6 +319,34 @@ z
         $this->assertEquals($expected, $rewrite($actual, self::defaultOption));
     }
 
+    function test_rewrite_pipe_operator()
+    {
+        /** @see Compiler::rewrite() */
+        $rewrite = $this->publishMethod(new Compiler(), 'rewrite');
+
+        $expected = '<?=html(((${"\0"}=array_slice($var)) === null ? ${"\0"} : array_slice(${"\0"})))?>';
+
+        // | &
+        $actual = '<?= $var | array_slice & array_slice ?>';
+        $this->assertEquals($expected, $rewrite($actual, ['varModifier' => ['|', '&']] + self::defaultOption));
+
+        // |> &
+        $actual = '<?= $var |> array_slice & array_slice ?>';
+        $this->assertEquals($expected, $rewrite($actual, ['varModifier' => ['|>', '&']] + self::defaultOption));
+
+        // | &>
+        $actual = '<?= $var | array_slice &> array_slice ?>';
+        $this->assertEquals($expected, $rewrite($actual, ['varModifier' => ['|', '&>']] + self::defaultOption));
+
+        // |> &>
+        $actual = '<?= $var |> array_slice &> array_slice ?>';
+        $this->assertEquals($expected, $rewrite($actual, ['varModifier' => ['|>', '&>']] + self::defaultOption));
+
+        // no |,&
+        $actual = '<?= ($a & $b | $c) |> array_slice &> array_slice ?>';
+        $this->assertEquals('<?=html(((${"\0"}=array_slice(($a & $b | $c))) === null ? ${"\0"} : array_slice(${"\0"})))?>', $rewrite($actual, ['varModifier' => ['|>', '&>']] + self::defaultOption));
+    }
+
     function test_rewriteWhitespace()
     {
         /** @see Compiler::rewriteWhitespace() */

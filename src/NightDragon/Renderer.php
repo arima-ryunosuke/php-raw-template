@@ -116,7 +116,7 @@ class Renderer
             'defaultGetter'      => Renderer::class . '::access',
             'defaultCloser'      => "\n",
             'nofilter'           => '@',
-            'varModifier'        => ['|', '&'],
+            'varModifier'        => ['|', '&'], // for compatible. change to ['|>', '&>'] in future scope
             'varReceiver'        => '$_',
             'varAccessor'        => '->',
             'varExpander'        => '`',
@@ -203,7 +203,7 @@ class Renderer
         if ($this->debug && is_writable($filename)) {
             $ropt = $this->renderOptions;
             $content = file_get_contents($filename);
-            $source = new Source($content, $ropt['compatibleShortTag'] ? Source::SHORT_TAG_REPLACE : Source::SHORT_TAG_NOTHING);
+            $source = new Source($content, $ropt['compatibleShortTag'] ? Source::COMPATIBLE_SHORT_TAG_REPLACE : 0);
 
             $E = fn($v) => var_export($v, true);
             $L = fn($v) => strlen($v) ? "$v\n" : $v;

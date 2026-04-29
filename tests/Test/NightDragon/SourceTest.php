@@ -48,13 +48,36 @@ class SourceTest extends \ryunosuke\Test\AbstractTestCase
             $this->markTestSkipped('short_open_tag is disabled');
         }
 
-        $source = new Source('<? $var = "prefix-" . "-middle-" . __FUNCTION__ . "-suffix";', Source::SHORT_TAG_REPLACE);
+        $source = new Source('<? $var = "prefix-" . "-middle-" . __FUNCTION__ . "-suffix";', Source::COMPATIBLE_SHORT_TAG_REPLACE);
         $this->assertEquals(Token::instance(T_OPEN_TAG, '<?pHP ', 1, 0), $source[0]);
         $this->assertEquals('<? $var = "prefix-" . "-middle-" . __FUNCTION__ . "-suffix";', (string) $source);
 
-        $source = new Source('<? $var = "prefix-" . "-middle-" . __FUNCTION__ . "-suffix";', Source::SHORT_TAG_REWRITE);
+        $source = new Source('<? $var = "prefix-" . "-middle-" . __FUNCTION__ . "-suffix";', Source::COMPATIBLE_SHORT_TAG_REWRITE);
         $this->assertEquals(Token::instance(T_OPEN_TAG, '<?pHP ', 1, 0), $source[0]);
         $this->assertEquals('<?pHP  $var = "prefix-" . "-middle-" . __FUNCTION__ . "-suffix";', (string) $source);
+    }
+
+    function test_pipe_operator()
+    {
+        // 標準と競合するとまずいので担保しておく（php8.5 で実行するとコケるがその場合はまるっと削除してよい）
+        $this->assertNotContains(10408, get_defined_constants(true)['tokenizer']);
+
+        $source = new Source('<?php $var |> hoge &> fuga;');
+        $this->assertEquals(Token::instance(ord('|'), '|', 1, 11), $source[2]);
+        $this->assertEquals(Token::instance(ord('>'), '>', 1, 12), $source[3]);
+        if (defined('T_AMPERSAND_NOT_FOLLOWED_BY_VAR_OR_VARARG')) {
+            $this->assertEquals(Token::instance(T_AMPERSAND_NOT_FOLLOWED_BY_VAR_OR_VARARG, '&', 1, 19), $source[5]);
+        }
+        else {
+            $this->assertEquals(Token::instance(ord('&'), '&', 1, 19), $source[5]);
+        }
+        $this->assertEquals(Token::instance(ord('>'), '>', 1, 20), $source[6]);
+        $this->assertEquals('<?php $var |> hoge &> fuga;', (string) $source);
+
+        $source = new Source('<?php $var |> hoge &> fuga;', Source::COMPATIBLE_PIPE_OPERATOR_REPLACE);
+        $this->assertEquals(Token::instance(10408, '|>', 1, 11), $source[2]);
+        $this->assertEquals(Token::instance(10408, '&>', 1, 19), $source[4]);
+        $this->assertEquals('<?php $var |> hoge &> fuga;', (string) $source);
     }
 
     function test_line()

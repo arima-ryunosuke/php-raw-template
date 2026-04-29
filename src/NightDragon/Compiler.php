@@ -43,7 +43,15 @@ class Compiler
     private function rewrite(string $source, array $options): Source
     {
         $source = $this->rewriteCustomTag($source, $options['customTagHandler'] ?? [], self::$lineMapping[$this->filename ?? '']);
-        $source = new Source($source, $options['compatibleShortTag'] ? Source::SHORT_TAG_REWRITE : Source::SHORT_TAG_NOTHING);
+
+        $sourceOptions = 0;
+        if ($options['compatibleShortTag']) {
+            $sourceOptions |= Source::COMPATIBLE_SHORT_TAG_REWRITE;
+        }
+        if (($options['varModifier'][0] ?? null) === '|>' || ($options['varModifier'][1] ?? null) === '&>') {
+            $sourceOptions |= Source::COMPATIBLE_PIPE_OPERATOR_REPLACE;
+        }
+        $source = new Source($source, $sourceOptions);
 
         $this->rewriteWhitespace($source, $options['stripWhitespace'], self::$lineMapping[$this->filename ?? '']);
 

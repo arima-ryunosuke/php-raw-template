@@ -6,32 +6,44 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
 {
     const SHORT_OPEN_TAG = '<?pHP ';
 
-    const SHORT_TAG_NOTHING = 0; // <? に関して何もしない
-    const SHORT_TAG_REPLACE = 1; // <? を <?php に読み替えるがパース時のみで書き下しには影響しない
-    const SHORT_TAG_REWRITE = 2; // <? を <?php に読み替えてパース時だけでなく書き下しにも影響する
+    const COMPATIBLE_SHORT_TAG_REPLACE     = 1; // <? を <?php に読み替えるがパース時のみで書き下しには影響しない
+    const COMPATIBLE_SHORT_TAG_REWRITE     = 2; // <? を <?php に読み替えてパース時だけでなく書き下しにも影響する
+    const COMPATIBLE_PIPE_OPERATOR_REPLACE = 4; // php8.5未満で |>,&> を検出する
 
     const MATCH_ANY       = true; // 任意のトークンにマッチ
     const MATCH_MANY      = -1;   // 指定トークンに量的マッチ
     const MATCH_NOT       = -98;  // 否定フラグ
     const MATCH_NOCAPTURE = -99;  // キャプチャしないフラグ
 
-    private int $compatibleShortTagMode;
+    private int $compatibleOptions;
 
     /** @var Token[] */
     private array $tokens = [];
 
-    public function __construct(string|array $eitherCodeOrTokens, int $compatibleShortTagMode = self::SHORT_TAG_NOTHING)
+    public function __construct(string|array $eitherCodeOrTokens, int $compatibleOptions = 0)
     {
         // php.ini でショートタグが有効なら標準に身を任せてこのクラスでは何もしない
-        $this->compatibleShortTagMode = ini_get('short_open_tag') ? self::SHORT_TAG_NOTHING : $compatibleShortTagMode;
+        if (ini_get('short_open_tag')) {
+            $compatibleOptions = $compatibleOptions & ~self::COMPATIBLE_SHORT_TAG_REPLACE & ~self::COMPATIBLE_SHORT_TAG_REWRITE; // @codeCoverageIgnore
+        }
+        $this->compatibleOptions = $compatibleOptions;
 
         $tokens = is_string($eitherCodeOrTokens) ? Token::tokenize($eitherCodeOrTokens) : array_values($eitherCodeOrTokens);
         foreach ($tokens as $token) {
             // ショートタグ互換ならそのインラインテキストを再パース
-            if ($this->compatibleShortTagMode > 0 && $token->is(T_INLINE_HTML) && strlen($token->text)) {
+            if ((($this->compatibleOptions & self::COMPATIBLE_SHORT_TAG_REPLACE) || ($this->compatibleOptions & self::COMPATIBLE_SHORT_TAG_REWRITE)) && $token->is(T_INLINE_HTML) && strlen($token->text)) {
                 $inline = str_replace('<?', self::SHORT_OPEN_TAG, $token->text);
-                $this->tokens = array_merge($this->tokens, (new self($inline, self::SHORT_TAG_NOTHING))->tokens);
+                $noShortTagOptions = $compatibleOptions & ~self::COMPATIBLE_SHORT_TAG_REPLACE & ~self::COMPATIBLE_SHORT_TAG_REWRITE;
+                $this->tokens = array_merge($this->tokens, (new self($inline, $noShortTagOptions))->tokens);
                 continue;
+            }
+
+            // php8.4 の |> を検出
+            if (($this->compatibleOptions & self::COMPATIBLE_PIPE_OPERATOR_REPLACE) && $token->is('>') && ($this->tokens[count($this->tokens) - 1] ?? null)?->is(['|', '&'])) {
+                $last = array_pop($this->tokens);
+                $token->id = 10408;
+                $token->text = $last->text . '>';
+                $token->pos = $last->pos;
             }
 
             $this->tokens[] = $token;
@@ -41,7 +53,7 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
     public function __toString(): string
     {
         $tokens = $this->tokens;
-        if ($this->compatibleShortTagMode === self::SHORT_TAG_REPLACE) {
+        if ($this->compatibleOptions & self::COMPATIBLE_SHORT_TAG_REPLACE) {
             $tokens = array_map(function (Token $token) {
                 if ($token->is(self::SHORT_OPEN_TAG)) {
                     $token->text = '<?';
@@ -246,7 +258,7 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
 
         $result = [];
         foreach ($parts as $part) {
-            $result[] = new self($part, $this->compatibleShortTagMode);
+            $result[] = new self($part, $this->compatibleOptions);
         }
         return $result;
     }
@@ -294,7 +306,7 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
     {
         $result = [];
         $this->scan($matchers, function ($matched) use (&$result) {
-            $result[] = new self($matched, $this->compatibleShortTagMode);
+            $result[] = new self($matched, $this->compatibleOptions);
         });
         return $result;
     }
@@ -321,7 +333,7 @@ class Source implements \ArrayAccess, \IteratorAggregate, \Countable
     {
         return $this->scan($matchers, function ($matched) use ($replace, $skip) {
             if ($replace instanceof \Closure) {
-                $replace = $replace(new self($matched, $this->compatibleShortTagMode), $skip);
+                $replace = $replace(new self($matched, $this->compatibleOptions), $skip);
             }
 
             if ($replace === false) {
