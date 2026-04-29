@@ -364,7 +364,8 @@ class Compiler
                 // () があるしレシーバ変数もあるならその箇所に適用
                 else {
                     // 事前準備として "{$_}" を "" . $_ . "" にバラす
-                    $parts->replace([T_CURLY_OPEN, $receiver, '}'], function () use ($receiver) {
+                    $receivevar = str_starts_with($receiver, '$') ? [$receiver] : ['$', $receiver];
+                    $parts->replace([T_CURLY_OPEN, ...$receivevar, '}'], function () use ($receiver) {
                         return [
                             [null, '"'],
                             [null, '.'],

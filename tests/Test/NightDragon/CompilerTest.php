@@ -599,6 +599,22 @@ z
         $this->assertEquals('<?=sprintf("Z".sprintf("z%sz","".trim(trim($a),"X")."")."Z","".sprintf("z%sz","".trim(trim($a),"X")."")."")?>', (string) $source);
     }
 
+    function test_rewriteModifier_placeholder()
+    {
+        /** @see Compiler::rewriteModifier() */
+        $rewrite = $this->publishMethod(new Compiler(), 'rewriteModifier');
+
+        $source = new Source('<?= $a | implode(",", ?) ?>');
+        $rewrite($source, '?', ['|', '&'], [], []);
+        $this->assertEquals('<?=implode(",",$a)?>', (string) $source);
+        $this->assertEquals('a,b', eval("\$a=['a', 'b'];ob_start();?>$source<?php return ob_get_clean() ?>"));
+
+        $source = new Source('<?= $a | trim | trim("X") | htmlspecialchars("a-{$?}-z") ?>');
+        $rewrite($source, '?', ['|', '&'], [], []);
+        $this->assertEquals('<?=htmlspecialchars("a-".trim(trim($a),"X")."-z")?>', (string) $source);
+        $this->assertEquals('a-a&amp;b-z', eval("\$a='a&b';ob_start();?>$source<?php return ob_get_clean() ?>"));
+    }
+
     function test_rewriteModifier_namespace()
     {
         /** @see Compiler::rewriteModifier() */
